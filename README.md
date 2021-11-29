@@ -1,6 +1,4 @@
-> NOTE: Remember to change the project name in src/setup.py and to rename /src/my_package to your package's name!
-
-# Title (change me!)
+# NLP Engine Core
 
 [add overview here]
 
