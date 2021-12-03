@@ -1,5 +1,3 @@
-
-
 class List(object):
     """docstring for List."""
 

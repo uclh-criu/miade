@@ -1,5 +1,3 @@
-
-
 class Note(object):
     """docstring for Note."""
 
