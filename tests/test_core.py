@@ -3,9 +3,10 @@ import pytest
 import nlp_engine_core
 
 
-def test_core(model_filepath):
+def test_core(model_filepath, test_note):
     processor = nlp_engine_core.core.NoteProcessor(model_filepath)
-    assert processor.annotator.get_entities("He was diagnosed with kidney failure") == {
+    extracted_entities = processor.annotator.get_entities(test_note)
+    assert extracted_entities == {
         "entities": {
             0: {
                 "pretty_name": "Diagnosis",

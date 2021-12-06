@@ -8,5 +8,9 @@ setup(
     setup_requires=[
         "wheel",
     ],
-    install_requires=["medcat", "pathlib"],
+    install_requires=[
+        "medcat",
+        "pathlib",
+        "typing",
+    ],
 )
