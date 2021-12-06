@@ -30,3 +30,14 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+#data
+*.dat
+*.csv
+*.zip
+
+#testing
+tests/data/
+
+#logs
+*.log
