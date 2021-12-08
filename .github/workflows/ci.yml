@@ -1,4 +1,4 @@
-name: tests
+name: Tests
 
 on:
   push:
@@ -9,19 +9,23 @@ on:
       - master
 
 jobs:
-  test:
+  Test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: install python3
         uses: actions/setup-python@v2
         with:
-          python-version: 3
+          python-version: 3.8.10
       - name: install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pytest
           pip install ./src/
           pip list
+      - name: download model
+        run: |
+          wget https://medcat.rosalind.kcl.ac.uk/media/medmen_wstatus_2021_oct.zip -P ./tests/data/models/
+          wget https://raw.githubusercontent.com/CogStack/MedCAT/master/tutorial/data/pt_notes.csv -P ./tests/data/
       - name: run pytest
         run: pytest ./tests/*

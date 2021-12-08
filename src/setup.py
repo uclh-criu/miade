@@ -8,5 +8,8 @@ setup(
     setup_requires=[
         "wheel",
     ],
-    install_requires=["medcat", "pathlib"],
+    install_requires=[
+        "medcat==1.2.5",
+        "typing==3.7.4.3",
+    ],
 )
