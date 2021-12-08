@@ -21,4 +21,8 @@ class NoteProcessor:
         self.annotator = CAT.load_model_pack(model_pack_filepath)
 
     def process(self, note: Note, patient_data: Optional[List[Concept]] = None) -> List[Concept]:
-        return self.annotator.get_entities(note)
+        concepts = []
+        entities = self.annotator.get_entities(note)
+        for entity in entities['entities'].values():
+            concepts.append(Concept(id=entity['cui'], name=entity['pretty_name']))
+        return concepts
