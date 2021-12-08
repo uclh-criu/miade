@@ -10,7 +10,6 @@ setup(
     ],
     install_requires=[
         "medcat",
-        "pathlib",
         "typing",
     ],
 )
