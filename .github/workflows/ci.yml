@@ -24,7 +24,7 @@ jobs:
           pip install ./src/
           pip list
       - name: download model
-        run |
+        run: |
           wget https://medcat.rosalind.kcl.ac.uk/media/medmen_wstatus_2021_oct.zip -P ./tests/data/models/
           wget https://raw.githubusercontent.com/CogStack/MedCAT/master/tutorial/data/pt_notes.csv -P ./tests/data/
       - name: run pytest
