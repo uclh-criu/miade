@@ -9,7 +9,7 @@ setup(
         "wheel",
     ],
     install_requires=[
-        "medcat",
-        "typing",
+        "medcat==1.2.5",
+        "typing==3.7.4.3",
     ],
 )
