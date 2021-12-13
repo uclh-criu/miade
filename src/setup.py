@@ -10,7 +10,7 @@ setup(
     ],
     install_requires=[
         "medcat==1.2.5",
-        "spacy==3.1.0"
+        "spacy==3.1.0",
         "typing==3.7.4.3",
     ],
 )
