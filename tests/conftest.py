@@ -23,3 +23,13 @@ def snomed_data_path() -> Path:
 @pytest.fixture(scope="function")
 def vocab_data_path() -> Path:
     return Path("./tests/examples/vocab_data.txt")
+
+
+@pytest.fixture(scope="function")
+def text_data_path() -> Path:
+    return Path("./tests/examples/wikipedia_sample.txt")
+
+
+@pytest.fixture(scope="function")
+def cdb_data_path() -> Path:
+    return Path("./tests/examples/cdb.dat")

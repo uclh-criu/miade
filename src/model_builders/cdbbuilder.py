@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import List, Optional
 
+from medcat.cdb import CDB
 from medcat.config import Config
 from medcat.cdb_maker import CDBMaker
 
@@ -24,7 +25,7 @@ class CDBBuilder(object):
         df = self.snomed.to_concept_df()
         df.to_csv('preprocessed_snomed.csv', index=False)
 
-    def create_cdb(self, csv_path: List[str]) -> None:
+    def create_cdb(self, csv_path: List[str]) -> CDB:
         cdb = self.maker.prepare_csvs(csv_path, full_build=True)
-        cdb.save('cdb.dat')
+        return cdb
 
