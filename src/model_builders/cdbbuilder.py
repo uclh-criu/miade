@@ -9,7 +9,7 @@ from .preprocess_snomeduk import Snomed
 
 class CDBBuilder(object):
     """Builds cdb from snomed data"""
-    def __init__(self, data_path: Path, config: Optional[Config] = None, model: str = 'en_core_sci_md'):
+    def __init__(self, data_path: Path, config: Optional[Config] = None, model: str = 'en_core_web_md'):
         if config is not None:
             self.config = config
         else:
