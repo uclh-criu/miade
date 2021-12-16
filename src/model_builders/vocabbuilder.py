@@ -15,14 +15,13 @@ class VocabBuilder(object):
         else:
             self.vocab = Vocab()
 
-    def create_new_vocab_with_word_embeddings(self, training_data_path: Path, cdb: CDB, config: Config) -> Vocab:
+    def create_new_vocab(self, training_data_list: List, cdb: CDB, config: Config, output_dir: Path = Path.cwd(),
+                         unigram_table_size: int = 100000000) -> Vocab:
         """create new vocab from text file without word embeddings"""
-        with open(training_data_path, 'r', encoding='utf-8') as training_data:
-            training_data_list = [line.strip() for line in training_data]
 
         make_vocab = MakeVocab(cdb=cdb, config=config)
-        make_vocab.make(training_data_list, out_folder='./')
-        make_vocab.add_vectors(in_path='./data.txt')
+        make_vocab.make(training_data_list, out_folder=str(output_dir))
+        make_vocab.add_vectors(in_path=str(output_dir/'data.txt'), unigram_table_size=unigram_table_size)
         self.vocab = make_vocab.vocab
         return self.vocab
 

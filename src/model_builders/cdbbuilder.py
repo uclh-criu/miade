@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -20,10 +21,10 @@ class CDBBuilder(object):
         self.snomed = Snomed(str(data_path))
         self.maker = CDBMaker(self.config)
 
-    def preprocess_snomed(self) -> None:
+    def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> None:
         print("Exporting preprocessed SNOMED to csv...")
         df = self.snomed.to_concept_df()
-        df.to_csv('preprocessed_snomed.csv', index=False)
+        df.to_csv(os.path.join(output_dir, 'preprocessed_snomed.csv'), index=False)
 
     def create_cdb(self, csv_path: List[str]) -> CDB:
         cdb = self.maker.prepare_csvs(csv_path, full_build=True)
