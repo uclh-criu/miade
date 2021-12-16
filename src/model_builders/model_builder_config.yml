@@ -1,13 +1,13 @@
 # General
-output_dir: tests/model_creator/output/
+output_dir: model_builders/output/
 
 # MedCAT input data
-concept_csv_file: tests/model_creator/umls_sample.csv
-unsupervised_training_data_file: tests/model_creator/wikipedia_sample.txt
+#cdb_csv_file: model_builders/preprocessed_snomed.csv
+cdb_data_path: tests/examples/example_snomed_sct2_20211124000001Z
+unsupervised_training_data_file: tests/examples/wikipedia_sample.txt
 
 # Optional file for custom MedCAT configuration
-# Default values can be found in medcat/config.py
-medcat_config_file: tests/model_creator/medcat.txt
+# medcat_config_file: tests/model_creator/medcat.txt
 
 # Optional property to set size of unigram table used for vocabulary
 # Default is 100000000

@@ -33,3 +33,8 @@ def text_data_path() -> Path:
 @pytest.fixture(scope="function")
 def cdb_data_path() -> Path:
     return Path("./tests/examples/cdb.dat")
+
+
+@pytest.fixture(scope="function")
+def cdb_csv_path() -> Path:
+    return Path("./tests/data/preprocessed_snomed.csv")
