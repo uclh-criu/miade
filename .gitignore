@@ -35,9 +35,11 @@ venv.bak/
 *.dat
 *.csv
 *.zip
+model_builders/output/
 
 #testing
 tests/data/
+!tests/examples/*
 
 #logs
 *.log
