@@ -11,7 +11,15 @@ from medcat.cdb_maker import CDBMaker
 from medcat.cat import CAT
 
 from .note import Note
-from .concept import Concept
+from .concept import Concept, Kind
+
+
+CONCEPT_KIND_MAP = {
+    'umls': {
+        'Disease or Syndrome': Kind.DIAGNOSIS,
+        'Pharmacologic Substance': Kind.MEDICATION,
+    },
+}
 
 
 class NoteProcessor:
@@ -31,13 +39,15 @@ class NoteProcessor:
 
         concepts: List[Concept] = []
 
-        for entity in self.annotators[0].get_entities(note)['entities'].values():
-            print(type(entity))
-            print(entity)
-
         for annotator in self.annotators:
             for entity in annotator.get_entities(note)['entities'].values():
-                if 'Disease or Syndrome' in entity['types'] or 'Pharmacologic Substance' in entity['types']:
-                        concepts.append(Concept(id=entity['cui'], name=entity['pretty_name']))
+                for kind in set.intersection(set(entity['types']), set(CONCEPT_KIND_MAP['umls'].keys())):
+                    concepts.append(
+                        Concept(
+                            id=entity['cui'],
+                            name=entity['pretty_name'],
+                            kind=CONCEPT_KIND_MAP['umls'][kind]
+                        )
+                    )
 
         return concepts

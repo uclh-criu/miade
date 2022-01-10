@@ -6,8 +6,8 @@ from miade.note import Note
 
 
 @pytest.fixture(scope="function")
-def model_filepath() -> Path:
-    return Path("./tests/data/models/medmen_wstatus_2021_oct.zip")
+def model_directory_path() -> Path:
+    return Path("./tests/data/models/")
 
 
 @pytest.fixture(scope="function")
