@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 
 from nlp_engine_core.note import Note
+from nlp_engine_core.concept import Concept
 
 
 @pytest.fixture(scope="function")
@@ -38,3 +39,14 @@ def cdb_data_path() -> Path:
 @pytest.fixture(scope="function")
 def cdb_csv_path() -> Path:
     return Path("./tests/data/preprocessed_snomed.csv")
+
+
+@pytest.fixture(scope="function")
+def test_med_note() -> Note:
+    return Note(text="A patient was prescribed Magnesium hydroxide 400mg/5ml suspension "
+                     "PO of total 30ml bid for the next 7 days.")
+
+
+@pytest.fixture(scope="function")
+def test_med_concept() -> Concept:
+    return Concept(id="387337001", name="Magnesium hydroxide")

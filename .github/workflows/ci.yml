@@ -28,5 +28,6 @@ jobs:
           wget https://medcat.rosalind.kcl.ac.uk/media/medmen_wstatus_2021_oct.zip -P ./tests/data/models/
           wget https://raw.githubusercontent.com/CogStack/MedCAT/master/tutorial/data/pt_notes.csv -P ./tests/data/
           python -m spacy download en_core_web_md
+          pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
       - name: run pytest
         run: pytest ./tests/*

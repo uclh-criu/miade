@@ -9,7 +9,7 @@ from medcat.cdb_maker import CDBMaker
 from .preprocess_snomeduk import Snomed
 
 
-class CDBBuilder(object):
+class CDBBuilder:
     """Builds cdb from snomed data"""
     def __init__(self, data_path: Path, config: Optional[Config] = None, model: str = 'en_core_web_md'):
         if config is not None:
