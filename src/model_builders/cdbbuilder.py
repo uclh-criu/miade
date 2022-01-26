@@ -33,10 +33,12 @@ class CDBBuilder(object):
     def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> None:
         print("Exporting preprocessed SNOMED to csv...")
         df = self.snomed.to_concept_df()
-        df.to_csv(output_dir/Path("preprocessed_snomed.csv"), index=False)
+        df.to_csv(output_dir / Path("preprocessed_snomed.csv"), index=False)
 
     def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> None:
-        preprocess_fdb(self.fdb_data_path).to_csv(output_dir/Path("preprocessed_fdb.csv"), index=False)
+        preprocess_fdb(self.fdb_data_path).to_csv(
+            output_dir / Path("preprocessed_fdb.csv"), index=False
+        )
 
     def create_cdb(self, csv_paths: List[str]) -> CDB:
         cdb = self.maker.prepare_csvs(csv_paths, full_build=True)

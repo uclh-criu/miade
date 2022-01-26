@@ -32,9 +32,11 @@ class NoteProcessor:
         medication_list_path: Path = None,
         allergy_list_path: Path = None,
     ):
-        meta_cat_config_dict = {'general': {'device': 'cpu'}}
+        meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.annotators = [
-            CAT.load_model_pack(model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict)
+            CAT.load_model_pack(
+                model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
+            )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
 

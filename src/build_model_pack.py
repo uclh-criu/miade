@@ -21,7 +21,9 @@ def build_model_pack(
 ):
 
     # TODO: option to input list of concept csv files
-    cdb_builder = CDBBuilder(snomed_data_path=snomed_data_path, fdb_data_path=fdb_data_path, config=config)
+    cdb_builder = CDBBuilder(
+        snomed_data_path=snomed_data_path, fdb_data_path=fdb_data_path, config=config
+    )
     cdb_builder.preprocess_snomed(output_dir=output_dir)
     cdb = cdb_builder.create_cdb(["preprocessed_snomed.csv"])
 
