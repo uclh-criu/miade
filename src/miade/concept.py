@@ -1,9 +1,10 @@
 from enum import Enum
 
+
 class Category(Enum):
-    DIAGNOSIS=1
-    MEDICATION=2
-    ALLERGY=3
+    DIAGNOSIS = 1
+    MEDICATION = 2
+    ALLERGY = 3
 
 
 class Concept(object):
@@ -18,4 +19,4 @@ class Concept(object):
         return f"{{name: {self.name}, id: {self.id}, type: {self.category.name}}}"
 
     def __eq__(self, other):
-        return (self.__dict__ == other.__dict__)
+        return self.__dict__ == other.__dict__

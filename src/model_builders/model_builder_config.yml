@@ -3,7 +3,8 @@ output_dir: model_builders/output/
 
 # MedCAT input data
 #cdb_csv_file: model_builders/preprocessed_snomed.csv
-cdb_data_path: tests/examples/example_snomed_sct2_20211124000001Z
+snomed_data_path: tests/examples/example_snomed_sct2_20211124000001Z
+fdb_data_path: data/fdb/exports/drug_names_export.csv
 unsupervised_training_data_file: tests/examples/wikipedia_sample.txt
 
 # Optional file for custom MedCAT configuration

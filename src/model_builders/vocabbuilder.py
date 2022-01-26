@@ -9,19 +9,28 @@ from medcat.utils.make_vocab import MakeVocab
 
 class VocabBuilder(object):
     """Builds vocab corpus"""
+
     def __init__(self, vocab_path: Optional[Path] = None):
         if vocab_path is not None:
             self.vocab = Vocab.load(vocab_path)
         else:
             self.vocab = Vocab()
 
-    def create_new_vocab(self, training_data_list: List, cdb: CDB, config: Config, output_dir: Path = Path.cwd(),
-                         unigram_table_size: int = 100000000) -> Vocab:
+    def create_new_vocab(
+        self,
+        training_data_list: List,
+        cdb: CDB,
+        config: Config,
+        output_dir: Path = Path.cwd(),
+        unigram_table_size: int = 100000000,
+    ) -> Vocab:
         """create new vocab from text file without word embeddings"""
 
         make_vocab = MakeVocab(cdb=cdb, config=config)
         make_vocab.make(training_data_list, out_folder=str(output_dir))
-        make_vocab.add_vectors(in_path=str(output_dir/'data.txt'), unigram_table_size=unigram_table_size)
+        make_vocab.add_vectors(
+            in_path=str(output_dir / "data.txt"), unigram_table_size=unigram_table_size
+        )
         self.vocab = make_vocab.vocab
         return self.vocab
 
@@ -32,4 +41,3 @@ class VocabBuilder(object):
     def update_vocab(self) -> Vocab:
         self.vocab.make_unigram_table()
         return self.vocab
-

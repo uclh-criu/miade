@@ -15,9 +15,9 @@ from .concept import Concept, Category
 
 
 CONCEPT_CATEGORY_MAP = {
-    'umls': {
-        'Disease or Syndrome': Category.DIAGNOSIS,
-        'Pharmacologic Substance': Category.MEDICATION,
+    "umls": {
+        "Disease or Syndrome": Category.DIAGNOSIS,
+        "Pharmacologic Substance": Category.MEDICATION,
     },
 }
 
@@ -25,28 +25,36 @@ CONCEPT_CATEGORY_MAP = {
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(self, model_directory: Path):
+    def __init__(
+        self,
+        model_directory: Path,
+        problem_list_path: Path = None,
+        medication_list_path: Path = None,
+        allergy_list_path: Path = None,
+    ):
+        meta_cat_config_dict = {'general': {'device': 'cpu'}}
         self.annotators = [
-                CAT.load_model_pack(model_pack_filepath)
-            for
-                model_pack_filepath
-            in
-                model_directory.glob('*.zip')
+            CAT.load_model_pack(model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict)
+            for model_pack_filepath in model_directory.glob("*.zip")
         ]
-        print(self.annotators)
 
-    def process(self, note: Note, patient_data: Optional[List[Concept]] = None) -> List[Concept]:
+    def process(
+        self, note: Note, patient_data: Optional[List[Concept]] = None
+    ) -> List[Concept]:
 
         concepts: List[Concept] = []
 
         for annotator in self.annotators:
-            for entity in annotator.get_entities(note)['entities'].values():
-                for category in set.intersection(set(entity['types']), set(CONCEPT_CATEGORY_MAP['umls'].keys())):
+            for entity in annotator.get_entities(note)["entities"].values():
+                for category in set.intersection(
+                    set(entity["types"]), set(CONCEPT_CATEGORY_MAP["umls"].keys())
+                ):
+                    print(entity)
                     concepts.append(
                         Concept(
-                            id=entity['cui'],
-                            name=entity['pretty_name'],
-                            category=CONCEPT_CATEGORY_MAP['umls'][category]
+                            id=entity["cui"],
+                            name=entity["pretty_name"],
+                            category=CONCEPT_CATEGORY_MAP["umls"][category],
                         )
                     )
 
