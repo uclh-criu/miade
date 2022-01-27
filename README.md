@@ -1,4 +1,4 @@
-# NLP Engine Core
+# MIADE
 
 [add overview here]
 
@@ -6,9 +6,10 @@
 
 ## Contributors
 
-| Name | Email |
-|------|-------|
-|      |       |
+| Name            | Email                 |
+|-----------------|-----------------------|
+| James Brandreth | j.brandreth@ucl.ac.uk |
+| Jennifer Jiang  | j.jiang.13@ucl.ac.uk  |
 
 ## Installing
 

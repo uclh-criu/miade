@@ -2,7 +2,7 @@ import pytest
 
 from pathlib import Path
 
-from nlp_engine_core.note import Note
+from miade.note import Note
 
 
 @pytest.fixture(scope="function")
