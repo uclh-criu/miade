@@ -1,7 +1,7 @@
 import pytest
 
-from nlp_engine_core.core import NoteProcessor
-from nlp_engine_core.concept import Concept
+from miade.core import NoteProcessor
+from miade.concept import Concept
 
 
 def test_core(model_filepath, test_note):
