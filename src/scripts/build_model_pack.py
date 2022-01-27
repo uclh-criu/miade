@@ -2,13 +2,13 @@ import argparse
 import yaml
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from medcat.config import Config
 from medcat.cat import CAT
 
-from model_builders.cdbbuilder import CDBBuilder
-from model_builders.vocabbuilder import VocabBuilder
+from miade.model_builders import CDBBuilder
+from miade.model_builders import VocabBuilder
 
 
 def build_model_pack(

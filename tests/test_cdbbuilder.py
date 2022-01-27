@@ -1,8 +1,6 @@
-import pytest
-
 from pathlib import Path
 
-from model_builders.cdbbuilder import CDBBuilder
+from miade.model_builders import CDBBuilder
 
 
 def test_cdbbuilder(snomed_data_path, fdb_data_path, cdb_csv_paths):
@@ -20,3 +18,4 @@ def test_cdbbuilder(snomed_data_path, fdb_data_path, cdb_csv_paths):
         "20": {"ibruprofen"},
         "30": {"co~codamol"},
     }
+    cdb.save("./tests/data/cdb.dat")

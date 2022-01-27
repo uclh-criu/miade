@@ -1,10 +1,8 @@
-import pytest
-
 from pathlib import Path
 from medcat.cdb import CDB
 from medcat.config import Config
 
-from model_builders.vocabbuilder import VocabBuilder
+from miade.model_builders import VocabBuilder
 
 
 def test_vocabbuilder(text_data_path, vocab_data_path, cdb_data_path):
