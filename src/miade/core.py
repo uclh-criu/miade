@@ -1,31 +1,46 @@
-import pandas as pd
-import numpy as np
-
 from pathlib import Path
 from typing import List, Optional
 
-from medcat.vocab import Vocab
-from medcat.cdb import CDB
-from medcat.config import Config
-from medcat.cdb_maker import CDBMaker
 from medcat.cat import CAT
 
+from .concept import Concept, Category
 from .note import Note
-from .concept import Concept
 
 
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(self, model_pack_filepath: Path):
-        self.annotator = CAT.load_model_pack(model_pack_filepath)
-
-    def process(self, note: Note, patient_data: Optional[List[Concept]] = None) -> List[Concept]:
-        return [
-                Concept(id=entity['cui'], name=entity['pretty_name'])
-            for
-                entity
-            in
-                self.annotator.get_entities(note)['entities'].values()
-            if 'Disease or Syndrome' in entity['types']
+    def __init__(
+        self,
+        model_directory: Path,
+    ):
+        meta_cat_config_dict = {"general": {"device": "cpu"}}
+        self.annotators = [
+            CAT.load_model_pack(
+                model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
+            )
+            for model_pack_filepath in model_directory.glob("*.zip")
         ]
+
+    def process(
+        self, note: Note, patient_data: Optional[List[Concept]] = None
+    ) -> List[Concept]:
+
+        concepts: List[Concept] = []
+
+        for annotator in self.annotators:
+            for entity in annotator.get_entities(note)["entities"].values():
+                print(entity)
+                if entity['ontologies'] == ['FDB']:
+                    category = Category.MEDICATION
+                if entity['ontologies'] == ['SNOMED-CT']:
+                    category = Category.DIAGNOSIS
+                concepts.append(
+                    Concept(
+                        id=entity["cui"],
+                        name=entity["pretty_name"],
+                        category=category
+                    )
+                )
+
+        return concepts
