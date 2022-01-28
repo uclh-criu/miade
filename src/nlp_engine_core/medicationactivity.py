@@ -1,13 +1,13 @@
-from typing import Optional
+from dataclasses import dataclass
 from datetime import datetime
 
 from pydantic import BaseModel
-from dataclasses import dataclass
+from typing import Optional
 
 from .concept import Concept
 
 
-class Dose(BaseModel):
+class Dosage(BaseModel):
     text: str
     value: int
     unit: Optional[str]
@@ -26,8 +26,9 @@ class Frequency(BaseModel):
 
 @dataclass
 class MedicationActivity:
+    text: str
     drug: Concept
-    dose: Dose = None
+    dosage: Dosage = None
     duration: Duration = None
     frequency: Optional[Frequency] = None
     route: Optional[str] = None

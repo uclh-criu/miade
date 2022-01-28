@@ -50,3 +50,8 @@ def test_med_note() -> Note:
 @pytest.fixture(scope="function")
 def test_med_concept() -> Concept:
     return Concept(id="387337001", name="Magnesium hydroxide")
+
+
+@pytest.fixture(scope="function")
+def test_lookup_dict_path() -> Path:
+    return Path("../src/nlp_engine_core/resources/med_lookup_dict.json")
