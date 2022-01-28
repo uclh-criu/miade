@@ -13,7 +13,7 @@ def model_directory_path() -> Path:
 
 @pytest.fixture(scope="function")
 def test_note() -> Note:
-    return Note(text="He was diagnosed with kidney failure")
+    return Note(text="Patient has liver failure and is taking paracetamol.")
 
 
 @pytest.fixture(scope="function")
