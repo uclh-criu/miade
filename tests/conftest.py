@@ -1,24 +1,30 @@
 import pytest
 
+from typing import List
 from pathlib import Path
 
-from nlp_engine_core.note import Note
-from nlp_engine_core.concept import Concept
+from miade.note import Note
+from miade.concept import Concept
 
 
 @pytest.fixture(scope="function")
-def model_filepath() -> Path:
-    return Path("./tests/data/models/medmen_wstatus_2021_oct.zip")
+def model_directory_path() -> Path:
+    return Path("./tests/data/models/")
 
 
 @pytest.fixture(scope="function")
 def test_note() -> Note:
-    return Note(text="He was diagnosed with kidney failure")
+    return Note(text="Patient has liver failure and is taking paracetamol.")
 
 
 @pytest.fixture(scope="function")
 def snomed_data_path() -> Path:
     return Path("./tests/examples/example_snomed_sct2_20211124000001Z/")
+
+
+@pytest.fixture(scope="function")
+def fdb_data_path() -> Path:
+    return Path("./tests/examples/example_fdb.csv")
 
 
 @pytest.fixture(scope="function")
@@ -37,8 +43,11 @@ def cdb_data_path() -> Path:
 
 
 @pytest.fixture(scope="function")
-def cdb_csv_path() -> Path:
-    return Path("./tests/data/preprocessed_snomed.csv")
+def cdb_csv_paths() -> List[Path]:
+    return [
+        Path("./tests/data/preprocessed_snomed.csv"),
+        Path("./tests/data/preprocessed_fdb.csv"),
+    ]
 
 
 @pytest.fixture(scope="function")

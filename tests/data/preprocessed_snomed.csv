@@ -1,0 +1,4 @@
+cui,name,name_status,ontologies,description_type_ids,type_ids
+1,COVID,P,SNOMED-CT,,
+3,Liver failure,P,SNOMED-CT,,
+4,Silodosin 8mg capsules,P,SNOMED-CT,,
