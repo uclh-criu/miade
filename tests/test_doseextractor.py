@@ -1,11 +1,12 @@
 import pytest
 
-from nlp_engine_core.doseextractor import DoseExtractor
+from miade.doseextractor import DoseExtractor
 
 
-def test_dose_extractor(test_med_note, test_med_concept, test_lookup_dict_path):
-    dose_extractor = DoseExtractor(test_lookup_dict_path)
+def test_dose_extractor(test_med_note, test_med_concept):
+    dose_extractor = DoseExtractor()
     medication_activity = dose_extractor.extract(note=test_med_note, drug=test_med_concept)
-    print(medication_activity.drug)
+    assert medication_activity.drug.name == "Magnesium hydroxide"
+    assert medication_activity.drug.id == "387337001"
     print(medication_activity)
 

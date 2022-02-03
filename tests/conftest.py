@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 
 from miade.note import Note
-from miade.concept import Concept
+from miade.concept import Concept, Category
 
 
 @pytest.fixture(scope="function")
@@ -53,14 +53,9 @@ def cdb_csv_paths() -> List[Path]:
 @pytest.fixture(scope="function")
 def test_med_note() -> Note:
     return Note(text="A patient was prescribed Magnesium hydroxide 400mg/5ml suspension "
-                     "PO of total 30ml bid for the next 7 days.")
+                     "PO of total thirty ml bid for the next 7 days.")
 
 
 @pytest.fixture(scope="function")
 def test_med_concept() -> Concept:
-    return Concept(id="387337001", name="Magnesium hydroxide")
-
-
-@pytest.fixture(scope="function")
-def test_lookup_dict_path() -> Path:
-    return Path("../src/nlp_engine_core/resources/med_lookup_dict.json")
+    return Concept(id="387337001", name="Magnesium hydroxide", category=Category.MEDICATION)
