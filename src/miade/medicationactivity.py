@@ -7,7 +7,7 @@ from typing import Optional
 from .concept import Concept
 
 
-class Dosage(BaseModel):
+class Dose(BaseModel):
     text: str
     value: int
     unit: Optional[str]
@@ -28,7 +28,7 @@ class Frequency(BaseModel):
 class MedicationActivity:
     text: str
     drug: Concept
-    dosage: Dosage = None
+    dose: Dose = None
     duration: Duration = None
     frequency: Optional[Frequency] = None
     route: Optional[str] = None

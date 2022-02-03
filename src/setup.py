@@ -5,6 +5,7 @@ setup(
     version="0.1",
     description="",
     packages=find_packages(),
+    include_package_data=True,
     setup_requires=[
         "wheel",
     ],
