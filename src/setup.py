@@ -6,6 +6,7 @@ setup(
     description="",
     packages=find_packages(),
     include_package_data=True,
+    package_data={"miade": ["data/med_lookup_dict.csv"]},
     setup_requires=[
         "wheel",
     ],
