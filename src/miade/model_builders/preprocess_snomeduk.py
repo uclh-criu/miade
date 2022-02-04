@@ -29,7 +29,7 @@ class Snomed:
         data_path,
     ):
         self.data_path = data_path
-        self.release = data_path[-15:-7]
+        self.release = data_path[-16:-8]
 
     def to_concept_df(self):
         """
@@ -102,6 +102,7 @@ class Snomed:
                 columns={"id_x": "cui", "term": "name", "typeId": "name_status"},
                 inplace=True,
             )
+            active_snomed_df["cui"] = active_snomed_df.cui.apply(lambda x: f"SNO-{x}")
             active_snomed_df["ontologies"] = "SNOMED-CT"
             active_snomed_df["name_status"] = active_snomed_df["name_status"].replace(
                 ["900000000000003001", "900000000000013009"], ["P", "A"]
@@ -133,6 +134,7 @@ class Snomed:
                 )
             )
             df2merge.append(active_snomed_df)
+
 
         return pd.concat(df2merge).reset_index(drop=True)
 

@@ -8,6 +8,7 @@ from medcat.cdb_maker import CDBMaker
 
 from .preprocess_snomeduk import Snomed
 from .preprocess_fdb import preprocess_fdb
+from .preprocess_elg import preprocess_elg
 
 
 class CDBBuilder(object):
@@ -17,10 +18,12 @@ class CDBBuilder(object):
         self,
         snomed_data_path: Path,
         fdb_data_path: Path,
+        elg_data_path: Path,
         config: Optional[Config] = None,
         model: str = "en_core_web_md",
     ):
         self.fdb_data_path = fdb_data_path
+        self.elg_data_path = elg_data_path
         if config is not None:
             self.config = config
         else:
@@ -38,6 +41,11 @@ class CDBBuilder(object):
     def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> None:
         preprocess_fdb(self.fdb_data_path).to_csv(
             output_dir / Path("preprocessed_fdb.csv"), index=False
+        )
+
+    def preprocess_elg(self, output_dir: Path = Path.cwd()) -> None:
+        preprocess_elg(self.elg_data_path).to_csv(
+            output_dir / Path("preprocessed_elg.csv"), index=False
         )
 
     def create_cdb(self, csv_paths: List[str]) -> CDB:
