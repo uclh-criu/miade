@@ -51,4 +51,5 @@ def cdb_csv_paths() -> List[Path]:
     return [
         Path("./tests/data/preprocessed_snomed.csv"),
         Path("./tests/data/preprocessed_fdb.csv"),
+        Path("./tests/data/preprocessed_elg.csv"),
     ]
