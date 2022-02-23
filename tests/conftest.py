@@ -27,6 +27,11 @@ def fdb_data_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def elg_data_path() -> Path:
+    return Path("./tests/examples/example_elg.csv")
+
+
+@pytest.fixture(scope="function")
 def vocab_data_path() -> Path:
     return Path("./tests/examples/vocab_data.txt")
 
@@ -46,4 +51,5 @@ def cdb_csv_paths() -> List[Path]:
     return [
         Path("./tests/data/preprocessed_snomed.csv"),
         Path("./tests/data/preprocessed_fdb.csv"),
+        Path("./tests/data/preprocessed_elg.csv"),
     ]
