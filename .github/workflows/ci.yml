@@ -24,8 +24,6 @@ jobs:
           pip install ./src/
           pip list
       - name: download model
-        run: |
-          wget https://raw.githubusercontent.com/CogStack/MedCAT/master/tutorial/data/pt_notes.csv -P ./tests/data/
-          python -m spacy download en_core_web_md
+        run: python -m spacy download en_core_web_md
       - name: run pytest
         run: pytest ./tests/*
