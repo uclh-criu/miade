@@ -31,7 +31,7 @@ class Snomed:
         self.data_path = data_path
         self.release = data_path[-15:-7]
 
-    def to_concept_df(self):
+    def to_concept_df(self, filter=None):
         """
         :return: SNOMED CT concept DataFrame ready for MEDCAT CDB creation
         """
@@ -44,7 +44,7 @@ class Snomed:
             for folder in os.listdir(self.data_path):
                 if "SnomedCT" in folder:
                     paths.append(os.path.join(self.data_path, folder))
-                    snomed_releases.append(folder[-16:-8])
+                    snomed_releases.append(folder[-15:-7])
         if len(paths) == 0:
             raise FileNotFoundError("Incorrect path to SNOMED CT directory")
 
@@ -135,8 +135,12 @@ class Snomed:
             )
             df2merge.append(active_snomed_df)
 
+        df = pd.concat(df2merge).reset_index(drop=True)
 
-        return pd.concat(df2merge).reset_index(drop=True)
+        if filter is not None:
+            df = df.merge(filter, how='inner', on='cui')
+
+        return df.reset_index(drop=True)
 
     def list_all_relationships(self):
         """

@@ -22,6 +22,11 @@ def snomed_data_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def snomed_subset_path() -> Path:
+    return Path("./tests/examples/example_snomed_subset.csv")
+
+
+@pytest.fixture(scope="function")
 def fdb_data_path() -> Path:
     return Path("./tests/examples/example_fdb.csv")
 
