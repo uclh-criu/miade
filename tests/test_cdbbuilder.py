@@ -3,11 +3,12 @@ from pathlib import Path
 from miade.model_builders import CDBBuilder
 
 
-def test_cdbbuilder(snomed_data_path, fdb_data_path, elg_data_path, cdb_csv_paths):
+def test_cdbbuilder(snomed_data_path, fdb_data_path, elg_data_path, cdb_csv_paths, snomed_subset_path):
     cdb_builder = CDBBuilder(
         snomed_data_path=snomed_data_path,
         fdb_data_path=fdb_data_path,
         elg_data_path=elg_data_path,
+        snomed_subset_path=snomed_subset_path
     )
     cdb_builder.preprocess_snomed(output_dir=Path("./tests/data/"))
     cdb_builder.preprocess_fdb(output_dir=Path("./tests/data/"))
@@ -21,6 +22,5 @@ def test_cdbbuilder(snomed_data_path, fdb_data_path, elg_data_path, cdb_csv_path
         "FDB-30": {"co~codamol"},
         "SNO-1": {"covid"},
         "SNO-3": {"liver~failure"},
-        "SNO-4": {"silodosin~8mg~capsule", "silodosin~8mg~capsules"},
     }
     cdb.save("./tests/data/cdb.dat")
