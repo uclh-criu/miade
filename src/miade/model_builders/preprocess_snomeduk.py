@@ -29,9 +29,9 @@ class Snomed:
         data_path,
     ):
         self.data_path = data_path
-        self.release = data_path[-15:-7]
+        self.release = data_path[-16:-8]
 
-    def to_concept_df(self):
+    def to_concept_df(self, filter=None):
         """
         :return: SNOMED CT concept DataFrame ready for MEDCAT CDB creation
         """
@@ -135,8 +135,12 @@ class Snomed:
             )
             df2merge.append(active_snomed_df)
 
+        df = pd.concat(df2merge).reset_index(drop=True)
 
-        return pd.concat(df2merge).reset_index(drop=True)
+        if filter is not None:
+            df = df.merge(filter, how='inner', on='cui')
+
+        return df.reset_index(drop=True)
 
     def list_all_relationships(self):
         """
