@@ -29,7 +29,7 @@ class Snomed:
         data_path,
     ):
         self.data_path = data_path
-        self.release = data_path[-15:-7]
+        self.release = data_path.split('_')[-1][0:8]
 
     def to_concept_df(self, filter=None):
         """
@@ -44,7 +44,7 @@ class Snomed:
             for folder in os.listdir(self.data_path):
                 if "SnomedCT" in folder:
                     paths.append(os.path.join(self.data_path, folder))
-                    snomed_releases.append(folder[-15:-7])
+                    snomed_releases.append(folder.split('_')[-1][0:8])
         if len(paths) == 0:
             raise FileNotFoundError("Incorrect path to SNOMED CT directory")
 
