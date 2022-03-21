@@ -5,10 +5,30 @@ import pkgutil
 import pandas as pd
 
 from typing import Dict, Tuple
+from spacy.language import Language
+from spacy.tokens import Span
 
 from .note import Note
 from .concept import Concept
 from .medicationactivity import MedicationActivity, Dose, Duration, Frequency
+
+
+@Language.component("refine_entities")
+def refine_entities(doc):
+    new_ents = []
+    for ind, ent in enumerate(doc.ents):
+        if (ent.label_ == "DURATION" or ent.label_ == "FREQUENCY") and ind != 0:
+            prev_ent = doc.ents[ind - 1]
+            if prev_ent.label_ == ent.label_:
+                new_ent = Span(doc, prev_ent.start, ent.end, label=ent.label)
+                new_ents.pop()
+                new_ents.append(new_ent)
+            else:
+                new_ents.append(ent)
+        else:
+            new_ents.append(ent)
+    doc.ents = new_ents
+    return doc
 
 
 class DosageExtractor:
@@ -62,6 +82,7 @@ class DosageExtractor:
 
     def extract(self, note: Note, drug: Concept) -> MedicationActivity:
         text = self._preprocess(note.text)
+        self.med7.add_pipe("refine_entities", after="ner")
         doc = self.med7(text)
 
         for e in doc.ents:
