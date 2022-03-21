@@ -23,8 +23,18 @@ def snomed_data_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def snomed_subset_path() -> Path:
+    return Path("./tests/examples/example_snomed_subset.csv")
+
+
+@pytest.fixture(scope="function")
 def fdb_data_path() -> Path:
     return Path("./tests/examples/example_fdb.csv")
+
+
+@pytest.fixture(scope="function")
+def elg_data_path() -> Path:
+    return Path("./tests/examples/example_elg.csv")
 
 
 @pytest.fixture(scope="function")
@@ -47,6 +57,7 @@ def cdb_csv_paths() -> List[Path]:
     return [
         Path("./tests/data/preprocessed_snomed.csv"),
         Path("./tests/data/preprocessed_fdb.csv"),
+        Path("./tests/data/preprocessed_elg.csv"),
     ]
 
 
