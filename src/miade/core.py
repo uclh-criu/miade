@@ -33,13 +33,17 @@ class NoteProcessor:
                 print(entity)
                 if entity['ontologies'] == ['FDB']:
                     category = Category.MEDICATION
-                if entity['ontologies'] == ['SNOMED-CT']:
+                elif entity['ontologies'] == ['SNOMED-CT']:
+                    category = Category.DIAGNOSIS
+                else:
                     category = Category.DIAGNOSIS
                 concepts.append(
                     Concept(
                         id=entity["cui"],
                         name=entity["pretty_name"],
-                        category=category
+                        category=category,
+                        start=entity['start'],
+                        end=entity['end']
                     )
                 )
 
