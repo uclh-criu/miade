@@ -6,6 +6,7 @@ setup(
     description="",
     packages=find_packages(),
     include_package_data=True,
+    package_data={"miade": ["configs/*.yml"]},
     setup_requires=[
         "wheel",
     ],
