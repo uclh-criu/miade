@@ -1,5 +1,5 @@
 import yaml
-import os
+import pkgutil
 
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -60,9 +60,8 @@ class NoteProcessor:
         return concepts
 
     def debug(self, note: Note, code: DEBUG = DEBUG.PRELOADED) -> (List[Concept], Dict):
-        config_file = Path(os.path.dirname(__file__), 'configs/debug_config.yml')
-        with open(config_file, "r") as stream:
-            debug_config = yaml.safe_load(stream)
+        config_file = pkgutil.get_data(__package__, 'configs/debug_config.yml')
+        debug_config = yaml.safe_load(config_file)
         # print(debug_config)
 
         # use preloaded concepts and cda fields
