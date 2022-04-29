@@ -89,4 +89,6 @@ class NoteProcessor:
 
         # switch out models once we have multiple models/version control
         if code == DEBUG.MODEL:
-            pass
+            for model in self.annotators:
+                model.get_model_card()
+
