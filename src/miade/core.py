@@ -1,10 +1,20 @@
+import yaml
+import os
+
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Dict, Optional
+from enum import Enum
 
 from medcat.cat import CAT
 
 from .concept import Concept, Category
 from .note import Note
+
+
+class DEBUG(Enum):
+    PRELOADED = 1
+    CDA = 2
+    MODEL = 3
 
 
 class NoteProcessor:
@@ -48,3 +58,36 @@ class NoteProcessor:
                 )
 
         return concepts
+
+    def debug(self, note: Note, code: DEBUG = DEBUG.PRELOADED) -> (List[Concept], Dict):
+        config_file = Path(os.path.dirname(__file__), 'configs/debug_config.yml')
+        with open(config_file, "r") as stream:
+            debug_config = yaml.safe_load(stream)
+        # print(debug_config)
+
+        # use preloaded concepts and cda fields
+        if DEBUG.PRELOADED:
+            concept_list = []
+            for name, value in debug_config['Concepts'].items():
+                if value['ontologies'] == ['FDB']:
+                    category = Category.MEDICATION
+                else:
+                    category = Category.DIAGNOSIS
+
+                concept_list.append(
+                    Concept(
+                        id=value["cui"],
+                        name=name,
+                        category=category,
+                    )
+                )
+            return concept_list, debug_config['CDA']
+
+        # detect concepts and return preloaded cda fields
+        if code == DEBUG.CDA:
+            concept_list = self.process(note)
+            return concept_list, debug_config['CDA']
+
+        # switch out models once we have multiple models/version control
+        if code == DEBUG.MODEL:
+            pass

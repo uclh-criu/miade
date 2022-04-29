@@ -1,0 +1,28 @@
+Concepts:
+  Liver failure:
+    cui: 59927004
+    ontologies: SNOMED-CT
+  Paracetamol:
+    cui: 90332006
+    ontologies: FDB
+
+CDA:
+  Problems:
+    effectiveTimeOnset: true
+    effectiveTimeResolve: true
+    statusCode: true
+
+  Medications:
+    effectiveTimePeriod: true
+    effectiveTimeLow: true
+    doseQuantity: true
+    routeCode: true
+    SIG: true
+
+  Allergy:
+    statusCode: true
+    effectiveTimeLow: true
+    reactionObservation: true
+
+Model:
+  modelId: 0
