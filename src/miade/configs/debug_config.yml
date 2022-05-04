@@ -8,9 +8,14 @@ Concepts:
 
 CDA:
   Problems:
-    effectiveTimeOnset: true
-    effectiveTimeResolve: true
-    statusCode: true
+    # whether problem is an active concern to clinician
+    statusCode: active
+    # time when the problem stop become a concern to clinician -  there will always be a low (implicit)
+    actEffectiveTimeHigh: false
+    # problem onset - can be a date in the past
+    observationEffectiveTimeLow: '20200504'
+    # problem resolve date
+    observationEffectiveTimeHigh: '20210904'
 
   Medications:
     effectiveTimePeriod: true
@@ -20,7 +25,7 @@ CDA:
     SIG: true
 
   Allergy:
-    statusCode: true
+    statusCode: active
     effectiveTimeLow: true
     reactionObservation: true
 
