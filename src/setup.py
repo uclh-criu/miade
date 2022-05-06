@@ -5,11 +5,13 @@ setup(
     version="0.1",
     description="",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={"miade": ["configs/*.yml"]},
     setup_requires=[
         "wheel",
     ],
     install_requires=[
-        "medcat==1.2.6",
+        "medcat==1.2.8",
         "spacy==3.1.0",
         "typing==3.7.4.3",
     ],
