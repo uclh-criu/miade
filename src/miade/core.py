@@ -65,7 +65,7 @@ class NoteProcessor:
         # print(debug_config)
 
         # use preloaded concepts and cda fields
-        if DEBUG.PRELOADED:
+        if code == DEBUG.PRELOADED:
             concept_list = []
             for name, value in debug_config['Concepts'].items():
                 if value['ontologies'] == ['FDB']:
@@ -83,12 +83,12 @@ class NoteProcessor:
             return concept_list, debug_config['CDA']
 
         # detect concepts and return preloaded cda fields
-        if code == DEBUG.CDA:
+        elif code == DEBUG.CDA:
             concept_list = self.process(note)
             return concept_list, debug_config['CDA']
 
         # switch out models once we have multiple models/version control
-        if code == DEBUG.MODEL:
+        elif code == DEBUG.MODEL:
             for model in self.annotators:
                 model.get_model_card()
 
