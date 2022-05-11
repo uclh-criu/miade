@@ -1,0 +1,6 @@
+snomed_data_path: data/snomed/SnomedCT_UKEditionRF2_PRODUCTION_20220413T000001Z
+fdb_data_path: ./data/fdb/exports/drug_names_export.csv
+elg_data_path: ./data/allergens/ELG_ALLERGEN.csv
+snomed_subset_path: ./data/snomed/UCLH_filter/snomed_subset.csv
+training_data_path: ./tests/examples/wikipedia_sample.txt
+output_dir: ./dev_models/modelpack
