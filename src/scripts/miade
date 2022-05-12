@@ -26,6 +26,7 @@ def build_model_pack(
     fdb_data_path = Path(config['fdb_data_path'])
     elg_data_path = Path(config['elg_data_path'])
     snomed_subset_path = Path(config['snomed_subset_path'])
+    snomed_exclusions_path = Path(config['snomed_exclusions_path'])
     training_data_path = Path(config['training_data_path'])
     output_dir = Path(config['output_dir'])
 
@@ -38,7 +39,8 @@ def build_model_pack(
         snomed_data_path=snomed_data_path,
         fdb_data_path=fdb_data_path,
         elg_data_path=elg_data_path,
-        snomed_subset_path=snomed_subset_path
+        snomed_subset_path=snomed_subset_path,
+        snomed_exclusions_path=snomed_exclusions_path
     )
 
     temp.mkdir()
