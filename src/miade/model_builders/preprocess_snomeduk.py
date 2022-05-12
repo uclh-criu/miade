@@ -142,10 +142,6 @@ class Snomed:
         df = pd.concat(df2merge).reset_index(drop=True)
 
         if subset_list is not None:
-            if 'cui' not in subset_list.columns.values:
-                df.rename(columns={'conceptId': 'cui'},
-                          inplace=True)
-
             df = df.merge(subset_list, how='inner', on='cui')
 
         if exclusion_list is not None:
