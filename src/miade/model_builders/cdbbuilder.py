@@ -40,7 +40,11 @@ class CDBBuilder(object):
 
     def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> None:
         print("Exporting preprocessed SNOMED to csv...")
+
         snomed_subset = pd.read_csv(self.snomed_subset_path, header=0)
+        if 'cui' not in snomed_subset.columns.values:
+            snomed_subset.rename(columns={'conceptId': 'cui'},
+                                 inplace=True)
         snomed_subset['cui'] = snomed_subset.cui.apply(lambda x: f"SNO-{x}")
 
         if self.snomed_exclusions_path is not None:
