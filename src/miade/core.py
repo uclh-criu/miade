@@ -60,7 +60,7 @@ class NoteProcessor:
         return concepts
 
     def debug(self, note: Note, code: DEBUG = DEBUG.PRELOADED) -> (List[Concept], Dict):
-        config_file = pkgutil.get_data(__package__, 'configs/debug_config.yml')
+        config_file = pkgutil.get_data(__package__, '../../configs/debug_config.yml')
         debug_config = yaml.safe_load(config_file)
         # print(debug_config)
 
