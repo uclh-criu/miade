@@ -11,8 +11,13 @@ setup(
         "wheel",
     ],
     install_requires=[
-        "medcat==1.2.6",
+        "medcat==1.2.8",
         "spacy==3.1.0",
         "typing==3.7.4.3",
+        "typer",
+        "pathlib"
     ],
+    scripts=[
+        "scripts/miade"
+    ]
 )

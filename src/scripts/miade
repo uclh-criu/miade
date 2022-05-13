@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+
+from pathlib import Path
+from shutil import rmtree
+from typing import Optional
+
+import typer
+import yaml
+from medcat.cat import CAT
+from medcat.config import Config
+
+from miade.model_builders import CDBBuilder
+from miade.model_builders import VocabBuilder
+
+app = typer.Typer()
+
+
+@app.command()
+def build_model_pack(
+        config_file: Path,
+        temp: Optional[Path] = typer.Argument(Path.cwd() / Path(".temp"))
+):
+    print(config_file)
+    with open(config_file, "r") as stream:
+        config = yaml.safe_load(stream)
+
+    snomed_data_path = Path(config['snomed_data_path'])
+    fdb_data_path = Path(config['fdb_data_path'])
+    elg_data_path = Path(config['elg_data_path'])
+    snomed_subset_path = Path(config['snomed_subset_path'])
+    snomed_exclusions_path = Path(config['snomed_exclusions_path'])
+    training_data_path = Path(config['training_data_path'])
+    output_dir = Path(config['output_dir'])
+
+    # Load MedCAT configuration
+    medcat_config = Config()
+    if "medcat_config_file" in config:
+        medcat_config.parse_config_file(Path(config["medcat_config_file"]))
+
+    cdb_builder = CDBBuilder(
+        snomed_data_path=snomed_data_path,
+        fdb_data_path=fdb_data_path,
+        elg_data_path=elg_data_path,
+        snomed_subset_path=snomed_subset_path,
+        snomed_exclusions_path=snomed_exclusions_path
+    )
+
+    temp.mkdir()
+
+    cdb_builder.preprocess_snomed(output_dir=temp)
+    cdb_builder.preprocess_fdb(output_dir=temp)
+    cdb_builder.preprocess_elg(output_dir=temp)
+
+    cdb = cdb_builder.create_cdb(
+        [
+            str(temp / Path("preprocessed_snomed.csv")),
+            str(temp / Path("preprocessed_fdb.csv")),
+            str(temp / Path("preprocessed_elg.csv"))
+        ]
+    )
+
+    rmtree(temp)
+
+    vocab_builder = VocabBuilder()
+
+    with open(
+            training_data_path, "r", encoding="utf-8"
+    ) as training_data:
+        training_data_list = [line.strip() for line in training_data]
+
+    vocab = vocab_builder.create_new_vocab(
+        training_data_list=training_data_list,
+        cdb=cdb,
+        config=medcat_config,
+        output_dir=output_dir,
+    )
+
+    cat = CAT(cdb=cdb, config=cdb.config, vocab=vocab)
+    cat.create_model_pack(str(output_dir))
+
+
+@app.command()
+def train(model: Path, data: Path, output: Optional[Path] = typer.Argument(None)):
+    if output is None:
+        output = model
+
+    with data.open('r') as d:
+        training_data = [line.strip() for line in d]
+
+    cat = CAT.load_model_pack(str(model))
+    cat.train(training_data)
+    cat.create_model_pack(str(output))
+
+
+if __name__ == "__main__":
+    app()

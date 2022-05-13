@@ -21,12 +21,14 @@ class CDBBuilder(object):
         fdb_data_path: Path,
         elg_data_path: Path,
         snomed_subset_path: Path,
+        snomed_exclusions_path: Optional[Path] = None,
         config: Optional[Config] = None,
         model: str = "en_core_web_md",
     ):
         self.fdb_data_path = fdb_data_path
         self.elg_data_path = elg_data_path
         self.snomed_subset_path = snomed_subset_path
+        self.snomed_exclusions_path = snomed_exclusions_path
         if config is not None:
             self.config = config
         else:
@@ -38,9 +40,21 @@ class CDBBuilder(object):
 
     def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> None:
         print("Exporting preprocessed SNOMED to csv...")
+
         snomed_subset = pd.read_csv(self.snomed_subset_path, header=0)
+        if 'cui' not in snomed_subset.columns.values:
+            snomed_subset.rename(columns={'conceptId': 'cui'},
+                                 inplace=True)
         snomed_subset['cui'] = snomed_subset.cui.apply(lambda x: f"SNO-{x}")
-        df = self.snomed.to_concept_df(filter=snomed_subset)
+
+        if self.snomed_exclusions_path is not None:
+            snomed_exclusions = pd.read_csv(self.snomed_exclusions_path, sep="\n", header=None)
+            snomed_exclusions.columns = ["cui"]
+            snomed_exclusions["cui"] = snomed_exclusions.cui.apply(lambda x: f"SNO-{x}")
+        else:
+            snomed_exclusions = None
+
+        df = self.snomed.to_concept_df(subset_list=snomed_subset, exclusion_list=snomed_exclusions)
         df.to_csv(output_dir / Path("preprocessed_snomed.csv"), index=False)
 
     def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> None:
