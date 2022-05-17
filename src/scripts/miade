@@ -26,7 +26,6 @@ class CLI_Config(BaseModel):
     training_data_path: Path
     output_dir: Path
 
-
     @classmethod
     def from_yaml_file(cls, config_filepath: Path):
         with config_filepath.open("r") as stream:
@@ -47,6 +46,7 @@ def build_model_pack(
         medcat_config.parse_config_file(str(config.medcat_config_file))
 
     cdb_builder = CDBBuilder(
+        temp_dir=temp,
         snomed_data_path=config.snomed_data_path,
         fdb_data_path=config.fdb_data_path,
         elg_data_path=config.elg_data_path,
@@ -54,22 +54,8 @@ def build_model_pack(
         snomed_exclusions_path=config.snomed_exclusions_path
     )
 
-    temp.mkdir()
-
-    cdb_builder.preprocess_snomed(output_dir=temp)
-    cdb_builder.preprocess_fdb(output_dir=temp)
-    cdb_builder.preprocess_elg(output_dir=temp)
-
-    cdb = cdb_builder.create_cdb(
-        [
-            str(temp / Path("preprocessed_snomed.csv")),
-            str(temp / Path("preprocessed_fdb.csv")),
-            str(temp / Path("preprocessed_elg.csv"))
-        ]
-    )
-
-    rmtree(temp)
-
+    cdb_builder.preprocess()
+    cdb = cdb_builder.create_cdb()
     vocab_builder = VocabBuilder()
 
     with open(

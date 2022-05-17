@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
+from shutil import rmtree
 import pandas as pd
 from medcat.cdb import CDB
 from medcat.config import Config
@@ -16,15 +17,17 @@ class CDBBuilder(object):
     """Builds cdb from snomed data"""
 
     def __init__(
-        self,
-        snomed_data_path: Path,
-        fdb_data_path: Path,
-        elg_data_path: Path,
-        snomed_subset_path: Optional[Path],
-        snomed_exclusions_path: Optional[Path] = None,
-        config: Optional[Config] = None,
-        model: str = "en_core_web_md",
+            self,
+            snomed_data_path: Optional[Path],
+            fdb_data_path: Optional[Path],
+            elg_data_path: Optional[Path],
+            snomed_subset_path: Optional[Path],
+            temp_dir: Path,
+            snomed_exclusions_path: Optional[Path] = None,
+            config: Optional[Config] = None,
+            model: str = "en_core_web_md",
     ):
+        self.temp_dir = temp_dir
         self.fdb_data_path = fdb_data_path
         self.elg_data_path = elg_data_path
         self.snomed_subset_path = snomed_subset_path
@@ -35,10 +38,18 @@ class CDBBuilder(object):
             self.config = Config()
         self.config.general["spacy_model"] = model
 
-        self.snomed = Snomed(str(snomed_data_path))
+        if snomed_data_path:
+            self.snomed = Snomed(str(snomed_data_path))
         self.maker = CDBMaker(self.config)
 
-    def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> None:
+        self.temp_dir.mkdir()
+
+    def __del__(self):
+        print(self.temp_dir)
+        rmtree(self.temp_dir)
+
+
+    def preprocess_snomed(self, output_dir: Path = Path.cwd()) -> Path:
         print("Exporting preprocessed SNOMED to csv...")
 
         if self.snomed_subset_path is not None:
@@ -57,19 +68,35 @@ class CDBBuilder(object):
         else:
             snomed_exclusions = None
 
+        output_file = output_dir / Path("preprocessed_snomed.csv")
         df = self.snomed.to_concept_df(subset_list=snomed_subset, exclusion_list=snomed_exclusions)
-        df.to_csv(output_dir / Path("preprocessed_snomed.csv"), index=False)
+        df.to_csv(output_file, index=False)
+        return output_file
 
-    def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> None:
+
+    def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> Path:
+        output_file = output_dir / Path("preprocessed_fdb.csv")
         preprocess_fdb(self.fdb_data_path).to_csv(
-            output_dir / Path("preprocessed_fdb.csv"), index=False
+            output_file, index=False
         )
+        return output_file
 
-    def preprocess_elg(self, output_dir: Path = Path.cwd()) -> None:
+    def preprocess_elg(self, output_dir: Path = Path.cwd()) -> Path:
+        output_file = output_dir / Path("preprocessed_elg.csv")
         preprocess_elg(self.elg_data_path).to_csv(
-            output_dir / Path("preprocessed_elg.csv"), index=False
+            output_file, index=False
         )
+        return output_file
 
-    def create_cdb(self, csv_paths: List[str]) -> CDB:
-        cdb = self.maker.prepare_csvs(csv_paths, full_build=True)
+    def preprocess(self):
+        self.vocab_files = []
+        if self.snomed:
+            self.vocab_files.append(self.preprocess_snomed(self.temp_dir))
+        if self.fdb_data_path:
+            self.vocab_files.append(self.preprocess_fdb(self.temp_dir))
+        if self.elg_data_path:
+            self.vocab_files.append(self.preprocess_elg(self.temp_dir))
+
+    def create_cdb(self) -> CDB:
+        cdb = self.maker.prepare_csvs(self.vocab_files, full_build=True)
         return cdb
