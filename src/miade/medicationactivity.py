@@ -15,7 +15,8 @@ class Dose(BaseModel):
 
 class Duration(BaseModel):
     text: str
-    value: datetime = datetime.today()
+    value: Optional[int] = None
+    unit: Optional[str] = None
     low: datetime = datetime.today()
     high: Optional[datetime] = None
 

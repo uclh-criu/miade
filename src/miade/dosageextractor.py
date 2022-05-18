@@ -5,6 +5,7 @@ import pkgutil
 import pandas as pd
 
 from typing import Dict, Tuple
+from datetime import datetime, timedelta
 from spacy.language import Language
 from spacy.tokens import Span
 
@@ -35,26 +36,28 @@ class DosageExtractor:
     def __init__(self):
         self.med7 = spacy.load("en_core_med7_lg")
         self.lookup_dict = self._load_lookup_dict()
+        self.frequency_dict = None
 
     @staticmethod
     def _load_lookup_dict() -> Dict:
         data = pkgutil.get_data(__name__, "data/med_lookup_dict.csv")
         return pd.read_csv(io.BytesIO(data), header=None, index_col=0, skiprows=1, squeeze=True).to_dict()
 
-    @staticmethod
-    def _preprocess(text: str) -> str:
+    def _preprocess(self, text: str) -> str:
         text = text.lower()
+        # standardise with lookup dict - to add words to normalise e.g. weeks etc.
+        text = ' '.join([str(self.lookup_dict.get(i, i)) for i in text.split()])
+        text = re.sub(r"(\d+)\s+(ml|mg|g|mcg)", r"\1\2", text)
         return text
 
     def _process_dose(self, string) -> Dose:
         value = 0
         unit = None
-        
-        s = ' '.join([str(self.lookup_dict.get(i, i)) for i in string.split()])
-        if re.match("^[0-9]*$", s):
-            value = s
+
+        if re.match("^\d+$", string):
+            value = string
         else:
-            m = re.match(r"(?P<value>\d+) (?P<unit>[a-zA-Z]+)$", s)
+            m = re.match(r"(?P<value>\d+)(?P<unit>[a-zA-Z]+)$", string)
             if m:
                 value = m.group('value')
                 unit = m.group('unit')
@@ -62,9 +65,32 @@ class DosageExtractor:
         return Dose(text=string, value=value, unit=unit)
 
     def _process_duration(self, string) -> Duration:
-        return Duration(text=string)
+        value = None
+        unit = None
+        end_date = None
+
+        m = re.search(r"(?P<value>\d+)\s(?P<unit>\D+)", string)
+        if m:
+            value = m.group('value')
+            unit = m.group('unit')
+            if unit == "days":
+                delta = timedelta(days=int(value))
+                end_date = datetime.today() + delta
+            elif unit == "weeks":
+                delta = timedelta(weeks=int(value))
+                end_date = datetime.today() + delta
+            elif unit == "months":
+                days = int(value)*30
+                delta = timedelta(days=days)
+                end_date = datetime.today() + delta
+            else:
+                end_date = None
+
+        print(end_date)
+        return Duration(text=string, value=value, unit=unit, high=end_date)
 
     def _process_frequency(self, string) -> Frequency:
+        # TODO: add frequency lookup
         return Frequency(text=string)
 
     def _parse_dosage_info(self, entities: Tuple) -> Dict:
