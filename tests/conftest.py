@@ -15,6 +15,10 @@ def model_directory_path() -> Path:
 def test_note() -> Note:
     return Note(text="Patient has liver failure and is taking paracetamol.")
 
+@pytest.fixture(scope="function")
+def temp_dir() -> Path:
+    return Path("./tests/data/temp")
+
 
 @pytest.fixture(scope="function")
 def snomed_data_path() -> Path:
