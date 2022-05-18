@@ -14,9 +14,7 @@ setup(
         "spacy==3.1.0",
         "typing==3.7.4.3",
         "typer",
-        "pathlib"
+        "pathlib",
     ],
-    scripts=[
-        "scripts/miade"
-    ]
+    scripts=["scripts/miade"],
 )

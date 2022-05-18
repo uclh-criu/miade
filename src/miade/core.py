@@ -41,9 +41,9 @@ class NoteProcessor:
         for annotator in self.annotators:
             for entity in annotator.get_entities(note)["entities"].values():
                 print(entity)
-                if entity['ontologies'] == ['FDB']:
+                if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
-                elif entity['ontologies'] == ['SNOMED-CT']:
+                elif entity["ontologies"] == ["SNOMED-CT"]:
                     category = Category.DIAGNOSIS
                 else:
                     category = Category.DIAGNOSIS
@@ -52,23 +52,23 @@ class NoteProcessor:
                         id=entity["cui"],
                         name=entity["pretty_name"],
                         category=category,
-                        start=entity['start'],
-                        end=entity['end']
+                        start=entity["start"],
+                        end=entity["end"],
                     )
                 )
 
         return concepts
 
     def debug(self, note: Note, code: DEBUG = DEBUG.PRELOADED) -> (List[Concept], Dict):
-        config_file = pkgutil.get_data(__package__, '../../configs/debug_config.yml')
+        config_file = pkgutil.get_data(__package__, "../../configs/debug_config.yml")
         debug_config = yaml.safe_load(config_file)
         # print(debug_config)
 
         # use preloaded concepts and cda fields
         if code == DEBUG.PRELOADED:
             concept_list = []
-            for name, value in debug_config['Concepts'].items():
-                if value['ontologies'] == ['FDB']:
+            for name, value in debug_config["Concepts"].items():
+                if value["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
                 else:
                     category = Category.DIAGNOSIS
@@ -80,15 +80,14 @@ class NoteProcessor:
                         category=category,
                     )
                 )
-            return concept_list, debug_config['CDA']
+            return concept_list, debug_config["CDA"]
 
         # detect concepts and return preloaded cda fields
         elif code == DEBUG.CDA:
             concept_list = self.process(note)
-            return concept_list, debug_config['CDA']
+            return concept_list, debug_config["CDA"]
 
         # switch out models once we have multiple models/version control
         elif code == DEBUG.MODEL:
             for model in self.annotators:
                 model.get_model_card()
-
