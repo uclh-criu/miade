@@ -11,11 +11,14 @@ class Category(Enum):
 class Concept(object):
     """docstring for Concept."""
 
-    def __init__(self, id: str,
-                 name: str,
-                 category: Category,
-                 start: Optional[int] = None,
-                 end: Optional[int] = None):
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        category: Category,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+    ):
 
         self.name: str = name
         self.id: str = id

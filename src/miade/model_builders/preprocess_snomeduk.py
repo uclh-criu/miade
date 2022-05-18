@@ -29,11 +29,9 @@ class Snomed:
         data_path,
     ):
         self.data_path = data_path
-        self.release = data_path.split('_')[-1][0:8]
+        self.release = data_path.split("_")[-1][0:8]
 
-    def to_concept_df(self,
-                      subset_list=None,
-                      exclusion_list=None):
+    def to_concept_df(self, subset_list=None, exclusion_list=None):
         """
         :param: subset_list
         :param: exclusion_list
@@ -48,7 +46,7 @@ class Snomed:
             for folder in os.listdir(self.data_path):
                 if "SnomedCT" in folder:
                     paths.append(os.path.join(self.data_path, folder))
-                    snomed_releases.append(folder.split('_')[-1][0:8])
+                    snomed_releases.append(folder.split("_")[-1][0:8])
         if len(paths) == 0:
             raise FileNotFoundError("Incorrect path to SNOMED CT directory")
 
@@ -134,7 +132,7 @@ class Snomed:
                 .dropna()
                 .apply(
                     lambda x: int(hashlib.sha256(x.encode("utf-8")).hexdigest(), 16)
-                    % 10 ** 8
+                    % 10**8
                 )
             )
             df2merge.append(active_snomed_df)
@@ -142,10 +140,10 @@ class Snomed:
         df = pd.concat(df2merge).reset_index(drop=True)
 
         if subset_list is not None:
-            df = df.merge(subset_list, how='inner', on='cui')
+            df = df.merge(subset_list, how="inner", on="cui")
 
         if exclusion_list is not None:
-            df = df[~df['cui'].isin(exclusion_list.cui)]
+            df = df[~df["cui"].isin(exclusion_list.cui)]
 
         return df.reset_index(drop=True)
 
@@ -163,7 +161,7 @@ class Snomed:
             for folder in os.listdir(self.data_path):
                 if "SnomedCT" in folder:
                     paths.append(os.path.join(self.data_path, folder))
-                    snomed_releases.append(folder.split('_')[-1][0:8])
+                    snomed_releases.append(folder.split("_")[-1][0:8])
         if len(paths) == 0:
             raise FileNotFoundError("Incorrect path to SNOMED CT directory")
 
@@ -184,9 +182,11 @@ class Snomed:
             int_relat = parse_file(
                 f"{contents_path}/sct2_Relationship_{uk_code}Snapshot_{snomed_v}_{snomed_release}.txt"
             )
-            active_relat = int_relat[int_relat.active == '1']
+            active_relat = int_relat[int_relat.active == "1"]
             del int_relat
 
-            all_rela.extend([relationship for relationship in active_relat["typeId"].unique()])
+            all_rela.extend(
+                [relationship for relationship in active_relat["typeId"].unique()]
+            )
 
         return all_rela
