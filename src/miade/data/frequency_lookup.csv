@@ -1,0 +1,10 @@
+words,replacement
+once,1 times
+twice,2 times
+thrice,3 times
+weekly, every 7 days
+bi-weekly,every 14 days
+tri-weekly, every 21 days
+r"(every|on|on a) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)", every 7 days
+every bid, every 2 days
+bid, 2 times a day

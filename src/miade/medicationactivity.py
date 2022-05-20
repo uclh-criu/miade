@@ -3,14 +3,28 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from typing import Optional
+from enum import Enum
 
 from .concept import Concept
+
+# TODO: MOVE TO CDA PARSER
+route_codes = {"Inhalation": "C38216",
+               "Oral": "C38288"}
+
+ucum = {"tablet": "{tbl}",
+        "tablets": "{tbl}",
+        "puff": "{puff}",
+        "puffs": "{puff}",
+        "drop": "[drp]",
+        "drops": "[drp]"}
 
 
 class Dose(BaseModel):
     text: str
-    value: int
-    unit: Optional[str]
+    quantity: Optional[int] = None
+    unit: Optional[str] = None  # ucum
+    low: Optional[int] = None
+    high: Optional[int] = None
 
 
 class Duration(BaseModel):
@@ -23,14 +37,23 @@ class Duration(BaseModel):
 
 class Frequency(BaseModel):
     text: str
+    value: Optional[float] = None
+    unit: Optional[str] = None
+    low: Optional[int] = None
+    high: Optional[int] = None
+
+
+class Route(BaseModel):
+    # NCI thesaurus code
+    text: str
+    name: Optional[str] = None
 
 
 @dataclass
 class MedicationActivity:
     text: str
     drug: Concept
-    dose: Dose = None
-    duration: Duration = None
+    dose: Optional[Dose] = None
+    duration: Optional[Duration] = None
     frequency: Optional[Frequency] = None
     route: Optional[str] = None
-    form: Optional[str] = None

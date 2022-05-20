@@ -6,7 +6,7 @@ setup(
     description="",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"miade": ["data/med_lookup_dict.csv"]},
+    package_data={"miade": ["data/*.csv"]},
     setup_requires=[
         "wheel",
     ],
@@ -14,6 +14,7 @@ setup(
         "medcat==1.2.8",
         "spacy==3.1.0",
         "typing==3.7.4.3",
+        "pandas",
         "typer",
         "pathlib"
     ],
