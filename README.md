@@ -23,9 +23,9 @@ For the reference server implementation, see: [nlp-engine-server](https://github
 ## Installing
 
 ```bash
-pip install -e ./src
+pip install -e .
 ```
-The `-e` flag sets the install to auto-update, useful when developing. Remove for production.
+The `-e` flag makes the install editable, useful when developing. Remove for production.
 
 ## Testing
 
