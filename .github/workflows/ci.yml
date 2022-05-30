@@ -23,7 +23,8 @@ jobs:
           pip install pytest
           pip install .
           pip list
+          miade --help
       - name: download model
         run: python -m spacy download en_core_web_md
       - name: run pytest
-        run: pytest ./tests/*
+        run: pytest ./tests/
