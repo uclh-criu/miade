@@ -7,16 +7,19 @@ from enum import Enum
 
 from .concept import Concept
 
-# TODO: MOVE TO CDA PARSER
 route_codes = {"Inhalation": "C38216",
-               "Oral": "C38288"}
+               "Oral": "C38288",
+               "Topical": "C38304",
+               "Sublingual": "C38300"}
 
 ucum = {"tablet": "{tbl}",
         "tablets": "{tbl}",
         "puff": "{puff}",
         "puffs": "{puff}",
         "drop": "[drp]",
-        "drops": "[drp]"}
+        "drops": "[drp]",
+        "applicatorful": "{applicatorful}",
+        "applicatorfuls": "{applicatorful}"}
 
 
 class Dose(BaseModel):
@@ -56,4 +59,4 @@ class MedicationActivity:
     dose: Optional[Dose] = None
     duration: Optional[Duration] = None
     frequency: Optional[Frequency] = None
-    route: Optional[str] = None
+    route: Optional[Route] = None
