@@ -9,7 +9,7 @@ For the reference server implementation, see: [nlp-engine-server](https://github
 1. [Contributors](#Contributors)
 2. [Installing](#Installing)
 3. [Testing](#Testing)
-4. [MIADE Notereader Debug Mode](#MIADE Notereader Debug Mode)
+4. [MIADE Notereader Debug Mode](#miade-notereader-debug-mode)
 5. [Contributing](#Contributing)
 6. [Licence](#Licence)
  
@@ -70,7 +70,7 @@ The patient is allergic to bee venom. This is an example note and none of the te
 The patient is diagnosed with liver failure. The NLP results will be returned in the CDA, along with any CDA content customisations.
 ```
 ### Configurations
-Preloaded concepts and CDA customisation can be configured in ```configs/debug_configs.yml```. An example config file is included as package data
+Preloaded concepts and CDA customisation can be configured in [```configs/debug_configs.yml```](https://github.com/uclh-criu/miade/blob/master/src/miade/configs/debug_config.yml). An example config file is included as package data
 with the MIADE module, but this can also be configured through the server.
 
 The format is as following:
