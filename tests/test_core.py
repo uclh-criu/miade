@@ -9,5 +9,7 @@ def test_core(model_directory_path, test_note):
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION, start=40, end=51),
     ]
 
-    # print(processor.debug(test_note, code=DEBUG.CDA))
-    # print(processor.debug(test_note, code=DEBUG.PRELOADED))
+    print(processor.debug(mode=DEBUG.CDA))
+    concept_list = processor.debug(mode=DEBUG.PRELOADED)
+    for concept in concept_list:
+        print(concept)
