@@ -31,7 +31,7 @@ class NoteProcessor:
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
-        config_file = pkgutil.get_data(__package__, "../../configs/debug_config.yml")
+        config_file = pkgutil.get_data(__name__, "configs/debug_config.yml")
         self.debug_config = yaml.safe_load(config_file)
 
     def process(
