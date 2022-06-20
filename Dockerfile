@@ -1,7 +1,8 @@
 FROM python:3.8
 
-ADD ./src/ /home/packages/miade/src
+ADD ./src/ /home/src
+ADD ./configs/ /home/configs
 
 WORKDIR /home/app
 
-RUN pip install /home/packages/miade/src
+RUN pip install /home/src
