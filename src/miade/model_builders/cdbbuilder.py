@@ -18,11 +18,11 @@ class CDBBuilder(object):
 
     def __init__(
         self,
-        snomed_data_path: Optional[Path],
-        fdb_data_path: Optional[Path],
-        elg_data_path: Optional[Path],
-        snomed_subset_path: Optional[Path],
         temp_dir: Path,
+        snomed_data_path: Optional[Path] = None,
+        fdb_data_path: Optional[Path] = None,
+        elg_data_path: Optional[Path] = None,
+        snomed_subset_path: Optional[Path] = None,
         snomed_exclusions_path: Optional[Path] = None,
         config: Optional[Config] = None,
         model: str = "en_core_web_md",
@@ -40,6 +40,9 @@ class CDBBuilder(object):
 
         if snomed_data_path:
             self.snomed = Snomed(str(snomed_data_path))
+        else:
+            self.snomed = None
+            
         self.maker = CDBMaker(self.config)
 
         self.temp_dir.mkdir()
