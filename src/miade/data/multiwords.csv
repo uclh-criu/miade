@@ -1,0 +1,296 @@
+"words","replacement","comments","order"
+"once","1 times"," ",0.01
+"twice","2 times"," ",0.02
+"thrice","3 times"," ",0.03
+"pick up","dispense",,0.04
+"/ /","deleteme",,0.05
+"(bi|2|2 -) weekly","every 14 days",,0.1
+"(tri|3|3 -) weekly","every 21 days",,0.2
+"(bi|2|2 -) monthly","every 60 days",,0.3
+"(tri|3|3 -) monthly","every 90 days",,0.4
+"(bi|2|2 -) yearly","every 730 days",,0.5
+"(tri|3|3 -) yearly","every 1095 days",,0.6
+"your","deleteme",,0.7
+"take (weekly|daily|every)","\1",,0.8
+"(&|\+)","and",,1
+"ss",0.5," ",2
+"start to ([[:digit:]\.]+)","start upto \1"," ",3
+"to be taken","deleteme"," ",4
+"([[:digit:]]+) 0 r ([[:digit:]\.]+)","\1 or \2"," ",5
+"each","every"," ",6
+"age ([[:digit:]]+) to ([[:digit:]]+) *","deleteme"," ",7
+"age ([[:digit:]]+) - ([[:digit:]]+) *","deleteme"," ",8
+"age ([[:digit:]]+) *","deleteme"," ",9
+"([[:digit:]]+) (year|years|month|months|day|days) old","deleteme",,9.5
+"@","at"," ",10
+"(x x|on the)","deleteme"," ",11
+"no more than","max"," ",12
+"not ([[:print:]]*)(exceed|more)","not \1max"," ",13
+"pre (24|48|day|week)","per \1"," ",14
+"in any","per"," ",15
+"(o / p|o p)","op"," ",16
+"n 0 cte","nocte"," ",17
+"(on an|on empty|on an empty|on antibiotic empty|antibiotic empty)","deleteme"," ",18
+"the","deleteme"," ",19
+"except on","except"," ",20
+"(a c|p c)","food"," ",21
+"b d","2 times day"," ",22
+"every bid","every 2 days"," ",23
+"bid","2 times day"," ",24
+"notes (for|to) patient.*","deleteme"," ",25
+"repeat details.*","deleteme"," ",26
+"- to","changeto"," ",27
+"to to","deleteme"," ",28
+"q ([[:digit:]\.]+)","every \1"," ",29
+102,"1 or 2"," ",30
+"10 r 2","1 or 2"," ",31
+"([[:digit:]\.]+) 0.5","\1 and 0.5"," ",32
+"([[:digit:]\.]+) star ([[:digit:]\.]+)","\1 or \2"," ",33
+"take","deleteme"," ",34
+"a quarter",0.25," ",35
+"quarter",0.25," ",36
+"([[:digit:]\.]+) and a ([[:digit:]\.]+)","\1 and \2"," ",37
+"[a ]*half[ a]*",0.5," ",38
+"one",1," ",39
+"1 half",0.5," ",40
+"i",1," ",41
+"0 d","daily"," ",42
+"([[:digit:]\.]+) (hours|minutes) (before|after) [[:alpha:]]+","deleteme"," ",43
+"at in","in"," ",44
+"([[:digit:]\.]+) hundred","\1 x 100"," ",45
+"1 oo",100," ",46
+"([[:digit:]\.]+) times times","\1 times"," ",47
+"([[:digit:]\.]+) m","\1 mane"," ",48
+"([[:digit:]\.]+) n","\1 nocte"," ",49
+"([[:digit:]\.]+) / 7","\1 days"," ",50
+"([[:digit:]\.]+) / 12","\1 month"," ",51
+"([[:digit:]\.]+) / 52","\1 week"," ",52
+"million","x 1000000"," ",53
+"ng","x 0.001 mcg"," ",54
+"mg / kg","mgperkg"," ",55
+"mcg / kg","x 0.001 mgperkg"," ",56
+"mg / m 2","mgpersqm"," ",57
+"mg / sqm","mgpersqm"," ",58
+"([[:digit:]\.]+) 000","\1 x 1000"," ",59
+"([[:digit:]\.]+) 500","\1 x 1000 + 500"," ",60
+"([[:digit:]\.]+) cc","\1 ml"," ",61
+"cc","food"," ",62
+"([[:digit:]\.]+) dr","\1 drops"," ",63
+"drops([[:print:]]*) ea","drops\1 both ear"," ",64
+"drops([[:print:]]*) ee","drops\1 both eye"," ",65
+"drops([[:print:]]*) en","drops\1 both nostril"," ",66
+"left [[:alpha:]]+ and right","both"," ",67
+"right [[:alpha:]]+ and left","both"," ",68
+"left and right","both"," ",69
+"right and left","both"," ",70
+"every (ear|eye|nostril)","both \1"," ",71
+"bd[rl] eye","bd eye"," ",72
+"g","gram"," ",73
+"mlno","ml every night"," ",74
+"mlsqds","ml qds"," ",75
+"mlod","ml od"," ",76
+"mlbd","ml bd"," ",77
+"mlqds","ml qds"," ",78
+"mls","ml"," ",79
+"times 5 ml","fiveml"," ",80
+"5 ml (dose|spoon)","1 fiveml"," ",81
+"5 ml","1 fiveml"," ",82
+"([[:digit:]\.]+) 1 fiveml","\1 fiveml"," ",83
+"(pre|pr|pv) suppos","\1"," ",84
+"suppos (pre|pr|pv)","\1"," ",85
+"per (pre|pr|pv)","\1"," ",86
+"u","unit"," ",87
+"every blister","deleteme"," ",88
+"times ([[:digit:]\.]+) week","\1 times week"," ",89
+"([[:digit:]\.]+) ([[:digit:]\.]+) mg (tab|cap)","\1 times \2 mg"," ",90
+"([[:digit:]\.]+) ([[:digit:]\.]+) mcg (tab|cap)","\1 times \2 mcg"," ",91
+"start x ([[:digit:]\.]+)","start \1"," ",93
+"x","times"," ",94
+"od alt","alt"," ",95
+"/","per"," ",96
+"for 21 days (a|per|every) month","for 21 days changeto 0 0 times day for 7 days",,96.5
+"(a month|per month|ol|monthly|every month)","every 30 days"," ",97
+"bi [- ]*every 30 days","every 60 days"," ",98
+"wk","week"," ",99
+"times ([[:digit:]\.]+) week","for \1 week"," ",100
+"not to be repeat with in a week","for 1 days changeto 0 0 times day for 6 days",,100.2
+"for a week","for 7 days"," ",101
+"dispense( | on )(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*","deleteme",,101.1
+"(every|on|on a) (monday|tuesday|wednesday|thursday|friday|saturday|sunday) (morning|midday|afternoon|evening|night)",,,101.2
+"(every|on|on a) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)","weekly",,101.5
+"(a|per|in|every|same day.*) week","weekly"," ",102
+"times week","times weekly",,103
+"weekly weekly","weekly"," ",104
+"weekly dispense","dispense every 7 days"," ",104.5
+"fortnightly dispense","dispense every 14 days"," ",104.6
+"weekly","every 7 days"," ",105
+"(every fortnight|fortnightly)","every 14 days"," ",106
+"tid","tds"," ",107
+"every hours","every 1 hours"," ",108
+"per ([[:digit:]\.]+) hours","every \1 hours"," ",109
+"every ([[:digit:]\.]+) hours","every \1 hours"," ",110
+"([[:digit:]\.]+)( -| ) hourly","every \1 hours"," ",111
+"(per hours|hourly)","every 1 hours"," ",113
+"48 hours","2 days"," ",114
+"72 hours","3 days"," ",115
+"in ([[:digit:]\.]+) days","every \1 days"," ",116
+"alternate","alt"," ",120
+"24 hours","day"," ",121
+"(daily|per day|in day|a day)","every day"," ",122
+"(7|8|9|10|11) am","at \1 am",,123
+"(6|7|8|9|10|11|12) pm","at \1 pm"," ",124
+"day([[:print:]]*) ([[:digit:]\.]+) am","day\1","remove time (XX am)",125
+"day([[:print:]]*) ([[:digit:]\.]+) pm","day\1","remove time (XX pm)",126
+"night([[:print:]]*) after evening","night\1","remove qualification of timing (e.g. at night after evening meal)",127
+"at ([[:digit:]\.]+) am","1 times day"," ",128
+"at ([[:digit:]\.]+) pm","1 times day"," ",129
+"o m","om"," ",130
+"([[:digit:]\.]+) am","\1 every morning"," ",131
+"([[:digit:]\.]+) ([[:alpha:]]+) am","\1 \2 every morning"," ",131.5
+"am ([[:print:]]*) pm","every morning \1 pm"," ",132
+"(mane|every day in morning|in morning|morning)","every morning"," ",133
+"morning ([[:print:]]*)every morning","\1every morning","remove duplicate statements of time of day",134
+"(mid - day|midday)","every midday"," ",135
+"midday ([[:print:]]*)every midday","\1every midday","remove duplicate statements of time of day",136
+"([[:digit:]\.]+) pm","\1 every afternoon"," ",137
+"([[:digit:]\.]+) ([[:alpha:]]+) pm","\1 \2 every afternoon"," ",137.5
+"every morning([[:print:]]*) pm","every morning\1 every afternoon"," ",138
+"(qpm|every day in afternoon|in afternoon|afternoon)","every afternoon"," ",139
+"afternoon ([[:print:]]*)every afternoon","\1every afternoon","remove duplicate statements of time of day",140
+"(main meal|tea - time|teatime|every day in evening|in evening|evening)","every evening"," ",141
+"evening ([[:print:]]*)every evening","\1every evening","remove duplicate statements of time of day",142
+"o n","on"," ",143
+"(bed - time|at bedtime|hd)","bedtime","bedtime can mean either evening or night-time",144
+"evening([[:print:]]*) bedtime","evening\1","ignore bedtime if evening also stated",145
+"(bedtime|on|night|nocte|qn) ([[:digit:]\.]+) times","\2 times","ignore bedtime if times also stated",145.5
+"(bedtime|on|night|nocte|qn)","every night","standardise night-time",146
+"every night ([[:digit:]\.]+) days","every night for \1 days"," ",147
+"night ([[:print:]]*)every night","\1every night","remove duplicate statements of time of day",148
+"every (3|4|5|6) hours and([[:print:]]*) every night","every \1 hours and\2","ignore night dose if very frequent",149
+"(ev|omn|at every|with every)","every"," ",150
+"every every","every"," ",151
+"monthly","month"," ",152
+"rectum","pre"," ",153
+"(st|stat then|stat)","stat"," ",154
+"times (per|every|a) day","times day"," ",155
+"up to","upto"," ",156
+"0 ne","one"," ",157
+"bb","2 times"," ",158
+"(bd|bis|bds|bd)","2 times day"," ",159
+"(tid|tds)","3 times day"," ",160
+"(qds|qid)","4 times day"," ",161
+"([[:digit:]\.]+) times day or ([[:digit:]\.]+) times day","\1 or \2 times day"," ",162
+"every other","alt"," ",163
+"alt","every 2 days"," ",164
+"(oh|qqhor)","every 1 hours"," ",165
+"(alt day|alt|omnbid|qan|qad)","every 2 days"," ",166
+"every ([[:digit:]\.]+) days every night","every \1 days"," ",167
+"every night every ([[:digit:]\.]+) days","every \1 days"," ",168
+"(omnsechor|oalthor|qah)","every 2 hours"," ",169
+"qqh","every 4 hours"," ",170
+"o d","od"," ",171
+"od","every day"," ",172
+"days day","days"," ",173
+"(with|before|after) meals","food"," ",174
+"(at mealtimes|at meal - times|ac|pc)","food"," ",175
+"(with|before|after) (food|any food)","food","added 'before food' and 'any food'",176
+"(after|before|with) every","every"," ",177
+"(3|4) times day([[:print:]]*) food and every night","\1 times day\2","if exact daily frequency stated, ignore 'with food' etc.",178
+"food and every night","4 times day"," ",179
+"(food|morning|midday|evening|day|days|night)([[:print:]]*) food","\1\2","remove all unnecessary references to food",180
+"food ([[:print:]]*)(morning|midday|evening|day|days|night)","\1\2","remove all unnecessary references to food",181
+"food ([[:digit:]\.]+) times","\1 times","remove all unnecessary references to food",181.5
+"food","3 times day"," ",182
+"every day or ([[:digit:]\.]+) every day","or \1 every day"," ",183
+"every morning or ([[:digit:]\.]+) every morning","or \1 every morning"," ",184
+"every midday or ([[:digit:]\.]+) every midday","or \1 every midday"," ",185
+"every afternoon or ([[:digit:]\.]+) every afternoon","or \1 every afternoon"," ",186
+"every evening or ([[:digit:]\.]+) every evening","or \1 every evening"," ",187
+"every night or ([[:digit:]\.]+) every night","or \1 every night"," ",188
+"every (morning|midday|afternoon|evening|night) ([[:digit:]\.]+) times","\2 times",,188.5
+"([[:digit:]\.]+) day ([[:digit:]\.]+) week then","\1 day for \2 week changeto"," ",189
+"([[:digit:]\.]+) every (day|morning|midday|afternoon|evening|night) ([[:digit:]\.]+) week then","\1 every \2 for \3 week changeto"," ",190
+"to last ([[:digit:]\.]+)","for \1"," ",191
+"times ([[:digit:]\.]+) days","for \1 days"," ",192
+"every for ([[:digit:]\.]+) days","every \1 days"," ",193
+"([[:digit:]\.]+) day break","changeto 0 0 times day for \1 days"," ",194
+"[[:alpha:]]+ [- ]*free week","changeto 0 0 times day for 7 days"," ",195
+"for for","for"," ",196
+"for changeto","changeto"," ",197
+"repeat after ([[:digit:]\.]+) days","changeto 0 0 times day for \1 days"," ",198
+"at a time","deleteme"," ",199
+"([[:digit:]\.]+) at time or","deleteme"," ",200
+"times ([[:digit:]\.]+) hours","every \1 hours"," ",201
+"stop after ([[:digit:]\.]+) days","for \1 days"," ",202
+"dispense every","for"," ",203
+"for ([[:digit:]\.]+) day","for \1 days"," ",204
+"for for","for"," ",205
+"([[:digit:]\.]+) h","\1 hours"," ",206
+"every ([[:digit:]\.]+) d","every \1 days"," ",207
+"([[:digit:]\.]+) every upto","upto"," ",208
+"(yearly|every year)","every 365 days"," ",209
+"dispense [[:alpha:] ]+every( |[[:digit:]]+ )(year|yearly|month|days)","deleteme",,209.5
+"start ([[:digit:]\.]+) week","start \1 every 7 days"," ",210
+"dispense ([[:digit:]\.]+) every ([[:digit:]\.]+)","start \1 every \2"," ",211
+"in every","every"," ",212
+"3 times day([[:print:]]*) every 8 hours","3 times day\1","if '3 times a day' stated as well as 'every 8 hours', ignore the latter",213
+"4 times day([[:print:]]*) every 6 hours","4 times day\1","if '4 times a day' stated as well as 'every 6 hours', ignore the latter",214
+"per hours","every 1 hours"," ",216
+"([[:digit:]\.]+) times times","\1 times"," ",217
+"star ([[:digit:]\.]+) times day","upto \1 times day"," ",218
+"(qv|if necessary|as needed|as req|prn|when req|if req)","when needed"," ",219
+"when needed ([[:digit:]\.]+)","when needed max \1"," ",220
+"food ([[:print:]]*)needed","\1needed","ignore food in 'with food when needed'",221
+"needed([[:print:]]*) food","needed\1","ignore food in 'when needed with food'",222
+"ad","upto"," ",223
+"maximum","max"," ",224
+"upto upto","upto"," ",225
+"([[:digit:]]+) days break","changeto 0 0 times day for \1 days"," ",226
+"it ([[:digit:]\.]+)","changeto \1"," ",227
+"(increase|decrease|then|rt|reduce)","changeto"," ",228
+"changeto to","changeto"," ",229
+"followed by","changeto"," ",230
+"changeto changeto","changeto"," ",231
+"changeto by.*","changeto"," ",232
+"([[:digit:]\.]+) tab upto ([[:digit:]\.]+) times day","upto \1 tab \2 times day"," ",233
+"food > when needed","deleteme"," ",234	
+"fprn","prn"," ",235
+"tu","when needed"," ",236
+"upto ([[:digit:]\.]+) dose every day","upto \1 times day"," ",237
+"use every","start every"," ",238
+"start every (day|morning|afternoon) ([[:digit:]\.]+) every","start 1 every \1 and \2 every"," ",239
+"start every (day|morning|afternoon|evening|night) ([[:digit:]\.]+)","start \2 every \1"," ",240
+"total.*","total"," ",241
+"repeat([[:print:]]*) (days|hours)","repeat\1","removing timing references for 'repeat after...' doses",242
+"needed to ([[:digit:]\.]+)","needed max \1"," ",243
+"at","deleteme"," ",244
+"except sunday","for 6 days changeto 0 0 times day for 1 days"," ",245
+"([[:digit:]\.]+) times day ([[:digit:]\.]+) day","\1 times day for \2 days"," ",246
+"([[:digit:]\.]+) times day per ([[:digit:]\.]+) times day","\1 or \2 times day"," ",247
+"2 per 3",0.6666666667," ",248
+"3 per 4",0.75," ",249
+"1 per 4",0.25," ",250
+"1 per 3",0.3333333333," ",251
+"mcg ([[:print:]]+) mg","mcg \1 x 1000 mcg","standardise units",252
+"mg ([[:print:]]+) gram","mg \1 x 1000 mg"," ",253
+"day - ([[:digit:]\.]+)","day or \1"," ",254
+"mg ([[:print:]]+) mcg","x 1000 mcg \1 mcg"," ",256
+"gram ([[:print:]]+) mg","x 1000 mg \1 mg"," ",257
+"([[:digit:]\.]+) (mg|gram|mcg) ([[:digit:]\.]+) ([[:digit:]\.]+) times","\1 x \3 \2 \4 times"," ",258
+"([[:digit:]\.]+) (mg|gram|mcg) ([[:digit:]\.]+) every","\1 x \3 \2 every"," ",259
+"day ([[:print:]]+) per","day \1 or","interpretation of slash",260
+"per d","every day"," ",261
+"(per|dose)","deleteme"," ",262
+"(test|stop) every ([[:digit:]\.]+) days.*","deleteme",,263
+"every ([[:digit:]\.]+) days (test|stop)","deleteme",,264
+"every ([[:digit:]\.]+) days dispense","for \1 days","dispensing interval is taken as the duration",265
+"every day time every day","every day","e.g. every day at the same time every day",266
+"3 week out of 4","for 21 days changeto 0 0 times day for 7 days",,267
+"7 days break every 21 days","for 21 days changeto 0 0 times day for 7 days",,268
+"21 days (in|in every|every|out of|per) (4|28|30)","for 21 days changeto 0 0 times day for 7 days",,269
+"test req every ([[:digit:]\.]+) days","deleteme",,270
+"[[:digit:]]+ minutes (before|after)","deleteme",,271
+"after changeto.*","deleteme","delete dose XXX after increasing/decreasing etc.",272
+"dispense[[:alpha:] ]+1 times every","for",,273
+"every day same time every day","every day",,274
+"(on weekday|every weekday|weekday)","for 5 days changeto 0 0 times day for 2 days",,275

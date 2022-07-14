@@ -1,0 +1,73 @@
+"words","qty","units","freq","tot","priority","max","time","change","choice","doubledose","duration","comment","category","order"
+" both ear ",,,,,"NA",,,"NA",,"double",,"imported from first","3units",1
+" both eye ",,,,,"NA",,,"NA",,"double",,"imported from first","3units",2
+" both nostril ",,,,,"NA",,,"NA",,"double",,"imported from first","3units",3
+" start star ",,,,,"NA","max",,"NA",,,,"imported from first","5uncertainty",4
+" start upto ",,,,,"NA","max",,"NA",,,,"imported from first","5uncertainty",5
+" start ([[:digit:]\.]+) ","\1",,,,1,,,"NA",,,,,"second",6
+" start ([[:digit:]\.]+) days ",0,,,,"NA",,,"NA",,,,,"second",7
+" ([[:digit:]\.]+) [[:alpha:]]+ ([[:digit:]\.]+) times ",,,"\2",,"NA",,,"NA",,,,,"second",8
+" ([[:digit:]\.]+) [[:alpha:]]+ ([[:digit:]\.]+) times day ","\1",,"\2",,1,,1,"NA",,,,,"second",9
+" ([[:digit:]\.]+) every ",,,,"\1","NA",,,"NA",,,,,"second",10
+" start ([[:digit:]\.]+) [[:alpha:]]+ ([[:digit:]\.]+) times day ","\1",,"\2",,"NA",,1,"NA",,,,,"second",11
+" start ([[:digit:]\.]+) [[:alpha:]]+ upto ([[:digit:]\.]+) times ","\1",,"\2",,1,"max",,"NA",,,,,"second",12
+" start ([[:digit:]\.]+) day ","\1",,1,"\1",1,,1,"NA",,,,,"second",13
+" when needed ",,,,,"NA",,,"NA","asneeded",,,"as much as desired","second",14
+" ql ",,,,,"NA",,,"NA","choice",,,"as much as desired","second",15
+" qp ",,,,,"NA",,,"NA","choice",,,,"second",16
+" every day ",,,1,,"NA",,1,"NA",,,,,"second",17
+" every afternoon ",,,1,,"NA",,1,"NA",,,,,"second",18
+" every midday ",,,1,,"NA",,1,"NA",,,,,"second",19
+" every morning ",,,1,,"NA",,1,"NA",,,,,"second",20
+" every evening ",,,1,,"NA",,1,"NA",,,,,"second",21
+" every night ",,,1,,"NA",,1,"NA",,,,,"second",22
+" every 2 month ",,,1,,"NA",,60,"NA",,,,,"second",23
+" every 3 month ",,,1,,"NA",,90,"NA",,,,,"second",24
+" every 6 month ",,,1,,"NA",,180,"NA",,,,,"second",25
+" every 1 hours ",,,1,,"NA",,0.0416666667,"NA",,,,,"second",26
+" every 2 hours ",,,1,,"NA",,0.0833333333,"NA",,,,,"second",27
+" every 2.5 hours ",,,1,,"NA",,0.1041666667,"NA",,,,,"second",28
+" every 3 hours ",,,1,,"NA",,0.125,"NA",,,,,"second",29
+" every 3.5 hours ",,,1,,"NA",,0.1458333333,"NA",,,,,"second",30
+" every 4 hours ",,,1,,"NA",,0.1666666667,"NA",,,,"overwritten by more precise measures","second",31
+" every 5 hours ",,,1,,"NA",,0.2083333333,"NA",,,,,"second",32
+" every 6 hours ",,,1,,"NA",,0.25,"NA",,,,,"second",33
+" every 8 hours ",,,1,,"NA",,0.3333333333,"NA",,,,,"second",34
+" every 12 hours ",,,1,,"NA",,0.5,"NA",,,,,"second",35
+" every ([[:digit:]\.]+) days ",,,1,,"NA",,"\1","NA",,,,,"second",36
+" ([[:digit:]\.]+) day ","\1",,,,1,,,"NA",,,,,"second",37
+" ([[:digit:]\.]+) every ([[:digit:]\.]+) hours ","\1",,,,1,,,"NA",,,,,"second",38
+" changeto 0 for ([[:digit:]\.]+) days ",,,1,,"NA",,1,"NA",,,"\1",,"second",39
+" stat ",,,,,"NA",,1,"NA",,,1,,"second",40
+" max ",,,,,"NA","max",,"NA",,,,,"second",41
+" ([[:digit:]\.]+) every day ","\1",,1,,1,,1,"NA",,,,,"second",42
+" ([[:digit:]\.]+) times every ",,,"\1",,"NA",,,"NA",,,,,"second",43
+" for ([[:digit:]\.]+) days ",,,,,"NA",,,"NA",,,"\1",,"second",44
+" start ([[:digit:]\.]+) times day ",0,,"\1","\1",1,,1,"NA",,,,,"second",45
+" ([[:digit:]\.]+) ([[:digit:]\.]+) times ","\1",,"\2",,1,,,"NA",,,,,"second",46
+" start ([[:digit:]\.]+) every day ","\1",,1,"\1",1,,1,"NA",,,,,"second",47
+" ([[:digit:]\.]+) ([[:digit:]\.]+) times day ","\1",,"\2",,1,,1,"NA",,,,,"second",48
+" ([[:digit:]\.]+) times day ",,,"\1",,1,,1,"NA",,,,,"second",49
+" start ([[:digit:]\.]+) every ([[:digit:]\.]+) hours ",,,,"\2","NA",,,"NA",,,,,"second",50
+" start ([[:digit:]\.]+) every ([[:digit:]\.]+) days ","\1",,1,"\1",1,,"\2","NA",,,,,"second",51
+" start ([[:digit:]\.]+) times ",,,"\1","\1",1,,,"NA",,,,,"second",52
+" times ([[:digit:]\.]+) day ",,,"\1",,1,,1,"NA",,,,,"second",53
+" times ([[:digit:]\.]+) week ",,,"\1",,1,,7,"NA",,,,,"second",54
+" times ([[:digit:]\.]+) every day ",,,"\1",,1,,1,"NA",,,,,"second",55
+" ([[:digit:]\.]+) ([[:digit:]\.]+) times every ","\1",,"\2",,1,,,"NA",,,,,"second",56
+" start to ([[:digit:]\.]+) every ","\1",,,,1,"max",,"NA",,,,,"second",57
+" ([[:digit:]\.]+) in 24 hours ",,,"\1",,"NA",,1,"NA",,,,,"second",58
+" start ([[:digit:]\.]+) in ([[:digit:]\.]+) days ",,,,"\1","NA",,"\2","NA",,,,,"second",59
+" ([[:digit:]\.]+) (nostril|ear|eye|instill|inh|neb|pv|pre|puff|spray|drops|suppos|sachet|blister|amp|pill|cap|tab|fiveml|unit|ml|mgperkg|mgpersqm|mg|gram|mcg) ","\1","\2",,,1,,,"NA",,,,,"second",60
+" start ([[:digit:]\.]+) tab every day ",,"tab",,"\1",3,,1,"NA",,,,,"second",86
+" start ([[:digit:]\.]+) tab day ",,"tab",,"\1",3,,1,"NA",,,,,"second",87
+" ([[:digit:]\.]+) tab ([[:digit:]\.]+) times ","\1","tab","\2",,3,,,"NA",,,,,"second",88
+" ([[:digit:]\.]+) times fiveml ([[:digit:]\.]+) times day ","\1","fiveml","\2",,3,,1,"NA",,,,,"second",89
+" ([[:digit:]\.]+) drops ([[:digit:]\.]+) times day ","\1","drops","\2",,3,,1,"NA",,,,,"second",90
+" ([[:digit:]\.]+) times fiveml ","\1","fiveml",,,3,,,"NA",,,,,"second",91
+" puff day ",,"puff",1,,1,,1,"NA",,,,,"second",92
+" tab day ",,"tab",1,,3,,1,"NA",,,,,"second",93
+" ([[:digit:]\.]+) ml day ","\1","ml",1,,4,,1,"NA",,,,,"second",94
+" ([[:digit:]\.]+) ml ([[:digit:]\.]+) times day ","\1","ml","\2",,4,,1,"NA",,,,,"second",95
+" ([[:digit:]\.]+) tab ([[:digit:]\.]+) times day ","\1","tab","\2",,3,,1,"NA",,,,,"second",96
+" ([[:digit:]\.]+) ([[:digit:]\.]+) ml every ","\2","ml","\1",,4,,,"NA",,,,,"second",97

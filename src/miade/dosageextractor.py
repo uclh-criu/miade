@@ -33,13 +33,14 @@ def refine_entities(doc):
         elif ent.label_ == "STRENGTH":
             new_ent = Span(doc, ent.start, ent.end, label="DOSAGE")
             new_ents.append(new_ent)
-        elif ent.label_ == "FORM":
-            # combine form with dosage if next to dosage
-            prev_ent = doc.ents[ind - 1]
-            if prev_ent.label_ == "DOSAGE":
-                new_ent = Span(doc, prev_ent.start, ent.end, label="DOSAGE")
-                new_ents.pop()
-                new_ents.append(new_ent)
+        # TODO: we could just take FORM here and put it in unit for dose
+        # elif ent.label_ == "FORM":
+        #     # combine form with dosage if next to dosage
+        #     prev_ent = doc.ents[ind - 1]
+        #     if prev_ent.label_ == "DOSAGE":
+        #         new_ent = Span(doc, prev_ent.start, ent.end, label="DOSAGE")
+        #         new_ents.pop()
+        #         new_ents.append(new_ent)
         else:
             new_ents.append(ent)
 
@@ -47,33 +48,42 @@ def refine_entities(doc):
     return doc
 
 
-# TODO: ask for a test set
 class DosageExtractor:
-    def __init__(self, spellcheck=False):
-        self.spellchecker = None
-        if spellcheck:
-            self.spellchecker = spacy.blank('en')
-            self.spellchecker.add_pipe('sentencizer')
-            self.spellchecker.add_pipe("contextual spellchecker")
-
+    def __init__(self):
         self.med7 = spacy.load("en_core_med7_lg")
         self.med7.add_pipe("refine_entities", after="ner")
 
-        self.lookup_dict = self._load_lookup_dict()
-        self.frequency_dict = None
+        self._load_lookup_dicts()
 
-    @staticmethod
-    def _load_lookup_dict() -> Dict:
-        data = pkgutil.get_data(__name__, "data/med_lookup_dict.csv")
-        return pd.read_csv(io.BytesIO(data), header=None, index_col=0, skiprows=1, squeeze=True).to_dict()
+    def _load_lookup_dicts(self):
+        singlewords_data = pkgutil.get_data(__name__, "data/singlewords.csv")
+        multiwords_data = pkgutil.get_data(__name__, "data/multiwords.csv")
+        patterns_data = pkgutil.get_data(__name__, "data/patterns.csv")
+
+        self.singlewords_dict = pd.read_csv(io.BytesIO(singlewords_data), index_col=0, squeeze=True)
+        self.multiwords_dict = pd.read_csv(io.BytesIO(multiwords_data), index_col=0, squeeze=True)
+        self.patterns_dict = pd.read_csv(io.BytesIO(patterns_data), index_col=0, squeeze=True)
 
     def _preprocess(self, text: str) -> str:
         text = text.lower()
-        if self.spellchecker is not None:
-            text = self.spellchecker(text)._.outcome_spellCheck
-        text = ' '.join([str(self.lookup_dict.get(i, i)) for i in text.split()])
-        text = re.sub(r"(\d+)\s+(ml|mg|g|mcg)", r"\1\2", text)
-        return text
+        print(text)
+        new_text = []
+        for i in text.split():
+            replacement = self.singlewords_dict.get(i, None)
+            if isinstance(replacement, str):
+                # replace with dict entry
+                new_text.append(replacement)
+            elif replacement is None:
+                # original algorithm checks for word space here but probably not necessary here
+                print(f"word '{i}' is unmatched in singlewords dict")
+            else:
+                # else the lookup returned Nan which means no change
+                new_text.append(i)
+        new_text = " ".join(new_text)
+        print(new_text)
+        # TODO: add numbersReplace function from R algorithm here
+        # text = re.sub(r"(\d+)\s+(ml|mg|g|mcg)", r"\1\2", text)
+        return new_text
 
     def _process_dose(self, string) -> Dose:
         quantity = None
@@ -136,10 +146,10 @@ class DosageExtractor:
         return Duration(text=string, value=value, unit=unit, high=end_date)
 
     def _process_frequency(self, string) -> Frequency:
-        # TODO: add frequency lookup to standardise common phrases - ask anoop
+        # TODO: use multiwords and patterns from CALIBER lookup here
         period_value = None
         unit = None
-        # TODO: load table
+        # TODO: load tables - may need to adapt to python regex
         m = re.search(r"(?P<value>\d+) times an* (?P<unit>\D+)", string)
         m2 = re.search(r"every (?P<value>\d+) (?P<unit>\D+)", string)
         # I've only seen epic do units in daus though
