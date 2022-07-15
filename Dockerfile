@@ -2,6 +2,7 @@ FROM python:3.8
 
 ADD ./src/ /home/src
 ADD ./configs/ /home/configs
+ADD ./notebooks/ /home/notebooks
 
 WORKDIR /home/app
 
