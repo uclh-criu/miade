@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from shutil import copy
 from typing import List, Optional
 
 from shutil import rmtree
@@ -19,6 +20,7 @@ class CDBBuilder(object):
     def __init__(
         self,
         temp_dir: Path,
+        custom_data_paths: Optional[List[Path]] = None, # THIS DATA MUST BE IN THE PRE-PROCESSED FORMAT: ["cui", "name", "ontologies", "name_status"]
         snomed_data_path: Optional[Path] = None,
         fdb_data_path: Optional[Path] = None,
         elg_data_path: Optional[Path] = None,
@@ -28,6 +30,7 @@ class CDBBuilder(object):
         model: str = "en_core_web_md",
     ):
         self.temp_dir = temp_dir
+        self.custom_data_paths = custom_data_paths
         self.fdb_data_path = fdb_data_path
         self.elg_data_path = elg_data_path
         self.snomed_subset_path = snomed_subset_path
@@ -88,6 +91,12 @@ class CDBBuilder(object):
         preprocess_elg(self.elg_data_path).to_csv(output_file, index=False)
         return output_file
 
+    def preprocess_custom(self, output_dir: Path = Path.cwd()) -> Path:
+        for path in self.custom_data_paths:
+            output_file = output_dir / path.name
+            copy(path,output_file)
+
+
     def preprocess(self):
         self.vocab_files = []
         if self.snomed:
@@ -96,6 +105,8 @@ class CDBBuilder(object):
             self.vocab_files.append(self.preprocess_fdb(self.temp_dir))
         if self.elg_data_path:
             self.vocab_files.append(self.preprocess_elg(self.temp_dir))
+        if self.custom_data_paths:
+            self.vocab_files += self.custom_data_paths
 
     def create_cdb(self) -> CDB:
         cdb = self.maker.prepare_csvs(self.vocab_files, full_build=True)
