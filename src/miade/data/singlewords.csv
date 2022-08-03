@@ -39,6 +39,7 @@ apl,use
 applic,use
 application,dose
 applicator,dose
+applicatorfuls,dose
 apply,use
 aq,","
 as,NA
@@ -71,6 +72,7 @@ build,increase
 building,increase
 by,NA
 cap,NA
+caps,cap
 capsule,cap
 capsules,cap
 cc,NA
@@ -235,6 +237,7 @@ midday,NA
 miligram,mg
 mililitres,ml
 milligram,mg
+milligrams,mg
 milligramme,mg
 milliliters,ml
 millilitres,ml

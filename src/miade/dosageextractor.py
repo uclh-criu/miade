@@ -4,7 +4,8 @@ import io
 import pkgutil
 import pandas as pd
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
+from devtools import debug
 from datetime import datetime, timedelta
 from spacy.language import Language
 from spacy.tokens import Span
@@ -104,9 +105,9 @@ def numbers_replace(text, max_if_choice=False):
     if max_if_choice:
         text = re.sub(r" ([\d.]+) (to|or|-|star) ([\d.]+) ",
                       lambda m: " {:g} ".format(max(int(m.group(1)), int(m.group(3)))), text)
-    # else:
-    #     text = re.sub(r" ([\d.]+) (to|or|-|star) ([\d.]+) ",
-    #                   lambda m: " {:g} ".format(((int(m.group(1)) + int(m.group(3))) / 2)), text)
+    else:
+        text = re.sub(r" ([\d.]+) (to|or|-|star) ([\d.]+) (tab|drops|cap|ml|puff|fiveml) ",
+                      r" \1 \4 \2 \3 \4 ", text)
 
     # X times or X times ...
     if max_if_choice:
@@ -142,6 +143,11 @@ class DosageExtractor:
 
     def _preprocess(self, text: str, caliber_preprocess=False) -> str:
         text = text.lower()
+        text = " {} ".format(text)
+        # TODO: remove periods also
+        text = re.sub(r" (\d+)([a-z]+) ", r" \1 \2 ", text)
+        text = re.sub(r" (\d+)-(\d+) ", r" \1 - \2 ", text)
+        text = re.sub(r" (\d+)/(\d+) ", r" \1 / \2 ", text)
         print(text)
         cleaned_text = []
         for word in text.split():
@@ -156,7 +162,7 @@ class DosageExtractor:
                         cleaned_text.append(replacement)
                     else:
                         cleaned_text.append(word)
-            elif replacement is None and not word.isdigit():
+            elif replacement is None and not word.replace('.', '', 1).isdigit():
                 # original algorithm checks for word space but probably not necessary here
                 if not caliber_preprocess:
                     cleaned_text.append(word)
@@ -170,10 +176,11 @@ class DosageExtractor:
         text = numbers_replace(text)
         print("After numbers replace: ", text)
 
-        # print(self.multiwords_dict)
         for row, words in enumerate(self.multiwords_dict.words.values):
             pattern = r" {} ".format(words)
             replacement = r" {} ".format(self.multiwords_dict.loc[row, "replacement"])
+            if replacement == "   ":
+                replacement = " "
             new_text = re.sub(pattern, replacement, text)
             if new_text != text:
                 print(f"MATCHED multiwords: {words}")
@@ -185,113 +192,168 @@ class DosageExtractor:
 
         return text
 
-    def _process_dose(self, string) -> Dose:
-        quantity = None
-        low = None
-        high = None
-        unit = None
+    @staticmethod
+    def _process_dose(text, quantities, units) -> Dose:
+        quantity_dosage = Dose(text=text)
 
-        if re.match("^\d*-*\d+$", string):
-            quantity = string
-        else:
-            m = re.match(r"(?P<quantity>\d*-*\d+)(?P<unit>[a-zA-Z]+)", string)
-            m2 = re.match(r"(?P<low>\d+)\sor\s(?P<high>\d+)\s(?P<unit>\D+)", string)
-            m3 = re.match(r"(?P<quantity>\d*-*\d+)\s(?P<unit>\D+)", string)
-            if m:
-                quantity = m.group('quantity')
-                unit = m.group('unit')
-            elif m2:
-                low = m2.group('low')
-                high = m2.group('high')
-                unit = m2.group('unit')
-            elif m3:
-                quantity = m3.group('quantity')
-                unit = m3.group('unit')
-
-        if quantity is not None:
-            if "-" in quantity:
-                dose_range = quantity.split("-")
-                low = dose_range[0]
-                high = dose_range[1]
-                quantity = None
-
-        if unit in ucum:
-            unit = ucum[unit]
-
-        return Dose(text=string, quantity=quantity, unit=unit, low=low, high=high)
-
-    def _process_duration(self, string) -> Duration:
-        value = None
-        unit = None
-        end_date = None
-
-        m = re.search(r"(?P<value>\d+)\s(?P<unit>\D+)", string)
-        if m:
-            value = m.group('value')
-            unit = m.group('unit')
-            if unit == "days" or unit == "day":
-                delta = timedelta(days=int(value))
-                end_date = datetime.today() + delta
-            elif unit == "weeks" or unit == "week":
-                delta = timedelta(weeks=int(value))
-                end_date = datetime.today() + delta
-            elif unit == "months" or unit == "month":
-                days = int(value) * 30
-                delta = timedelta(days=days)
-                end_date = datetime.today() + delta
+        if len(quantities) == 1 and len(units) == 0:
+            if quantities[0].replace('.', '', 1).isdigit():
+                quantity_dosage.quantity = quantities[0]
             else:
-                end_date = None
+                # match single unit or range e.g. 3 - 4 units
+                m1 = re.search(r"([\d.]+) - ([\d.]+) ([a-z]+)", quantities[0])
+                m2 = re.search(r"([\d.]+) ([a-z]+)", quantities[0])
+                if m1:
+                    quantity_dosage.low = m1.group(1)
+                    quantity_dosage.high = m1.group(2)
+                    quantity_dosage.unit = m1.group(3)
+                elif m2:
+                    quantity_dosage.quantity = m2.group(1)
+                    quantity_dosage.unit = m2.group(2)
+        elif len(quantities) == 1 and len(units) == 1:
+            m = re.search(r"([\d.]+) - ([\d.]+)", quantities[0])
+            if m:
+                quantity_dosage.low = m.group(1)
+                quantity_dosage.high = m.group(2)
+            else:
+                quantity_dosage.quantity = quantities[0]
+            quantity_dosage.unit = units[0]
+        elif len(quantities) == 2 and len(units) == 2:
+            quantities.sort()
+            quantity_dosage.low = quantities[0]
+            quantity_dosage.high = quantities[1]
+            if units[0] == units[1]:
+                quantity_dosage.unit = units[0]
+            else:
+                print("dose units don't match")
+                quantity_dosage.unit = units[-1]
+        else:
+            print("more than 2 quantities detected")
 
-        print(end_date)
-        return Duration(text=string, value=value, unit=unit, high=end_date)
+        if quantity_dosage.unit is not None:
+            if quantity_dosage.unit in ucum:
+                quantity_dosage.unit = ucum[quantity_dosage.unit]
+            else:
+                quantity_dosage.unit = "{" + quantity_dosage.unit + "}"
 
-    def _process_frequency(self, string) -> Frequency:
-        period_value = None
-        unit = None
-        # m = re.search(r"(?P<value>\d+) times an* (?P<unit>\D+)", string)
-        # m2 = re.search(r"every (?P<value>\d+) (?P<unit>\D+)", string)
-        # # I've only seen epic do units in daus though
-        # if m:
-        #     value = m.group('value')
-        #     unit = m.group('unit')[0]
-        #     if unit == "d":
-        #         period_value = 24 / int(value) / 24
-        #     elif unit == "h":
-        #         period_value = 60 / int(value) / 60
-        # elif m2:
-        #     period_value = m.group('value')
-        #     unit = m.group('unit')[0]
+        return quantity_dosage
 
-        return Frequency(text=string, value=period_value, unit=unit)
+    @staticmethod
+    def _process_duration(text: [str], full_text: Optional[str] = None) -> Duration:
+        # convert all time units to days
+        duration_dosage = Duration(text=text)
+        text = " {} ".format(text)
+        match1 = re.search(r" for ([\d.]+) days ", text)
+        match2 = re.search(r" stat ", text)
+        if match1 is None and match2 is None:
+            # if no match search the whole text
+            match1 = re.search(r" for ([\d.]+) days ", full_text)
+            match2 = re.search(r" stat ", full_text)
+        if match1 or match2:
+            duration_dosage.low = datetime.today()
+            duration_dosage.unit = "d"
+            if match1:
+                duration_dosage.value = match1.group(1)
+                delta = timedelta(days=float(duration_dosage.value))
+                duration_dosage.high = datetime.today() + delta
+            elif match2:
+                duration_dosage.value = 1
+                delta = timedelta(days=1)
+                duration_dosage.high = datetime.today() + delta
+
+        return duration_dosage
+
+    def _process_frequency(self, text) -> Frequency:
+        frequency_dosage = Frequency(text=text)
+
+        freq = None
+        time = None
+        for pattern in self.patterns_dict.index:
+            match = re.search(pattern, text)
+            if match:
+                print("matched pattern: ", pattern)
+                match_table = self.patterns_dict.loc[pattern].dropna()
+                # print(match_table)
+                if "freq" in match_table.index:
+                    freq = match_table.freq
+                    if isinstance(freq, str) and "\\" in freq:
+                        freq = match.group(int(freq[-1]))
+                    freq = int(freq)
+                if "time" in match_table.index:
+                    time = match_table.time
+                    if isinstance(time, str) and "\\" in time:
+                        time = match.group(int(time[-1]))
+                    time = float(time)
+                if "institution_specified" in match_table.index:
+                    frequency_dosage.institution_specified = match_table.institution_specified
+                print("freq: ", freq)
+                print("time: ", time)
+        if freq is not None and time is not None:
+            if time == 1:
+                frequency_dosage.value = 24 / freq / 24
+            else:
+                frequency_dosage.value = time
+            if not frequency_dosage.institution_specified and time < 1:
+                frequency_dosage.value = round(frequency_dosage.value * 24)
+                frequency_dosage.unit = "h"
+            else:
+                frequency_dosage.unit = "d"
+
+        if "when needed" in text:
+            frequency_dosage.precondition_asrequired = True
+
+        return frequency_dosage
 
     def _process_route(self, string) -> Route:
         # prioritise oral and inhalation
-        # TODO: probably easiest to do a lookup here too
         return Route(text=string)
 
-    def _parse_dosage_info(self, entities: Tuple) -> Dict:
-
+    def _parse_dosage_info(self, entities: [Tuple], full_text: [str]) -> Dict:
         dosage_dict = {}
+
+        quantities = []
+        units = []
+        dose_start = 1000
+        dose_end = 0
+
         for ent in entities:
             if ent.label_ == "DOSAGE":
-                dosage_dict["dose"] = self._process_dose(ent.text)
+                quantities.append(ent.text)
+                if ent.start < dose_start:
+                    dose_start = ent.start
+                if ent.end > dose_end:
+                    dose_end = ent.end
+            elif ent.label_ == "FORM":
+                units.append(ent.text)
+                if ent.start < dose_start:
+                    dose_start = ent.start
+                if ent.end > dose_end:
+                    dose_end = ent.end
             elif ent.label_ == "DURATION":
-                dosage_dict["duration"] = self._process_duration(ent.text)
-            elif ent.label_ == "FREQUENCY":
-                dosage_dict["frequency"] = self._process_frequency(ent.text)
+                dosage_dict["duration"] = self._process_duration(ent.text, full_text)
             elif ent.label_ == "ROUTE":
                 dosage_dict["route"] = self._process_route(ent.text)
+
+        dosage_dict["dose"] = self._process_dose(" ".join(full_text.split()[dose_start:dose_end]),
+                                                 quantities,
+                                                 units)
+        dosage_dict["frequency"] = self._process_frequency(full_text)
 
         return dosage_dict
 
     def extract(self, note: Note, drug: Concept) -> MedicationActivity:
+        doc = self.med7(self._preprocess(note.text))
+        for e in doc.ents:
+            print((e.text, e.start_char, e.end_char, e.label_))
+
         text = self._preprocess(note.text, caliber_preprocess=True)
         doc = self.med7(text)
 
         for e in doc.ents:
             print((e.text, e.start_char, e.end_char, e.label_))
 
-        dosage_dict = self._parse_dosage_info(doc.ents)
+        dosage_dict = self._parse_dosage_info(doc.ents, text)
         result = MedicationActivity(text=note.text, drug=drug, **dosage_dict)
+        debug(result)
 
         return result

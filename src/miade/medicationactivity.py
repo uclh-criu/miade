@@ -12,14 +12,14 @@ route_codes = {"Inhalation": "C38216",
                "Topical": "C38304",
                "Sublingual": "C38300"}
 
-ucum = {"tablet": "{tbl}",
-        "tablets": "{tbl}",
-        "puff": "{puff}",
-        "puffs": "{puff}",
+ucum = {"tab": "{tbl}",
         "drop": "[drp]",
-        "drops": "[drp]",
-        "applicatorful": "{applicatorful}",
-        "applicatorfuls": "{applicatorful}"}
+        "mg": "mg",
+        "ml": "ml",
+        "gram": "g",
+        "mcg": "mcg",
+        "ng": "ng",
+        "unit": None}
 
 
 class Dose(BaseModel):
@@ -34,16 +34,20 @@ class Duration(BaseModel):
     text: str
     value: Optional[int] = None
     unit: Optional[str] = None
-    low: datetime = datetime.today()
+    low: Optional[datetime] = None
     high: Optional[datetime] = None
 
 
 class Frequency(BaseModel):
+    # TODO: in CDA parser need to add standard deviation and preconditions
     text: str
     value: Optional[float] = None
     unit: Optional[str] = None
     low: Optional[int] = None
     high: Optional[int] = None
+    standard_deviation: Optional[int] = None
+    institution_specified: Optional[bool] = None
+    precondition_asrequired: Optional[bool] = None
 
 
 class Route(BaseModel):
