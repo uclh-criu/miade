@@ -4,7 +4,7 @@ import io
 import pkgutil
 import pandas as pd
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, List
 from devtools import debug
 from datetime import datetime, timedelta
 from spacy.language import Language
@@ -14,7 +14,7 @@ from .note import Note
 from .concept import Concept
 from .medicationactivity import MedicationActivity
 from .medicationactivity import Dose, Duration, Frequency, Route
-from .medicationactivity import ucum
+from .medicationactivity import ucum, route_codes
 
 
 @Language.component("refine_entities")
@@ -47,8 +47,7 @@ def refine_entities(doc):
     return doc
 
 
-def numbers_replace(text, max_if_choice=False):
-    # TODO: change max_if_choice to range
+def numbers_replace(text):
     # 10 ml etc
     text = re.sub(r" (\d+) o (ml|microgram|mcg|gram|mg) ",
                   lambda m: " {:g} {} ".format(float(m.group(1)) * 10, m.group(2)), text)
@@ -87,13 +86,10 @@ def numbers_replace(text, max_if_choice=False):
     text = re.sub(r" days (\d+) (to|-) day (\d+) ",
                   lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))), text)
     # X times day to X times day
-    # TODO: range
-    if max_if_choice:
-        text = re.sub(r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
-                      lambda m: " {:g} times day ".format(max(int(m.group(1)), int(m.group(4)))), text)
-    else:
-        text = re.sub(r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
-                      lambda m: " {:g} times day ".format(((int(m.group(1)) + int(m.group(4))) / 2)), text)
+    text = re.sub(r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
+                  lambda m: " every {:g} hours +-{:g} ".format(
+                      (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,
+                      24 / int(m.group(1)) - (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2), text)
 
     # days 1 to 14 ...
     text = re.sub(r" days (\d+) (to|-) (\d+) ",
@@ -129,10 +125,9 @@ class DosageExtractor:
         self.multiwords_dict = pd.read_csv(io.BytesIO(multiwords_data), squeeze=True)
         self.patterns_dict = pd.read_csv(io.BytesIO(patterns_data), index_col=0, squeeze=True)
 
-    def _preprocess(self, text: str) -> str:
+    def _preprocess(self, text: [str]) -> str:
         text = text.lower()
         text = re.sub(r"(\d+)([a-z]+) ", r"\1 \2 ", text)
-        print(text)
         processed_text = []
         for word in re.findall(r"[\w']+|[.,!?;*&@>#/-]", text):
             replacement = self.singlewords_dict.get(word, None)
@@ -170,7 +165,7 @@ class DosageExtractor:
 
         return processed_text
 
-    def _process_dose(self, text, quantities, units) -> Dose:
+    def _process_dose(self, text: [str], quantities: List[str], units: List[str]) -> Dose:
         quantity_dosage = Dose(text=text)
 
         if len(quantities) == 1 and len(units) == 0:
@@ -254,8 +249,16 @@ class DosageExtractor:
 
     def _process_route(self, text) -> Route:
         # prioritise oral and inhalation
-        # TODO: add route words to dict so it's not removed
-        return Route(text=text)
+        route_dosage = Route(text=text)
+        if "mouth" in text:
+            route_dosage.displayName = "Oral"
+            route_dosage.code = route_codes["Oral"]
+        elif "inhalation" in text:
+            route_dosage.displayName = "Inhalation"
+            route_dosage.code = route_codes["Inhalation"]
+
+        # TODO: add other routes
+        return route_dosage
 
     def _parse_dosage_info(self, entities: [Tuple], full_text: [str]) -> Dict:
         dosage_dict = {}
@@ -316,9 +319,9 @@ class DosageExtractor:
                         results[key] = match_table.loc[key]
                         if isinstance(results[key], str) and "\\" in results[key]:
                             results[key] = match.group(int(match_table.loc[key][-1]))
-                        if key == "qty":
+                        if key in ["qty", "time"]:
                             results[key] = float(results[key])
-                        elif key in ["time", "freq", "duration"]:
+                        elif key in ["freq", "duration"]:
                             results[key] = int(results[key])
         print(results)
         return results

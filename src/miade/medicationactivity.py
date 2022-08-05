@@ -53,8 +53,8 @@ class Frequency(BaseModel):
 class Route(BaseModel):
     # NCI thesaurus code
     text: str
-    name: Optional[str] = None
-
+    displayName: Optional[str] = None
+    code: Optional[str] = None
 
 @dataclass
 class MedicationActivity:

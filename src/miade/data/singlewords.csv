@@ -191,6 +191,7 @@ inh,NA
 inhale,inh
 inhaled,inh
 inhaler,inh
+inhalation,NA
 ins,insert
 instil,instill
 instill,NA
@@ -269,6 +270,7 @@ morne,morning
 morning,NA
 motion,","
 motions,","
+mouth,NA
 ms,","
 msl,ml
 mu,mcg
@@ -336,7 +338,7 @@ pilll,pill
 pills,pill
 pils,pill
 pm,NA
-po,","
+po,"oral"
 position,","
 pre,NA
 prescribe,dispense
@@ -520,3 +522,5 @@ x,NA
 year,NA
 yearly,NA
 your,your
+oral,NA
+orally,oral
