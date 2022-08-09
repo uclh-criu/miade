@@ -8,6 +8,7 @@ import typer
 import yaml
 from medcat.cat import CAT
 from medcat.config import Config
+from pydantic import BaseModel
 
 from miade.model_builders import CDBBuilder
 from miade.model_builders import VocabBuilder
@@ -15,56 +16,50 @@ from miade.model_builders import VocabBuilder
 app = typer.Typer()
 
 
+class CLI_Config(BaseModel):
+    snomed_data_path: Optional[Path] = None
+    fdb_data_path: Optional[Path] = None
+    elg_data_path: Optional[Path] = None
+    snomed_subset_path: Optional[Path] = None
+    snomed_exclusions_path: Optional[Path] = None
+    medcat_config_file: Optional[Path] = None
+    training_data_path: Path
+    output_dir: Path
+
+    @classmethod
+    def from_yaml_file(cls, config_filepath: Path):
+        with config_filepath.open("r") as stream:
+            config_dict = yaml.safe_load(stream)
+            return cls(**config_dict)
+
+
 @app.command()
 def build_model_pack(
         config_file: Path,
         temp: Optional[Path] = typer.Argument(Path.cwd() / Path(".temp"))
 ):
-    print(config_file)
-    with open(config_file, "r") as stream:
-        config = yaml.safe_load(stream)
-
-    snomed_data_path = Path(config['snomed_data_path'])
-    fdb_data_path = Path(config['fdb_data_path'])
-    elg_data_path = Path(config['elg_data_path'])
-    snomed_subset_path = Path(config['snomed_subset_path'])
-    snomed_exclusions_path = Path(config['snomed_exclusions_path'])
-    training_data_path = Path(config['training_data_path'])
-    output_dir = Path(config['output_dir'])
+    config = CLI_Config.from_yaml_file(config_file)
 
     # Load MedCAT configuration
     medcat_config = Config()
-    if "medcat_config_file" in config:
-        medcat_config.parse_config_file(Path(config["medcat_config_file"]))
+    if config.medcat_config_file:
+        medcat_config.parse_config_file(str(config.medcat_config_file))
 
     cdb_builder = CDBBuilder(
-        snomed_data_path=snomed_data_path,
-        fdb_data_path=fdb_data_path,
-        elg_data_path=elg_data_path,
-        snomed_subset_path=snomed_subset_path,
-        snomed_exclusions_path=snomed_exclusions_path
+        temp_dir=temp,
+        snomed_data_path=config.snomed_data_path,
+        fdb_data_path=config.fdb_data_path,
+        elg_data_path=config.elg_data_path,
+        snomed_subset_path=config.snomed_subset_path,
+        snomed_exclusions_path=config.snomed_exclusions_path
     )
 
-    temp.mkdir()
-
-    cdb_builder.preprocess_snomed(output_dir=temp)
-    cdb_builder.preprocess_fdb(output_dir=temp)
-    cdb_builder.preprocess_elg(output_dir=temp)
-
-    cdb = cdb_builder.create_cdb(
-        [
-            str(temp / Path("preprocessed_snomed.csv")),
-            str(temp / Path("preprocessed_fdb.csv")),
-            str(temp / Path("preprocessed_elg.csv"))
-        ]
-    )
-
-    rmtree(temp)
-
+    cdb_builder.preprocess()
+    cdb = cdb_builder.create_cdb()
     vocab_builder = VocabBuilder()
 
     with open(
-            training_data_path, "r", encoding="utf-8"
+            config.training_data_path, "r", encoding="utf-8"
     ) as training_data:
         training_data_list = [line.strip() for line in training_data]
 
@@ -72,11 +67,11 @@ def build_model_pack(
         training_data_list=training_data_list,
         cdb=cdb,
         config=medcat_config,
-        output_dir=output_dir,
+        output_dir=config.output_dir,
     )
 
     cat = CAT(cdb=cdb, config=cdb.config, vocab=vocab)
-    cat.create_model_pack(str(output_dir))
+    cat.create_model_pack(str(config.output_dir))
 
 
 @app.command()

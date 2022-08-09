@@ -21,8 +21,8 @@ class NoteProcessor:
     """docstring for NoteProcessor."""
 
     def __init__(
-        self,
-        model_directory: Path,
+            self,
+            model_directory: Path,
     ):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.annotators = [
@@ -31,20 +31,24 @@ class NoteProcessor:
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
+        config_file = pkgutil.get_data(__name__, "configs/debug_config.yml")
+        self.debug_config = yaml.safe_load(config_file)
 
     def process(
-        self, note: Note, patient_data: Optional[List[Concept]] = None
+            self, note: Note, patient_data: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
 
         for annotator in self.annotators:
             for entity in annotator.get_entities(note)["entities"].values():
-                print(entity)
-                if entity['ontologies'] == ['FDB']:
+                # print(entity)
+                if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
-                elif entity['ontologies'] == ['SNOMED-CT']:
+                elif entity["ontologies"] == ["SNOMED-CT"]:
                     category = Category.DIAGNOSIS
+                elif entity["ontologies"] == ["ELG"]:
+                    category = Category.ALLERGY
                 else:
                     category = Category.DIAGNOSIS
                 concepts.append(
@@ -52,43 +56,47 @@ class NoteProcessor:
                         id=entity["cui"],
                         name=entity["pretty_name"],
                         category=category,
-                        start=entity['start'],
-                        end=entity['end']
+                        start=entity["start"],
+                        end=entity["end"],
                     )
                 )
 
         return concepts
 
-    def debug(self, note: Note, code: DEBUG = DEBUG.PRELOADED) -> (List[Concept], Dict):
-        config_file = pkgutil.get_data(__package__, '../../configs/debug_config.yml')
-        debug_config = yaml.safe_load(config_file)
+    def debug(self, mode: DEBUG = DEBUG.PRELOADED, code: Optional[int] = 0) -> (List[Concept], Dict):
         # print(debug_config)
-
         # use preloaded concepts and cda fields
-        if code == DEBUG.PRELOADED:
+        if mode == DEBUG.PRELOADED:
             concept_list = []
-            for name, value in debug_config['Concepts'].items():
-                if value['ontologies'] == ['FDB']:
+            for name, concept_dict in self.debug_config["Presets"][code].items():
+                dosage = None
+                meta = None
+                if concept_dict["ontologies"] == "FDB":
                     category = Category.MEDICATION
+                    if "dosage" in concept_dict:
+                        dosage = concept_dict["dosage"]  # sub for MedicationActivity
+                elif concept_dict["ontologies"] == "ELG":
+                    category = Category.ALLERGY
+                    if "reaction" in concept_dict:
+                        meta = concept_dict["reaction"]
+                elif concept_dict["ontologies"] == "SNOMED CT":
+                    category = Category.DIAGNOSIS
                 else:
                     category = Category.DIAGNOSIS
-
                 concept_list.append(
                     Concept(
-                        id=value["cui"],
+                        id=concept_dict["cui"],
                         name=name,
                         category=category,
+                        dosage=dosage,
+                        meta=meta
                     )
                 )
-            return concept_list, debug_config['CDA']
-
+            return concept_list
         # detect concepts and return preloaded cda fields
-        elif code == DEBUG.CDA:
-            concept_list = self.process(note)
-            return concept_list, debug_config['CDA']
-
+        elif mode == DEBUG.CDA:
+            return self.debug_config["CDA"][code]
         # switch out models once we have multiple models/version control
-        elif code == DEBUG.MODEL:
+        elif mode == DEBUG.MODEL:
             for model in self.annotators:
                 model.get_model_card()
-

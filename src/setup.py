@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="miade",
-    version="0.1",
+    version="0.2",
     description="",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"miade": ["data/*.csv"]},
+    package_data={"miade": ["data/*.csv", "configs/*.yml"]},
     setup_requires=[
         "wheel",
     ],
@@ -19,7 +19,5 @@ setup(
         "click==7.1.2",
         "pathlib"
     ],
-    scripts=[
-        "scripts/miade"
-    ]
+    scripts=["scripts/miade"],
 )

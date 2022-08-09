@@ -1,4 +1,4 @@
-cui,name,ontologies
-10,paracetamol,FDB
-20,ibruprofen,FDB
-30,co-codamol,FDB
+cui,name,ontologies,name_status
+FDB-10,paracetamol,FDB,P
+FDB-20,ibruprofen,FDB,P
+FDB-30,co-codamol,FDB,P
