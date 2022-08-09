@@ -18,8 +18,8 @@ ucum = {"tab": "{tbl}",
         "ml": "ml",
         "gram": "g",
         "mcg": "mcg",
-        "ng": "ng",
-        "unit": None}
+        "ng": "ng"
+        }
 
 
 class Dose(BaseModel):
@@ -46,8 +46,8 @@ class Frequency(BaseModel):
     low: Optional[int] = None
     high: Optional[int] = None
     standard_deviation: Optional[int] = None
-    institution_specified: Optional[bool] = None
-    precondition_asrequired: Optional[bool] = None
+    institution_specified: bool = False
+    precondition_asrequired: bool = False
 
 
 class Route(BaseModel):

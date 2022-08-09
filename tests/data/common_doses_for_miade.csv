@@ -1,0 +1,47 @@
+drug,dosestring,dosequantity,doselow,dosehigh,doseunit,timeinterval_value,timeinterval_unit,institution_specified,precondition_as_required
+clopidogrel,75mg daily,75,,,mg,1,d,FALSE,FALSE
+clopidogrel,75mg od,75,,,mg,1,d,FALSE,FALSE
+clopidogrel,75mg,75,,,mg,,,,
+clopidogrel 75mg,1 tab daily,1,,,{tbl},1,d,FALSE,FALSE
+clopidogrel 75mg tablets,75 milligrams daily,75,,,mg,1,d,FALSE,FALSE
+clopidogrel 75mg tabs,75 mg od,75,,,mg,1,d,FALSE,FALSE
+ramipril,10 mg daily,10,,,mg,1,d,FALSE,FALSE
+ramipril 10mg caps,10 mg od,10,,,mg,1,d,FALSE,FALSE
+ramipril 10mg capsules,1 cap daily,1,,,{cap},1,d,FALSE,FALSE
+metoprolol,25mg tds,25,,,mg,0.333333333333333,d,TRUE,FALSE
+metoprolol 50mg tablets,half a tablet 2 times daily,0.5,,,{tbl},0.5,d,TRUE,FALSE
+metoprolol 50mg tablets,half a tablet twice daily,0.5,,,{tbl},0.5,d,TRUE,FALSE
+metoprolol 50mg tablets,0.5 tab bd,0.5,,,{tbl},0.5,d,TRUE,FALSE
+metoprolol 50mg tablets,25mg bd,25,,,mg,0.5,d,TRUE,FALSE
+metoprolol 50mg tablets,25mg 3 times a day,25,,,mg,0.333333333333333,d,TRUE,FALSE
+metoprolol 50mg tablets,25mg three times a day,25,,,mg,0.333333333333333,d,TRUE,FALSE
+metoprolol 50mg tablets,25mg thrice daily,25,,,mg,0.333333333333333,d,TRUE,FALSE
+metoprolol 50mg tablets,25mg tds,25,,,mg,0.333333333333333,d,TRUE,FALSE
+co-amoxiclav,625 mg tds,625,,,mg,0.333333333333333,d,TRUE,FALSE
+co-amoxiclav,625 mg every 8 hours,625,,,mg,8,h,FALSE,FALSE
+penicillin v 250mg tablets,2 tabs 4 times a day,2,,,{tbl},0.25,d,TRUE,FALSE
+penicillin v 250mg tablets,2 tabs qds,2,,,{tbl},0.25,d,TRUE,FALSE
+penicillin v 250mg tablets,500mg qds,500,,,mg,0.25,d,TRUE,FALSE
+thyroxine 50 microgram tablets,75 micrograms daily,75,,,mcg,1,d,FALSE,FALSE
+thyroxine 50 microgram tablets,75 mcg od,75,,,mcg,1,d,FALSE,FALSE
+lactulose,10 ml twice daily,10,,,ml,0.5,d,TRUE,FALSE
+senna,2 tabs every evening,2,,,{tbl},1,d,FALSE,FALSE
+atorvastatin,20 mg every night,20,,,mg,1,d,FALSE,FALSE
+metformin,500mg tds with meals,500,,,mg,0.333333333333333,d,TRUE,FALSE
+alendronate,70 mg weekly,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on mondays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on tuesdays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on wednesdays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on thursdays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on fridays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on saturdays,70,,,mg,7,d,FALSE,FALSE
+aldendronic acid,70 mg on sundays,70,,,mg,7,d,FALSE,FALSE
+paracetamol,1 gram four times a day when needed,1,,,g,0.25,d,TRUE,TRUE
+paracetamol 500 mg effervescent tablets,1 gram every 6 hours,1,,,g,6,h,FALSE,FALSE
+paracetamol 500 mg caps,1-2 caps when needed max 4 times a day,,1,2,{cap},0.25,d,TRUE,TRUE
+salbutamol,2 puffs when needed,2,,,{puff},,,FALSE,TRUE
+movicol,1-2 sachets when needed,,1,2,{sachet},,,FALSE,TRUE
+novorapid,4-8 units with meals,,4,8,{unit},0.333333333333333,d,TRUE,FALSE
+novorapid insulin,4-8 units with meals,,4,8,{unit},0.333333333333333,d,TRUE,FALSE
+lantus,12 units daily,12,,,{unit},1,d,FALSE,FALSE
+penicillin v 250mg tablets,2 tabs by mouth 4 times a day for a week,2,,,{tbl},0.25,d,TRUE,FALSE

@@ -15,7 +15,8 @@ setup(
         "spacy==3.1.0",
         "typing==3.7.4.3",
         "pandas",
-        "typer",
+        "typer==0.3.2",
+        "click==7.1.2",
         "pathlib"
     ],
     scripts=[

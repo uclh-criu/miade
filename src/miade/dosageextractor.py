@@ -2,9 +2,10 @@ import spacy
 import re
 import io
 import pkgutil
+import logging
 import pandas as pd
 
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from devtools import debug
 from datetime import datetime, timedelta
 from spacy.language import Language
@@ -15,6 +16,9 @@ from .concept import Concept
 from .medicationactivity import MedicationActivity
 from .medicationactivity import Dose, Duration, Frequency, Route
 from .medicationactivity import ucum, route_codes
+
+
+log = logging.getLogger(__name__)
 
 
 @Language.component("refine_entities")
@@ -53,6 +57,8 @@ def numbers_replace(text):
                   lambda m: " {:g} {} ".format(float(m.group(1)) * 10, m.group(2)), text)
     # t d s
     text = re.sub(r" ([a-z]) ([a-z]) ([a-z]) ", r" \1\2\3 ", text)
+    # 0 . 5
+    text = re.sub(r" (\d+) \. (\d+) ", r" \1.\2 ", text)
     # 1/2
     text = re.sub(r" 1 / 2 ", r" 0.5 ", text)
     # 1.5 times 2 ... (not used for 5ml doses, because this is treated as a separate dose units)
@@ -127,7 +133,11 @@ class DosageExtractor:
 
     def _preprocess(self, text: [str]) -> str:
         text = text.lower()
-        text = re.sub(r"(\d+)([a-z]+) ", r"\1 \2 ", text)
+        # 25mg to 25 mg
+        text = re.sub(r"(\d+)([a-z]+)", r"\1 \2", text)
+        # remove periods if not between two numbers
+        text = re.sub(r"(?<!\d)\.(?!\d)", "", text)
+
         processed_text = []
         for word in re.findall(r"[\w']+|[.,!?;*&@>#/-]", text):
             replacement = self.singlewords_dict.get(word, None)
@@ -135,16 +145,16 @@ class DosageExtractor:
                 # replace with dict entry
                 processed_text.append(replacement)
             elif replacement is None and not word.replace('.', '', 1).isdigit():
-                print(f"word '{word}' is unmatched in singlewords dict, removed for caliberdrug")
+                log.debug(f"word '{word}' is unmatched in singlewords dict, removed")
             else:
                 # else the lookup returned Nan which means no change
                 processed_text.append(word)
 
         processed_text = "start {} ".format(" ".join(processed_text))
-        print("After single words replace: ", processed_text)
+        log.debug(f"After single words replace: {processed_text}")
 
         processed_text = numbers_replace(processed_text)
-        print("After numbers replace: ", processed_text)
+        log.debug(f"After numbers replace: {processed_text}")
 
         # caliberdrug multiword replace
         for row, words in enumerate(self.multiwords_dict.words.values):
@@ -154,14 +164,13 @@ class DosageExtractor:
                 replacement = " "
             new_text = re.sub(pattern, replacement, processed_text)
             if new_text != processed_text:
-                print(f"MATCHED multiwords: {words}")
-                print(f"phrase updated to: {new_text}")
+                log.debug(f"MATCHED multiwords: {words}")
+                log.debug(f"phrase updated to: {new_text}")
             processed_text = new_text
-        print("After multiword replace: ", processed_text)
 
         # final numbers replace
         processed_text = numbers_replace(processed_text)
-        print("Final text: ", processed_text)
+        log.debug(f"Final preprocessed text: {processed_text}")
 
         return processed_text
 
@@ -197,10 +206,10 @@ class DosageExtractor:
             if units[0] == units[1]:
                 quantity_dosage.unit = units[0]
             else:
-                print("dose units don't match")
+                log.warning(f"Dose units don't match: {units}")
                 quantity_dosage.unit = units[-1]
         else:
-            print("quantities not 1 or 2")
+            log.warning(f"Quantities length is not 1 or 2: {quantities}")
             # use caliber results as backup
             quantity_dosage.quantity = self.caliberdrug_results["qty"]
             quantity_dosage.unit = self.caliberdrug_results["units"]
@@ -225,11 +234,11 @@ class DosageExtractor:
 
         return duration_dosage
 
-    def _process_frequency(self, text) -> Frequency:
+    def _process_frequency(self, text) -> Optional[Frequency]:
         # TODO: extract frequency range
         frequency_dosage = Frequency(text=text)
 
-        if "institution_specified" in self.caliberdrug_results:
+        if self.caliberdrug_results["institution_specified"]:
             frequency_dosage.institution_specified = self.caliberdrug_results["institution_specified"]
 
         if self.caliberdrug_results["freq"] is not None and self.caliberdrug_results["time"] is not None:
@@ -244,6 +253,9 @@ class DosageExtractor:
 
         if "when needed" in text:
             frequency_dosage.precondition_asrequired = True
+
+        if frequency_dosage.value is None and not frequency_dosage.precondition_asrequired:
+            return None
 
         return frequency_dosage
 
@@ -293,8 +305,7 @@ class DosageExtractor:
                                                  quantities,
                                                  units)
 
-        if self.caliberdrug_results["freq"] is not None:
-            dosage_dict["frequency"] = self._process_frequency(full_text)
+        dosage_dict["frequency"] = self._process_frequency(full_text)
 
         if self.caliberdrug_results["duration"] is not None:
             dosage_dict["duration"] = self._process_duration(duration_text)
@@ -307,12 +318,12 @@ class DosageExtractor:
                    "qty": None,
                    "units": None,
                    "duration": None,
-                   "institution_specified": None}
+                   "institution_specified": False}
 
         for pattern in self.patterns_dict.index:
             match = re.search(pattern, text)
             if match:
-                print("matched pattern: ", pattern)
+                log.debug(f"Matched pattern: {pattern}")
                 match_table = self.patterns_dict.loc[pattern].dropna()
                 for key in results.keys():
                     if key in match_table.index and match_table.loc[key] != results[key]:
@@ -323,7 +334,7 @@ class DosageExtractor:
                             results[key] = float(results[key])
                         elif key in ["freq", "duration"]:
                             results[key] = int(results[key])
-        print(results)
+        log.info(f"Pattern match results: {results}")
         return results
 
     def extract(self, note: Note, drug: Concept) -> MedicationActivity:
@@ -331,7 +342,7 @@ class DosageExtractor:
         text = self._preprocess(note.text)
         doc = self.med7(text)
         for e in doc.ents:
-            print((e.text, e.start_char, e.end_char, e.label_))
+            log.info(f"(Text: {e.text}, Label: {e.label_})")
 
         dosage_dict = self._parse_dosage_info(doc.ents, text)
         result = MedicationActivity(text=note.text, drug=drug, **dosage_dict)
