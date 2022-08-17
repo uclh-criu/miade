@@ -1,62 +1,62 @@
 words,qty,units,freq,time,duration,institution_specified
- start ([\d\.]+) ,\1,,,,,
- start (?:[\d\.]+) days ,0,,,,,
- (?:[\d\.]+) [A-Za-z]+ ([\d\.]+) times ,,,\1,,,TRUE
- ([\d\.]+) [A-Za-z]+ ([\d\.]+) times day ,\1,,\2,1,,TRUE
- start ([\d\.]+) [A-Za-z]+ ([\d\.]+) times day ,\1,,\2,1,,TRUE
- start ([\d\.]+) [A-Za-z]+ upto ([\d\.]+) times ,\1,,\2,,,TRUE
- start ([\d\.]+) day ,\1,,1,1,,
- every day ,,,1,1,,
- every afternoon ,,,1,1,,
- every midday ,,,1,1,,
- every morning ,,,1,1,,
- every evening ,,,1,1,,
- every night ,,,1,1,,
- every 2 month ,,,1,60,,
- every 3 month ,,,1,90,,
- every 6 month ,,,1,180,,
- every 1 hours ,,,1,0.0416666667,,
- every 2 hours ,,,1,0.0833333333,,
- every 2.5 hours ,,,1,0.1041666667,,
- every 3 hours ,,,1,0.125,,
- every 3.5 hours ,,,1,0.1458333333,,
- every 4 hours ,,,1,0.1666666667,,
- every 5 hours ,,,1,0.2083333333,,
- every 6 hours ,,,1,0.25,,
- every 8 hours ,,,1,0.3333333333,,
- every 12 hours ,,,1,0.5,,
- every ([\d\.]+) days ,,,1,\1,,
- ([\d\.]+) day ,\1,,,,,
- ([\d\.]+) every (?:[\d\.]+) hours ,\1,,,,,
- changeto 0 for ([\d\.]+) days ,,,1,1,\1,
- stat ,,,,,1,
- ([\d\.]+) every day ,\1,,1,1,,TRUE
- ([\d\.]+) times every ,,,\1,,,
- for ([\d\.]+) days ,,,,,\1,
- start ([\d\.]+) times day ,0,,\1,1,,TRUE
- ([\d\.]+) ([\d\.]+) times ,\1,,\2,,,TRUE
- start ([\d\.]+) every day ,\1,,1,1,,TRUE
- ([\d\.]+) ([\d\.]+) times day ,\1,,\2,1,,TRUE
- ([\d\.]+) times day ,,,\1,1,,TRUE
- start ([\d\.]+) every ([\d\.]+) days ,\1,,1,\2,,
- start ([\d\.]+) times ,,,\1,,,TRUE
- times ([\d\.]+) day ,,,\1,1,,TRUE
- times ([\d\.]+) week ,,,\1,7,,TRUE
- times ([\d\.]+) every day ,,,\1,1,,TRUE
- ([\d\.]+) ([\d\.]+) times every ,\1,,\2,,,TRUE
- start to ([\d\.]+) every ,\1,,,,,
- ([\d\.]+) in 24 hours ,,,\1,1,,TRUE
- start (?:[\d\.]+) in ([\d\.]+) days ,,,,\1,,
- ([\d\.]+) (nostril|ear|eye|instill|inh|neb|pv|pre|puff|spray|drops|suppos|sachet|blister|amp|pill|cap|tab|fiveml|unit|ml|mgperkg|mgpersqm|mg|gram|mcg|applicatorful) ,\1,\2,,,,
- start ([\d\.]+) tab every day ,,tab,,1,,TRUE
- start ([\d\.]+) tab day ,,tab,,1,,TRUE
- ([\d\.]+) tab ([\d\.]+) times ,\1,tab,\2,,,TRUE
- ([\d\.]+) times fiveml ([\d\.]+) times day ,\1,fiveml,\2,1,,TRUE
- ([\d\.]+) drops ([\d\.]+) times day ,\1,drops,\2,1,,TRUE
- ([\d\.]+) times fiveml ,\1,fiveml,,,,TRUE
- puff day ,,puff,1,1,,TRUE
- tab day ,,tab,1,1,,TRUE
- ([\d\.]+) ml day ,\1,ml,1,1,,TRUE
- ([\d\.]+) ml ([\d\.]+) times day ,\1,ml,\2,1,,TRUE
- ([\d\.]+) tab ([\d\.]+) times day ,\1,tab,\2,1,,TRUE
- ([\d\.]+) ([\d\.]+) ml every ,\2,ml,\1,,,
+ start ([\d\.]+) ,\1,None,None,None,None,FALSE
+ start (?:[\d\.]+) days ,0,None,None,None,None,FALSE
+ (?:[\d\.]+) [A-Za-z]+ ([\d\.]+) times ,None,None,\1,None,None,TRUE
+ ([\d\.]+) [A-Za-z]+ ([\d\.]+) times day ,\1,None,\2,1,None,TRUE
+ start ([\d\.]+) [A-Za-z]+ ([\d\.]+) times day ,\1,None,\2,1,None,TRUE
+ start ([\d\.]+) [A-Za-z]+ upto ([\d\.]+) times ,\1,None,\2,None,None,TRUE
+ start ([\d\.]+) day ,\1,None,1,1,None,FALSE
+ every day ,None,None,1,1,None,FALSE
+ every afternoon ,None,None,1,1,None,FALSE
+ every midday ,None,None,1,1,None,FALSE
+ every morning ,None,None,1,1,None,FALSE
+ every evening ,None,None,1,1,None,FALSE
+ every night ,None,None,1,1,None,FALSE
+ every 2 month ,None,None,1,60,None,FALSE
+ every 3 month ,None,None,1,90,None,FALSE
+ every 6 month ,None,None,1,180,None,FALSE
+ every 1 hours ,None,None,1,0.0416666667,None,FALSE
+ every 2 hours ,None,None,1,0.0833333333,None,FALSE
+ every 2.5 hours ,None,None,1,0.1041666667,None,FALSE
+ every 3 hours ,None,None,1,0.125,None,FALSE
+ every 3.5 hours ,None,None,1,0.1458333333,None,FALSE
+ every 4 hours ,None,None,1,0.1666666667,None,FALSE
+ every 5 hours ,None,None,1,0.2083333333,None,FALSE
+ every 6 hours ,None,None,1,0.25,None,FALSE
+ every 8 hours ,None,None,1,0.3333333333,None,FALSE
+ every 12 hours ,None,None,1,0.5,None,FALSE
+ every ([\d\.]+) days ,None,None,1,\1,None,FALSE
+ ([\d\.]+) day ,\1,None,None,None,None,FALSE
+ ([\d\.]+) every (?:[\d\.]+) hours ,\1,None,None,None,None,FALSE
+ changeto 0 for ([\d\.]+) days ,None,None,1,1,\1,FALSE
+ stat ,None,None,,None,1,FALSE
+ ([\d\.]+) every day ,\1,None,1,1,None,TRUE
+ ([\d\.]+) times every ,None,None,\1,None,None,FALSE
+ for ([\d\.]+) days ,None,None,None,None,\1,FALSE
+ start ([\d\.]+) times day ,0,None,\1,1,None,TRUE
+ ([\d\.]+) ([\d\.]+) times ,\1,None,\2,None,None,TRUE
+ start ([\d\.]+) every day ,\1,None,1,1,None,TRUE
+ ([\d\.]+) ([\d\.]+) times day ,\1,None,\2,1,None,TRUE
+ ([\d\.]+) times day ,None,None,\1,1,None,TRUE
+ start ([\d\.]+) every ([\d\.]+) days ,\1,None,1,\2,None,FALSE
+ start ([\d\.]+) times ,None,None,\1,None,None,TRUE
+ times ([\d\.]+) day ,None,None,\1,1,None,TRUE
+ times ([\d\.]+) week ,None,None,\1,7,None,TRUE
+ times ([\d\.]+) every day ,None,None,\1,1,None,TRUE
+ ([\d\.]+) ([\d\.]+) times every ,\1,None,\2,None,None,TRUE
+ start to ([\d\.]+) every ,\1,None,None,None,None,FALSE
+ ([\d\.]+) in 24 hours ,None,None,\1,1,None,TRUE
+ start (?:[\d\.]+) in ([\d\.]+) days ,None,None,None,\1,None,FALSE
+ ([\d\.]+) (nostril|ear|eye|instill|inh|neb|pv|pre|puff|spray|drops|suppos|sachet|blister|amp|pill|cap|tab|fiveml|unit|ml|mgperkg|mgpersqm|mg|gram|mcg|applicatorful) ,\1,\2,None,None,None,
+ start ([\d\.]+) tab every day ,None,tab,None,1,None,TRUE
+ start ([\d\.]+) tab day ,None,tab,None,1,None,TRUE
+ ([\d\.]+) tab ([\d\.]+) times ,\1,tab,\2,None,None,TRUE
+ ([\d\.]+) times fiveml ([\d\.]+) times day ,\1,fiveml,\2,1,None,TRUE
+ ([\d\.]+) drops ([\d\.]+) times day ,\1,drops,\2,1,None,TRUE
+ ([\d\.]+) times fiveml ,\1,fiveml,None,None,None,TRUE
+ puff day ,None,puff,1,1,None,TRUE
+ tab day ,None,tab,1,1,None,TRUE
+ ([\d\.]+) ml day ,\1,ml,1,1,None,TRUE
+ ([\d\.]+) ml ([\d\.]+) times day ,\1,ml,\2,1,None,TRUE
+ ([\d\.]+) tab ([\d\.]+) times day ,\1,tab,\2,1,None,TRUE
+ ([\d\.]+) ([\d\.]+) ml every ,\2,ml,\1,None,None,FALSE
