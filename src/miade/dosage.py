@@ -247,7 +247,7 @@ class Dosage:
                                     results=doc._.results)
 
         # if duration not given in text could extract this from total dose if given
-        if dose is not None and frequency is not None:
+        if total_dose is not None and dose is not None and doc._.results["freq"]:
             if dose.quantity is not None:
                 daily_dose = float(dose.quantity) * (round(doc._.results["freq"] / doc._.results["time"]))
             elif dose.high is not None:

@@ -1,7 +1,7 @@
 import pytest
 import math
 
-from devtools import debug
+# from devtools import debug
 
 from miade.dosageprocessor import DosageProcessor
 
@@ -10,17 +10,17 @@ def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
 
     notes = test_miade_doses[0]
     doses = test_miade_doses[1]
+    dosage_processor = DosageProcessor()
 
     for ind, note in enumerate(notes):
-        print("==================================================================================")
-        print("drug concept: ", test_miade_med_concepts[ind])
-        print("dose string: ", note)
-        print("==================================================================================")
-
-        dosage_processor = DosageProcessor()
         dosage = dosage_processor.process(note.text)
 
-        debug(dosage.__dict__)
+        # print("==================================================================================")
+        # print("drug concept: ", test_miade_med_concepts[ind])
+        # print("dose string: ", note)
+        # print("==================================================================================")
+
+        # debug(dosage.__dict__)
 
         if math.isnan(doses.dosequantity.values[ind]):
             assert dosage.dose.quantity is None

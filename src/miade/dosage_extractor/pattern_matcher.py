@@ -6,12 +6,11 @@ import spacy
 import pandas as pd
 
 from typing import Dict
-from math import isnan
+from pandas import isnull
 
 from spacy.language import Language
 from spacy.tokens import Doc
 from spacy.tokens import Span
-
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +32,7 @@ class PatternMatcher:
     """
     Rule-based entity tagging and dosage lookup with data from CALIBERdrugdose
     """
+
     def __init__(self, nlp: Language, patterns: Dict):
         self.patterns_dict = patterns
         # an extension attribute to store whether dose refers to total dose
@@ -78,7 +78,7 @@ class PatternMatcher:
                 #     dose_span.label_ = "DOSAGE"
                 #     new_entities.append(dose_span)
                 for key, value in doc._.results.items():
-                    if dosage[key] != "None" and dosage[key] != value:
+                    if not isnull(dosage[key]) and dosage[key] != value:
                         if isinstance(dosage[key], str) and "\\" in dosage[key]:
                             doc._.results[key] = match.group(int(dosage[key][-1]))
                         else:

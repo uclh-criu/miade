@@ -1,8 +1,6 @@
 import spacy
 import logging
 
-from .note import Note
-from .concept import Concept, Category
 from .dosage import Dosage
 from .dosage_extractor.preprocessor import Preprocessor
 from .dosage_extractor.pattern_matcher import PatternMatcher

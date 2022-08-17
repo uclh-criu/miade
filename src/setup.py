@@ -17,7 +17,8 @@ setup(
         "pandas",
         "typer==0.3.2",
         "click==7.1.2",
-        "pathlib"
+        "pathlib",
+        "pydantic"
     ],
     scripts=["scripts/miade"],
 )
