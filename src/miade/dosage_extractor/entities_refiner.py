@@ -9,6 +9,8 @@ log = logging.getLogger(__name__)
 
 @Language.component("entities_refiner")
 def EntitiesRefiner(doc):
+    """Refines NER results"""
+
     new_ents = []
     for ind, ent in enumerate(doc.ents):
         # combine consecutive labels with the same tag

@@ -7,21 +7,25 @@ from typing import Dict, List
 log = logging.getLogger(__name__)
 
 
-def word_replace(word: str, dictionary: Dict, processed_text: List):
+def word_replace(word: str, dictionary: Dict[str, str], processed_text: List[str]):
+    """Replaces words with entries from CALIBERdrugdose singleword dict"""
+
     replacement = dictionary.get(word, None)
     if isinstance(replacement, str):
         # replace with dict entry
         processed_text.append(replacement)
+        log.debug(f"Replaced word '{word}' with '{replacement}'")
     elif replacement is None and not word.replace('.', '', 1).isdigit():
         # 25mg to 25 mg
         word = re.sub(r"(\d+)([a-z]+)", r"\1 \2", word)
+        # split further if e.g. 2-5
         for subword in re.findall(r"[\w']+|[.,!?;*&@>#/-]", word):
             replacement = dictionary.get(subword, None)
             if isinstance(replacement, str):
                 processed_text.append(replacement)
-                log.debug(f"Replaced word '{subword} with {replacement}")
+                log.debug(f"Replaced word '{subword}' with '{replacement}'")
             elif replacement is None and not subword.replace('.', '', 1).isdigit():
-                log.debug(f"Removed word '{subword} - unmatched in singlewords dict")
+                log.debug(f"Removed word '{subword}', not in singleword dict")
             else:
                 processed_text.append(subword)
     else:
@@ -68,6 +72,7 @@ def numbers_replace(text):
     text = re.sub(r" days (\d+) (to|-) day (\d+) ",
                   lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))), text)
     # X times day to X times day
+    # TODO: frequency ranges
     text = re.sub(r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
                   lambda m: " every {:g} hours +-{:g} ".format(
                       (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,

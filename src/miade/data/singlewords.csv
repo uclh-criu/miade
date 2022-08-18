@@ -1,7 +1,7 @@
 words,replacement
--,-
-.,.
-",",","
+-,NA
+.,NA
+",",NA
 0,NA
 :,NA
 (,NA
@@ -526,3 +526,5 @@ yearly,NA
 your,your
 oral,NA
 orally,oral
+injection,NA
+nights,days

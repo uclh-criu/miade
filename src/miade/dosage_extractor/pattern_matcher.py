@@ -30,7 +30,8 @@ def create_pattern_matcher(nlp: Language, name: str, patterns: Dict):
 
 class PatternMatcher:
     """
-    Rule-based entity tagging and dosage lookup with data from CALIBERdrugdose
+    Rule-based entity tagging and dosage pattern lookup with data from CALIBERdrugdose
+    The dosage results are stored in doc._.results
     """
 
     def __init__(self, nlp: Language, patterns: Dict):
@@ -52,7 +53,8 @@ class PatternMatcher:
         dose_string = doc.text
 
         # rule-based matching based on structure of dosage - HIE medication e.g. take 2 every day, 24 tablets
-        for match in re.finditer(r"(?P<dose_string>start [\w\s,-]+ ), (?P<total_dose>\d+) (?P<unit>\D+)?", doc.text):
+        expression = r"(?P<dose_string>start [\w\s,-]+ ), (?P<total_dose>\d+) (?P<unit>[a-z]+ )?$"
+        for match in re.finditer(expression, dose_string):
             dose_string = match.group("dose_string")  # remove total dose component for lookup
             start, end = match.span("total_dose")
             total_dose_span = doc.char_span(start, end, alignment_mode="contract")
@@ -71,7 +73,6 @@ class PatternMatcher:
         # lookup patterns from CALIBERdrugdose - returns dosage results in doc._.results attribute
         for pattern, dosage in self.patterns_dict.items():
             for match in re.finditer(pattern, dose_string):
-                log.debug(f"Matched lookup pattern: {pattern}, updating results")
                 # if {k: v for k, v in dosage.items() if v is not "None" or v is not False}.keys() == ["qty"]:
                 #     start, end = match.span()
                 #     dose_span = doc.char_span(start, end, alignment_mode="contract")
@@ -79,6 +80,8 @@ class PatternMatcher:
                 #     new_entities.append(dose_span)
                 for key, value in doc._.results.items():
                     if not isnull(dosage[key]) and dosage[key] != value:
+                        log.debug(f"Matched lookup pattern: '{pattern}' at {match.span()}, "
+                                  f"updating {key} results to {dosage[key]}")
                         if isinstance(dosage[key], str) and "\\" in dosage[key]:
                             doc._.results[key] = match.group(int(dosage[key][-1]))
                         else:

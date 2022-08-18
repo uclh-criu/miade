@@ -6,9 +6,7 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel
 from spacy.tokens import Doc
 
-
 log = logging.getLogger(__name__)
-
 
 route_codes = {"Inhalation": "C38216",
                "Oral": "C38288",
@@ -56,12 +54,19 @@ class Frequency(BaseModel):
 
 class Route(BaseModel):
     # NCI thesaurus code
-    source: str
+    source: Optional[str] = None
     displayName: Optional[str] = None
     code: Optional[str] = None
 
 
 def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict) -> Optional[Dose]:
+    """
+    :param text: (str) string containing dose
+    :param quantities: (list) list of quantity entities NER
+    :param units: (list) list of unit entities from NER
+    :param results: (dict) dosage lookup results
+    :return: dose: (Dose) pydantic model containing dose in CDA format; returns None if inconclusive
+    """
 
     quantity_dosage = Dose(source=text)
 
@@ -79,6 +84,8 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
             elif m2:
                 quantity_dosage.quantity = m2.group(1)
                 quantity_dosage.unit = m2.group(2)
+            else:
+                return None
     elif len(quantities) == 1 and len(units) == 1:
         m = re.search(r"([\d.]+) - ([\d.]+)", quantities[0])
         if m:
@@ -97,11 +104,16 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
             log.warning(f"Dose units don't match: {units}")
             quantity_dosage.unit = units[-1]
     else:
-        log.warning(f"Quantities length is not 1 or 2: {quantities}")
         # use caliber results as backup
-        if results["qty"] is not None:
-            quantity_dosage.quantity = results["qty"]
+        if results["units"] is not None:
+            log.debug(f"Inconclusive dose entities {quantities}, "
+                      f"using lookup results {results['qty'] or 1} {results['units']}")
             quantity_dosage.unit = results["units"]
+            #  only autofill 1 if non-quantitative units e.g. tab, cap, puff
+            if results["qty"] is None and quantity_dosage.unit not in ["mg", "gram", "mcg", "ml", "ng"]:
+                quantity_dosage.quantity = 1
+            else:
+                quantity_dosage.quantity = results["qty"]
             quantity_dosage.source = "lookup"
         else:
             return None
@@ -116,6 +128,12 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
 
 
 def parse_frequency(text: str, results: Dict) -> Optional[Frequency]:
+    """
+    :param text: (str) processed text which the lookup is performed on
+    :param results: (dict) dosage lookup results
+    :return: dose: (Frequency) pydantic model containing frequency in CDA format; returns None if inconclusive
+    """
+
     # TODO: extract frequency range
     frequency_dosage = Frequency(source=text)
 
@@ -145,18 +163,24 @@ def parse_duration(text: str,
                    results: Dict,
                    total_dose: Optional[float],
                    daily_dose: Optional[float]) -> Optional[Duration]:
-
-    if results["duration"] is None and (total_dose is None or daily_dose is None):
-        return None
+    """
+    :param text: (str) string containing duration
+    :param results: (dict) dosage lookup results
+    :param total_dose: (float) total dose of the medication if extracted
+    :param daily_dose: (float) total dose of the medication in a day if extracted
+    :return: dose: (Duration) pydantic model containing duration in CDA format; returns None if inconclusive
+    """
 
     duration_dosage = Duration(source=text)
 
     # only calculate if there is a total dose but no duration results
-    if results["duration"]:
+    if results["duration"] is not None:
         duration_dosage.value = results["duration"]
-    else:
+    elif total_dose is not None and daily_dose is not None:
         duration_dosage.value = total_dose / daily_dose
         duration_dosage.source = "calculated"
+    else:
+        return None
 
     # convert all time units to days
     duration_dosage.low = datetime.today()
@@ -166,25 +190,42 @@ def parse_duration(text: str,
     return duration_dosage
 
 
-def parse_route(text: str) -> Optional[Route]:
-    if text is None:
-        return None
-
+def parse_route(text: str, dose: Optional[Dose]) -> Optional[Route]:
+    """
+    :param text: (str) string containing route
+    :param dose: (Dose) dose object
+    :return: (Route) pydantic model containing route in CDA format; returns None if inconclusive
+    """
     # prioritise oral and inhalation
     route_dosage = Route(source=text)
 
-    if "mouth" in text:
-        route_dosage.displayName = "Oral"
-        route_dosage.code = route_codes["Oral"]
-    elif "inhalation" in text:
-        route_dosage.displayName = "Inhalation"
-        route_dosage.code = route_codes["Inhalation"]
+    if text is not None:
+        if "mouth" in text:
+            route_dosage.displayName = "Oral"
+            route_dosage.code = route_codes["Oral"]
+        elif "inhalation" in text:
+            route_dosage.displayName = "Inhalation"
+            route_dosage.code = route_codes["Inhalation"]
+    # could infer some route information from units?
+    elif dose is not None and dose.unit is not None:
+        if dose.unit == "{puff}":
+            route_dosage.displayName = "Inhalation"
+            route_dosage.code = route_codes["Inhalation"]
+            route_dosage.source = "inferred from unit"
+        else:
+            return None
+    else:
+        return None
 
     # TODO: add other routes
     return route_dosage
 
 
 class Dosage:
+    """
+    Container for drug dosage information
+    """
+
     def __init__(self,
                  text: str,
                  dose: Optional[Dose],
@@ -198,8 +239,13 @@ class Dosage:
         self.route = route
 
     @classmethod
-    def from_doc(cls, doc: Doc):
-        """parses from a spacy doc object"""
+    def from_doc(cls, doc: Doc, calculate: bool = True):
+        """
+        Parses dosage from a spacy doc object
+        :param doc: (Doc) spacy doc object with processed dosage text
+        :param calculate: (bool) whether to calculate duration if total and daily dose is given
+        :return:
+        """
 
         quantities = []
         units = []
@@ -236,8 +282,6 @@ class Dosage:
             elif ent.label_ == "ROUTE":
                 route_text = ent.text
 
-        route = parse_route(text=route_text)
-
         dose = parse_dose(text=" ".join(doc.text.split()[dose_start:dose_end]),
                           quantities=quantities,
                           units=units,
@@ -246,12 +290,17 @@ class Dosage:
         frequency = parse_frequency(text=doc.text,
                                     results=doc._.results)
 
-        # if duration not given in text could extract this from total dose if given
-        if total_dose is not None and dose is not None and doc._.results["freq"]:
-            if dose.quantity is not None:
-                daily_dose = float(dose.quantity) * (round(doc._.results["freq"] / doc._.results["time"]))
-            elif dose.high is not None:
-                daily_dose = float(dose.high) * (round(doc._.results["freq"] / doc._.results["time"]))
+        route = parse_route(text=route_text,
+                            dose=dose)
+
+        # technically not information recorded so will keep as an option
+        if calculate:
+            # if duration not given in text could extract this from total dose if given
+            if total_dose is not None and dose is not None and doc._.results["freq"]:
+                if dose.quantity is not None:
+                    daily_dose = float(dose.quantity) * (round(doc._.results["freq"] / doc._.results["time"]))
+                elif dose.high is not None:
+                    daily_dose = float(dose.high) * (round(doc._.results["freq"] / doc._.results["time"]))
 
         duration = parse_duration(text=duration_text,
                                   results=doc._.results,
@@ -265,11 +314,7 @@ class Dosage:
                    route=route)
 
     def __str__(self):
-        return (f"{{text: {self.text}, \n"
-                f"dose: {self.dose}, \n"
-                f"frequency: {self.frequency}, \n"
-                f"duration: {self.duration}, \n"
-                f"route: {self.route}}} ")
+        return f"{self.__dict__}"
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

@@ -296,4 +296,6 @@ every day same time every day,every day
 (on weekday|every weekday|weekday),for 5 days changeto 0 0 times day for 2 days
 inh,by inhalation
 oral,by mouth
-to be,
+to be, 
+pre -, 
+when necessary,when needed
