@@ -45,7 +45,7 @@ class DosageProcessor:
         doc = self.dosage_extractor(text)
 
         log.debug(f"med7 results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}")
-        log.info(f"Parsing dosage information from results: {doc._.results}")
+        log.debug(f"Lookup results: {doc._.results}")
 
         dosage = Dosage.from_doc(doc=doc, calculate=calculate)
 
