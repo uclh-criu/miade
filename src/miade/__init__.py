@@ -12,5 +12,5 @@ __all__ = [
 ]
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
 add_handlers(log)

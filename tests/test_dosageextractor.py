@@ -6,6 +6,7 @@ from miade.dosageprocessor import DosageProcessor
 
 
 def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
+    # TODO: add unit tests
 
     notes = test_miade_doses[0]
     doses = test_miade_doses[1]
@@ -13,13 +14,6 @@ def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
 
     for ind, note in enumerate(notes):
         dosage = dosage_processor.process(note.text)
-
-        # print("==================================================================================")
-        # print("drug concept: ", test_miade_med_concepts[ind])
-        # print("dose string: ", note)
-        # print("==================================================================================")
-
-        # debug(dosage.__dict__)
 
         if isnull(doses.dosequantity.values[ind]):
             assert dosage.dose is None or dosage.dose.quantity is None

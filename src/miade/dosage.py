@@ -107,7 +107,7 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
         # use caliber results as backup
         if results["units"] is not None:
             log.debug(f"Inconclusive dose entities {quantities}, "
-                      f"using lookup results {results['qty'] or 1} {results['units']}")
+                      f"using lookup results {results['qty']} {results['units']}")
             quantity_dosage.unit = results["units"]
             #  only autofill 1 if non-quantitative units e.g. tab, cap, puff
             if results["qty"] is None and quantity_dosage.unit not in ["mg", "gram", "mcg", "ml", "ng"]:
