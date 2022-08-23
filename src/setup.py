@@ -6,7 +6,7 @@ setup(
     description="",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"miade": ["configs/*.yml"]},
+    package_data={"miade": ["data/*.csv", "configs/*.yml"]},
     setup_requires=[
         "wheel",
     ],
@@ -14,8 +14,11 @@ setup(
         "medcat==1.2.8",
         "spacy==3.1.0",
         "typing==3.7.4.3",
-        "typer",
+        "pandas",
+        "typer==0.3.2",
+        "click==7.1.2",
         "pathlib",
+        "pydantic"
     ],
     scripts=["scripts/miade"],
 )

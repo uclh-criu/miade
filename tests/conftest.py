@@ -1,9 +1,11 @@
 import pytest
+import pandas as pd
 
 from typing import List
 from pathlib import Path
 
 from miade.note import Note
+from miade.concept import Concept, Category
 
 
 @pytest.fixture(scope="function")
@@ -62,3 +64,26 @@ def cdb_csv_paths() -> List[Path]:
         Path("./tests/data/preprocessed_fdb.csv"),
         Path("./tests/data/preprocessed_elg.csv"),
     ]
+
+
+@pytest.fixture(scope="function")
+def test_med_note() -> Note:
+    return Note(text="75 mcg po 3 times a day as needed for three days .")
+
+
+@pytest.fixture(scope="function")
+def test_med_concept() -> Concept:
+    return Concept(id="387337001", name="Magnesium hydroxide", category=Category.MEDICATION)
+
+
+@pytest.fixture(scope="function")
+def test_miade_doses() -> (List[Note], pd.DataFrame):
+    print(Path.cwd())
+    extracted_doses = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
+
+
+@pytest.fixture(scope="function")
+def test_miade_med_concepts() -> List[Concept]:
+    data = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]

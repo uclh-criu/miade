@@ -7,7 +7,7 @@ from medcat.config import Config
 from medcat.utils.make_vocab import MakeVocab
 
 
-class VocabBuilder(object):
+class VocabBuilder:
     """Builds vocab corpus"""
 
     def __init__(self, vocab_path: Optional[Path] = None):

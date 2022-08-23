@@ -35,7 +35,8 @@ venv.bak/
 *.dat
 *.csv
 *.zip
-model_builders/output/
+src/miade/model_builders/output/
+!src/miade/data/*
 
 #testing
 tests/data/
