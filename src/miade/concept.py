@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Optional
 
+from .dosage import Dosage
+
 
 class Category(Enum):
     DIAGNOSIS = 1
@@ -18,7 +20,7 @@ class Concept(object):
         category: Category,
         start: Optional[int] = None,
         end: Optional[int] = None,
-        dosage: Optional = None,  # sub in classes later
+        dosage: Optional[Dosage] = None,
         meta: Optional = None
     ):
 
