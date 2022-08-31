@@ -2,6 +2,7 @@ import spacy
 import logging
 
 from spacy import Language
+from typing import Optional
 
 from .dosage import Dosage
 from .dosage_extractor.preprocessor import Preprocessor
@@ -33,7 +34,7 @@ class DosageProcessor:
 
         return nlp
 
-    def process(self, text: str, calculate: bool = True) -> Dosage:
+    def process(self, text: str, calculate: bool = True) -> Optional[Dosage]:
         """
         Processes a string that contains dosage instructions (excluding drug concept as this is handled by core)
         :param text: (str) string containing dosage
@@ -48,5 +49,8 @@ class DosageProcessor:
         log.info(f"Parsing dosage from lookup results: {doc._.results}")
 
         dosage = Dosage.from_doc(doc=doc, calculate=calculate)
+
+        if all(v is None for v in [dosage.dose, dosage.frequency, dosage.route, dosage.duration]):
+            return None
 
         return dosage
