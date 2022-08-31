@@ -45,7 +45,7 @@ class NoteProcessor:
                 # print(entity)
                 if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
-                elif entity["ontologies"] == ["SNOMED-CT"]:
+                elif entity["ontologies"] == ["SNO"]:
                     category = Category.DIAGNOSIS
                 elif entity["ontologies"] == ["ELG"]:
                     category = Category.ALLERGY
