@@ -11,7 +11,6 @@ from spacy.tokens import Doc
 
 from .utils import word_replace, numbers_replace
 
-
 log = logging.getLogger(__name__)
 
 
@@ -59,6 +58,11 @@ class Preprocessor:
 
         # numbers replace 1
         processed_text = "start {} ".format(" ".join(processed_text))
+
+        # remove numbers relating to strength of med e.g. aspirin 200mg tablets...
+        processed_text = re.sub(r" (\d+\.?\d*) (mg|ml|g|mcg|microgram|gram|%)"
+                                r"(\s|/)(tab|cap|gel|cream|dose|pessaries)", "",
+                                processed_text)
         processed_text = numbers_replace(processed_text)
 
         # multiword replacement

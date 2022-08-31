@@ -26,10 +26,10 @@ ucum = {"tab": "{tbl}",
 
 class Dose(BaseModel):
     source: Optional[str] = None
-    quantity: Optional[int] = None
+    quantity: Optional[float] = None
     unit: Optional[str] = None  # ucum
-    low: Optional[int] = None
-    high: Optional[int] = None
+    low: Optional[float] = None
+    high: Optional[float] = None
 
 
 class Duration(BaseModel):
@@ -72,32 +72,39 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
 
     if len(quantities) == 1 and len(units) == 0:
         if quantities[0].replace('.', '', 1).isdigit():
-            quantity_dosage.quantity = quantities[0]
+            quantity_dosage.quantity = float(quantities[0])
         else:
             # match single unit or range e.g. 3 - 4 units
             m1 = re.search(r"([\d.]+) - ([\d.]+) ([a-z]+)", quantities[0])
             m2 = re.search(r"([\d.]+) ([a-z]+)", quantities[0])
             if m1:
-                quantity_dosage.low = m1.group(1)
-                quantity_dosage.high = m1.group(2)
+                quantity_dosage.low = float(m1.group(1))
+                quantity_dosage.high = float(m1.group(2))
                 quantity_dosage.unit = m1.group(3)
             elif m2:
-                quantity_dosage.quantity = m2.group(1)
+                quantity_dosage.quantity = float(m2.group(1))
                 quantity_dosage.unit = m2.group(2)
             else:
                 return None
     elif len(quantities) == 1 and len(units) == 1:
         m = re.search(r"([\d.]+) - ([\d.]+)", quantities[0])
         if m:
-            quantity_dosage.low = m.group(1)
-            quantity_dosage.high = m.group(2)
+            quantity_dosage.low = float(m.group(1))
+            quantity_dosage.high = float(m.group(2))
         else:
-            quantity_dosage.quantity = quantities[0]
+            try:
+                quantity_dosage.quantity = float(quantities[0])
+            except:
+                quantity_dosage.quantity = float(re.sub(r"[^\d.]+", "", quantities[0]))
         quantity_dosage.unit = units[0]
     elif len(quantities) == 2 and len(units) == 2:
         quantities.sort()
-        quantity_dosage.low = quantities[0]
-        quantity_dosage.high = quantities[1]
+        try:
+            quantity_dosage.low = float(quantities[0])
+            quantity_dosage.high = float(quantities[1])
+        except:
+            quantity_dosage.low = float(re.sub(r"[^\d.]+", "", quantities[0]))
+            quantity_dosage.high = float(re.sub(r"[^\d.]+", "", quantities[1]))
         if units[0] == units[1]:
             quantity_dosage.unit = units[0]
         else:
@@ -114,6 +121,8 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
                 quantity_dosage.quantity = 1
             else:
                 quantity_dosage.quantity = results["qty"]
+                if quantity_dosage.quantity is not None:
+                    quantity_dosage.quantity = float(quantity_dosage.quantity)
             quantity_dosage.source = "lookup"
         else:
             return None
