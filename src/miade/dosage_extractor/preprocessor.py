@@ -17,7 +17,9 @@ log = logging.getLogger(__name__)
 @spacy.registry.misc("singleword_lookup_dict.v1")
 def create_singleword_dict():
     singlewords_data = pkgutil.get_data(__name__, "../data/singlewords.csv")
-    singlewords_dict = pd.read_csv(io.BytesIO(singlewords_data), index_col=0, squeeze=True).to_dict()
+    singlewords_dict = pd.read_csv(
+        io.BytesIO(singlewords_data), index_col=0, squeeze=True
+    ).to_dict()
 
     return singlewords_dict
 
@@ -25,13 +27,20 @@ def create_singleword_dict():
 @spacy.registry.misc("multiword_lookup_dict.v1")
 def create_multiword_dict():
     multiwords_data = pkgutil.get_data(__name__, "../data/multiwords.csv")
-    multiwords_dict = pd.read_csv(io.BytesIO(multiwords_data), index_col=0, squeeze=True).to_dict()
+    multiwords_dict = pd.read_csv(
+        io.BytesIO(multiwords_data), index_col=0, squeeze=True
+    ).to_dict()
 
     return multiwords_dict
 
 
-@Language.factory("preprocessor", default_config={"singleword": {"@misc": "singleword_lookup_dict.v1"},
-                                                  "multiword": {"@misc": "multiword_lookup_dict.v1"}})
+@Language.factory(
+    "preprocessor",
+    default_config={
+        "singleword": {"@misc": "singleword_lookup_dict.v1"},
+        "multiword": {"@misc": "multiword_lookup_dict.v1"},
+    },
+)
 def create_preprocessor(nlp: Language, name: str, singleword: Dict, multiword: Dict):
     return Preprocessor(nlp, singleword, multiword)
 
@@ -41,6 +50,7 @@ class Preprocessor:
     Preprocessing steps to standardise text based on CALIBERdrugdose algorithm
     using singlrword and multiword lookup dicts
     """
+
     def __init__(self, nlp: Language, singleword: Dict, multiword: Dict):
         self.spellcheck_dict = singleword
         self.standardize_dict = multiword
@@ -60,9 +70,12 @@ class Preprocessor:
         processed_text = "start {} ".format(" ".join(processed_text))
 
         # remove numbers relating to strength of med e.g. aspirin 200mg tablets...
-        processed_text = re.sub(r" (\d+\.?\d*) (mg|ml|g|mcg|microgram|gram|%)"
-                                r"(\s|/)(tab|cap|gel|cream|dose|pessaries)", "",
-                                processed_text)
+        processed_text = re.sub(
+            r" (\d+\.?\d*) (mg|ml|g|mcg|microgram|gram|%)"
+            r"(\s|/)(tab|cap|gel|cream|dose|pessaries)",
+            "",
+            processed_text,
+        )
         processed_text = numbers_replace(processed_text)
 
         # multiword replacement
@@ -79,7 +92,9 @@ class Preprocessor:
                 if replacement == " ":
                     log.debug(f"Removed multiword match '{words}'")
                 else:
-                    log.debug(f"Replaced multiword match '{words}' with '{replacement}'")
+                    log.debug(
+                        f"Replaced multiword match '{words}' with '{replacement}'"
+                    )
             processed_text = new_text
 
         # numbers replace 2

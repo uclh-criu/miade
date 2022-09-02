@@ -14,7 +14,11 @@ def EntitiesRefiner(doc):
     new_ents = []
     for ind, ent in enumerate(doc.ents):
         # combine consecutive labels with the same tag
-        if (ent.label_ == "DURATION" or ent.label_ == "FREQUENCY" or ent.label_ == "DOSAGE") and ind != 0:
+        if (
+            ent.label_ == "DURATION"
+            or ent.label_ == "FREQUENCY"
+            or ent.label_ == "DOSAGE"
+        ) and ind != 0:
             prev_ent = doc.ents[ind - 1]
             if prev_ent.label_ == ent.label_:
                 new_ent = Span(doc, prev_ent.start, ent.end, label=ent.label)

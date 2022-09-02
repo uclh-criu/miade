@@ -36,6 +36,6 @@ def test_dosage_text_splitter(model_directory_path, test_med_concepts, test_med_
                                                      unit='d',
                                                      low=None,
                                                      high=None,
-                                                     standard_deviation=None,
-                                                     institution_specified=False,
-                                                     precondition_asrequired=False)
+                                                     standardDeviation=None,
+                                                     institutionSpecified=False,
+                                                     preconditionAsRequired=False)

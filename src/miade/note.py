@@ -14,7 +14,7 @@ class Note(object):
         self.sections: Optional[List[NoteSection]] = []
 
     def get_sections(self) -> None:
-        sections = re.split(r'\n(?=[A-Za-z\s]+:)', self.text)
+        sections = re.split(r"\n(?=[A-Za-z\s]+:)", self.text)
         for text in sections:
             heading, body = text.split(":")
             category = None
@@ -25,7 +25,9 @@ class Note(object):
             elif re.match(r"problems?|diagnos(is|ses)", heading.lower()):
                 category = Category.DIAGNOSIS
 
-            self.sections.append(NoteSection(heading=heading, body=body, category=category))
+            self.sections.append(
+                NoteSection(heading=heading, body=body, category=category)
+            )
 
     def __str__(self):
         return self.text

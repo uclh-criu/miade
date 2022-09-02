@@ -17,6 +17,7 @@ class DosageProcessor:
     """
     Parses and extracts drug dosage
     """
+
     def __init__(self, model: str = "en_core_med7_lg"):
         self.model = model
         self.dosage_extractor = self.create_extractor_pipeline()
@@ -45,12 +46,17 @@ class DosageProcessor:
 
         doc = self.dosage_extractor(text)
 
-        log.debug(f"Med7 results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}")
+        log.debug(
+            f"Med7 results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}"
+        )
         log.info(f"Parsing dosage from lookup results: {doc._.results}")
 
         dosage = Dosage.from_doc(doc=doc, calculate=calculate)
 
-        if all(v is None for v in [dosage.dose, dosage.frequency, dosage.route, dosage.duration]):
+        if all(
+            v is None
+            for v in [dosage.dose, dosage.frequency, dosage.route, dosage.duration]
+        ):
             return None
 
         return dosage

@@ -7,7 +7,7 @@ def add_handlers(log):
     if len(log.handlers) == 0:
         formatter = logging.Formatter(fmt="%(asctime)s:%(levelname)s:%(message)s")
 
-        fh = logging.FileHandler('miade.log')
+        fh = logging.FileHandler("miade.log")
         ch = logging.StreamHandler()
 
         ch.setFormatter(formatter)

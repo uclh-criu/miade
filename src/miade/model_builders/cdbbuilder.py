@@ -20,7 +20,9 @@ class CDBBuilder(object):
     def __init__(
         self,
         temp_dir: Path,
-        custom_data_paths: Optional[List[Path]] = None, # THIS DATA MUST BE IN THE PRE-PROCESSED FORMAT: ["cui", "name", "ontologies", "name_status"]
+        custom_data_paths: Optional[
+            List[Path]
+        ] = None,  # THIS DATA MUST BE IN THE PRE-PROCESSED FORMAT: ["cui", "name", "ontologies", "name_status"]
         snomed_data_path: Optional[Path] = None,
         fdb_data_path: Optional[Path] = None,
         elg_data_path: Optional[Path] = None,
@@ -45,7 +47,7 @@ class CDBBuilder(object):
             self.snomed = Snomed(str(snomed_data_path))
         else:
             self.snomed = None
-            
+
         self.maker = CDBMaker(self.config)
 
         self.temp_dir.mkdir()
@@ -94,8 +96,7 @@ class CDBBuilder(object):
     def preprocess_custom(self, output_dir: Path = Path.cwd()) -> Path:
         for path in self.custom_data_paths:
             output_file = output_dir / path.name
-            copy(path,output_file)
-
+            copy(path, output_file)
 
     def preprocess(self):
         self.vocab_files = []
