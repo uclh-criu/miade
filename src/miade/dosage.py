@@ -38,8 +38,8 @@ class Duration(BaseModel):
     source: Optional[str] = None
     value: Optional[int] = None
     unit: Optional[str] = None
-    low: Optional[datetime] = None
-    high: Optional[datetime] = None
+    low: Optional[int] = None
+    high: Optional[int] = None
 
 
 class Frequency(BaseModel):
@@ -203,10 +203,12 @@ def parse_duration(
         return None
 
     # convert all time units to days
-    duration_dosage.low = datetime.today()
-    duration_dosage.high = datetime.today() + timedelta(
+    low = datetime.today()
+    high = datetime.today() + timedelta(
         days=float(duration_dosage.value)
     )
+    duration_dosage.low = low.strftime("%Y%m%d")
+    duration_dosage.high = high.strftime("%Y%m%d")
     duration_dosage.unit = "d"
 
     return duration_dosage

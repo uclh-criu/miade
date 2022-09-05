@@ -9,6 +9,7 @@ from enum import Enum
 from medcat.cat import CAT
 
 from .concept import Concept, Category
+from .dosage import Dosage, Dose, Frequency, Duration, Route
 from .note import Note
 from .dosageprocessor import DosageProcessor
 
@@ -52,10 +53,7 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(
-        self,
-        model_directory: Path,
-    ):
+    def __init__(self, model_directory: Path, debug_config_path: Optional[Path] = None):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.annotators = [
             CAT.load_model_pack(
@@ -63,10 +61,17 @@ class NoteProcessor:
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
+
         self.dosage_processor = DosageProcessor()
 
-        config_file = pkgutil.get_data(__name__, "configs/debug_config.yml")
-        self.debug_config = yaml.safe_load(config_file)
+        if debug_config_path is not None:
+            with open(debug_config_path, "r") as stream:
+                debug_config = yaml.safe_load(stream)
+        else:
+            data = pkgutil.get_data(__name__, "configs/example_debug_config.yml")
+            debug_config = yaml.safe_load(data)
+
+        self.debug_config = debug_config
 
     def process(
         self, note: Note, patient_data: Optional[List[Concept]] = None
@@ -143,7 +148,21 @@ class NoteProcessor:
                 if concept_dict["ontologies"] == "FDB":
                     category = Category.MEDICATION
                     if "dosage" in concept_dict:
-                        dosage = concept_dict["dosage"]  # sub for MedicationActivity
+                        dosage = Dosage(
+                            text="debug mode",
+                            dose=Dose(
+                                **concept_dict["dosage"].get("dose")
+                            ),
+                            frequency=Frequency(
+                                **concept_dict["dosage"].get("frequency")
+                            ),
+                            duration=Duration(
+                                **concept_dict["dosage"].get("duration")
+                            ),
+                            route=Route(
+                                **concept_dict["dosage"].get("route")
+                            ),
+                        )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
                     if "reaction" in concept_dict:

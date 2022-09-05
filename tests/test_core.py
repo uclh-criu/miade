@@ -3,17 +3,35 @@ from miade.concept import Concept, Category
 from miade.dosage import Dose, Frequency
 
 
-def test_core(model_directory_path, test_note):
-    processor = NoteProcessor(model_directory_path)
+def test_core(model_directory_path, debug_path, test_note):
+    processor = NoteProcessor(model_directory_path, debug_path)
     assert processor.process(test_note) == [
         Concept(id="3", name="Liver failure", category=Category.DIAGNOSIS, start=12, end=25),
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION, start=40, end=51),
     ]
 
-    print(processor.debug(mode=DebugMode.CDA))
+    assert processor.debug(mode=DebugMode.CDA) == {'Problems': {'statusCode': 'active',
+                                                                 'actEffectiveTimeHigh': 'None',
+                                                                 'observationEffectiveTimeLow': 20200504,
+                                                                 'observationEffectiveTimeHigh': 20210904},
+                                                   'Medication': {'consumableCodeSystemName': 'RxNorm',
+                                                                  'consumableCodeSystemValue': '2.16.840.1.113883.6.88'},
+                                                   'Allergy': {'allergySectionCodeName': 'Propensity to adverse reaction',
+                                                               'allergySectionCodeValue': 420134006}}
+
     concept_list = processor.debug(mode=DebugMode.PRELOADED)
-    for concept in concept_list:
-        print(concept)
+    assert concept_list[1].name == "Paracetamol"
+    assert concept_list[1].id == 90332006
+    assert concept_list[1].category == Category.MEDICATION
+    assert concept_list[1].dosage.dose.quantity == 2
+    assert concept_list[1].dosage.dose.unit == "{tbl}"
+    assert concept_list[1].dosage.frequency.value == 0.25
+    assert concept_list[1].dosage.duration.low == 20220606
+    assert concept_list[1].dosage.route.code == "C38288"
+
+    assert concept_list[2].name == "Penicillins"
+    assert concept_list[2].id == 84874
+    assert concept_list[2].category == Category.ALLERGY
 
 
 def test_dosage_text_splitter(model_directory_path, test_med_concepts, test_med_note):

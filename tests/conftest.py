@@ -14,6 +14,11 @@ def model_directory_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def debug_path() -> Path:
+    return Path("./tests/examples/example_debug_config.yml")
+
+
+@pytest.fixture(scope="function")
 def test_note() -> Note:
     return Note(text="Patient has liver failure and is taking paracetamol.")
 
@@ -84,12 +89,11 @@ def test_med_concepts() -> List[Concept]:
 
 @pytest.fixture(scope="function")
 def test_miade_doses() -> (List[Note], pd.DataFrame):
-    print(Path.cwd())
-    extracted_doses = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
 
 
 @pytest.fixture(scope="function")
 def test_miade_med_concepts() -> List[Concept]:
-    data = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]

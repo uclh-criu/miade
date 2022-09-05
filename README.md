@@ -23,6 +23,11 @@ For the reference server implementation, see: [nlp-engine-server](https://github
 
 ## Installing
 
+As the drug dosage extraction module uses Med7, you will need to download the model:
+```bash
+pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+```
+Then install MiADE:
 ```bash
 pip install -e ./src
 ```

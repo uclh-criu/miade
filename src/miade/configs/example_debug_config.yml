@@ -17,7 +17,7 @@ Presets:
           value: 0.25
           unit: d
         route:
-          cui: C38288
+          code: C38288
           name: Oral
     Penicillins:
       cui: 84874
