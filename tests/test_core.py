@@ -23,7 +23,7 @@ def test_core(model_directory_path, debug_path, test_note):
     assert concept_list[1].name == "Paracetamol"
     assert concept_list[1].id == 90332006
     assert concept_list[1].category == Category.MEDICATION
-    assert concept_list[1].dosage.dose.quantity == 2
+    assert concept_list[1].dosage.dose.value == 2
     assert concept_list[1].dosage.dose.unit == "{tbl}"
     assert concept_list[1].dosage.frequency.value == 0.25
     assert concept_list[1].dosage.duration.low == 20220606
@@ -44,7 +44,7 @@ def test_dosage_text_splitter(model_directory_path, test_med_concepts, test_med_
     assert concepts[3].dosage.text == "DOXYCYCLINE 500mg tablets for two weeks"
 
     assert concepts[0].dosage.dose == Dose(source='75 mg',
-                                           quantity=75,
+                                           value=75,
                                            unit='mg',
                                            low=None,
                                            high=None)

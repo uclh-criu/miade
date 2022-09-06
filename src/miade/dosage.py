@@ -28,7 +28,7 @@ ucum = {
 
 class Dose(BaseModel):
     source: Optional[str] = None
-    quantity: Optional[float] = None
+    value: Optional[float] = None
     unit: Optional[str] = None  # ucum
     low: Optional[float] = None
     high: Optional[float] = None
@@ -76,7 +76,7 @@ def parse_dose(
 
     if len(quantities) == 1 and len(units) == 0:
         if quantities[0].replace(".", "", 1).isdigit():
-            quantity_dosage.quantity = float(quantities[0])
+            quantity_dosage.value = float(quantities[0])
         else:
             # match single unit or range e.g. 3 - 4 units
             m1 = re.search(r"([\d.]+) - ([\d.]+) ([a-z]+)", quantities[0])
@@ -86,7 +86,7 @@ def parse_dose(
                 quantity_dosage.high = float(m1.group(2))
                 quantity_dosage.unit = m1.group(3)
             elif m2:
-                quantity_dosage.quantity = float(m2.group(1))
+                quantity_dosage.value = float(m2.group(1))
                 quantity_dosage.unit = m2.group(2)
             else:
                 return None
@@ -97,9 +97,9 @@ def parse_dose(
             quantity_dosage.high = float(m.group(2))
         else:
             try:
-                quantity_dosage.quantity = float(quantities[0])
+                quantity_dosage.value = float(quantities[0])
             except:
-                quantity_dosage.quantity = float(re.sub(r"[^\d.]+", "", quantities[0]))
+                quantity_dosage.value = float(re.sub(r"[^\d.]+", "", quantities[0]))
         quantity_dosage.unit = units[0]
     elif len(quantities) == 2 and len(units) == 2:
         quantities.sort()
@@ -130,11 +130,11 @@ def parse_dose(
                 "ml",
                 "ng",
             ]:
-                quantity_dosage.quantity = 1
+                quantity_dosage.value = 1
             else:
-                quantity_dosage.quantity = results["qty"]
-                if quantity_dosage.quantity is not None:
-                    quantity_dosage.quantity = float(quantity_dosage.quantity)
+                quantity_dosage.value = results["qty"]
+                if quantity_dosage.value is not None:
+                    quantity_dosage.value = float(quantity_dosage.value)
             quantity_dosage.source = "lookup"
         else:
             return None
@@ -323,8 +323,8 @@ class Dosage(object):
         if calculate:
             # if duration not given in text could extract this from total dose if given
             if total_dose is not None and dose is not None and doc._.results["freq"]:
-                if dose.quantity is not None:
-                    daily_dose = float(dose.quantity) * (
+                if dose.value is not None:
+                    daily_dose = float(dose.value) * (
                         round(doc._.results["freq"] / doc._.results["time"])
                     )
                 elif dose.high is not None:
