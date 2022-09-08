@@ -8,7 +8,7 @@ Presets:
       ontologies: FDB
       dosage:
         dose:
-          quantity: 500
+          value: 500
           unit: mg
         duration:
           low: 20220606
@@ -17,8 +17,8 @@ Presets:
           value: 0.25
           unit: d
         route:
-          cui: C38288
-          name: Oral
+          code: C38288
+          displayName: Oral
     Penicillins:
       cui: 84874
       ontologies: ELG

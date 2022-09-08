@@ -14,8 +14,14 @@ def model_directory_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def debug_path() -> Path:
+    return Path("./tests/examples/example_debug_config.yml")
+
+
+@pytest.fixture(scope="function")
 def test_note() -> Note:
     return Note(text="Patient has liver failure and is taking paracetamol.")
+
 
 @pytest.fixture(scope="function")
 def temp_dir() -> Path:
@@ -68,22 +74,26 @@ def cdb_csv_paths() -> List[Path]:
 
 @pytest.fixture(scope="function")
 def test_med_note() -> Note:
-    return Note(text="75 mcg po 3 times a day as needed for three days .")
+    return Note(text="Magnesium hydroxide 75mg daily \nparacetamol 500mg po 3 times a day as needed.\n"
+                     "Patient treated with aspirin IM q daily x 2 weeks with concurrent DOXYCYCLINE 500mg tablets for "
+                     "two weeks")
 
 
 @pytest.fixture(scope="function")
-def test_med_concept() -> Concept:
-    return Concept(id="387337001", name="Magnesium hydroxide", category=Category.MEDICATION)
+def test_med_concepts() -> List[Concept]:
+    return [Concept(id="0", name="Magnesium hydroxide", category=Category.MEDICATION, start=0, end=19),
+            Concept(id="1", name="Paracetamol", category=Category.MEDICATION, start=32, end=43),
+            Concept(id="2", name="Aspirin", category=Category.MEDICATION, start=99, end=107),
+            Concept(id="3", name="Doxycycline", category=Category.MEDICATION, start=144, end=156)]
 
 
 @pytest.fixture(scope="function")
 def test_miade_doses() -> (List[Note], pd.DataFrame):
-    print(Path.cwd())
-    extracted_doses = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
 
 
 @pytest.fixture(scope="function")
 def test_miade_med_concepts() -> List[Concept]:
-    data = pd.read_csv("./tests/data/common_doses_for_miade.csv")
+    data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]
