@@ -36,10 +36,10 @@ class Dose(BaseModel):
 
 class Duration(BaseModel):
     source: Optional[str] = None
-    value: Optional[int] = None
+    value: Optional[float] = None
     unit: Optional[str] = None
-    low: Optional[int] = None
-    high: Optional[int] = None
+    low: Optional[str] = None
+    high: Optional[str] = None
 
 
 class Frequency(BaseModel):
@@ -47,9 +47,9 @@ class Frequency(BaseModel):
     source: Optional[str] = None
     value: Optional[float] = None
     unit: Optional[str] = None
-    low: Optional[int] = None
-    high: Optional[int] = None
-    standardDeviation: Optional[int] = None
+    low: Optional[str] = None
+    high: Optional[str] = None
+    standardDeviation: Optional[float] = None
     institutionSpecified: bool = False
     preconditionAsRequired: bool = False
 
