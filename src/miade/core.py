@@ -46,11 +46,11 @@ class NoteProcessor:
                 if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
                 elif entity["ontologies"] == ["SNO"]:
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 elif entity["ontologies"] == ["ELG"]:
                     category = Category.ALLERGY
                 else:
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 concepts.append(
                     Concept(
                         id=entity["cui"],
@@ -80,9 +80,9 @@ class NoteProcessor:
                     if "reaction" in concept_dict:
                         meta = concept_dict["reaction"]
                 elif concept_dict["ontologies"] == "SNOMED CT":
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 else:
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 concept_list.append(
                     Concept(
                         id=concept_dict["cui"],

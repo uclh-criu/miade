@@ -92,21 +92,21 @@ def test_miade_med_concepts() -> List[Concept]:
 @pytest.fixture(scope="function")
 def test_duplicate_concepts_record() -> List[Concept]:
     return [
-        Concept(id="1", name="test1", category=Category.DIAGNOSIS),
-        Concept(id="2", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="3", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="4", name="test2", category=Category.DIAGNOSIS),
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.PROBLEM),
+        Concept(id="3", name="test2", category=Category.PROBLEM),
+        Concept(id="4", name="test2", category=Category.PROBLEM),
     ]
 
 
 @pytest.fixture(scope="function")
 def test_duplicate_concepts_note() -> List[Concept]:
     return [
-        Concept(id="1", name="test1", category=Category.DIAGNOSIS),
-        Concept(id="2", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="3", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="4", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="5", name="test2", category=Category.DIAGNOSIS),
-        Concept(id="6", name="test2", category=Category.DIAGNOSIS),
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.PROBLEM),
+        Concept(id="3", name="test2", category=Category.PROBLEM),
+        Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="5", name="test2", category=Category.PROBLEM),
+        Concept(id="6", name="test2", category=Category.PROBLEM),
     ]
 

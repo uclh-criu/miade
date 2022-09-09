@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class Category(Enum):
-    DIAGNOSIS = 1
+    PROBLEM = 1
     MEDICATION = 2
     ALLERGY = 3
 
