@@ -109,6 +109,7 @@ class PatternMatcher:
         # convert fiveml back to number
         if "fiveml" in dose_string:
             doc._.results["qty"] *= 5
+            doc._.results["units"] = "ml"
 
         # assign new ents to doc
         doc.ents = list(doc.ents) + new_entities
