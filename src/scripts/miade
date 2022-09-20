@@ -102,5 +102,22 @@ def train(model: Path, data: Path,
     cat.create_model_pack(str(output))
 
 
+@app.command()
+def train_supervised(model: Path, annotations_path: Path,
+                     nepochs: int,
+                     use_filters=True,
+                     print_stats=True,
+                     output: Optional[Path] = typer.Argument(Path.cwd())):
+
+    cat = CAT.load_model_pack(str(model))
+
+    cat.train_supervised(data_path=str(annotations_path),
+                         nepochs=nepochs,
+                         use_filters=use_filters,
+                         print_stats=print_stats)
+
+    cat.create_model_pack(str(output))
+
+
 if __name__ == "__main__":
     app()
