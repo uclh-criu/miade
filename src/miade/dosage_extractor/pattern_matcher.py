@@ -18,12 +18,17 @@ log = logging.getLogger(__name__)
 @spacy.registry.misc("patterns_lookup_table.v1")
 def create_patterns_dict():
     patterns_data = pkgutil.get_data(__name__, "../data/patterns.csv")
-    patterns_dict = pd.read_csv(io.BytesIO(patterns_data), index_col=0, squeeze=True).T.to_dict()
+    patterns_dict = pd.read_csv(
+        io.BytesIO(patterns_data), index_col=0, squeeze=True
+    ).T.to_dict()
 
     return patterns_dict
 
 
-@Language.factory("pattern_matcher", default_config={"patterns": {"@misc": "patterns_lookup_table.v1"}})
+@Language.factory(
+    "pattern_matcher",
+    default_config={"patterns": {"@misc": "patterns_lookup_table.v1"}},
+)
 def create_pattern_matcher(nlp: Language, name: str, patterns: Dict):
     return PatternMatcher(nlp, patterns)
 
@@ -41,12 +46,17 @@ class PatternMatcher:
             Span.set_extension("total_dose", default=False)
         # create doc attribute to store results
         if not Doc.has_extension("results"):
-            Doc.set_extension("results", default={"freq": None,
-                                                  "time": None,
-                                                  "qty": None,
-                                                  "units": None,
-                                                  "duration": None,
-                                                  "institution_specified": False})
+            Doc.set_extension(
+                "results",
+                default={
+                    "freq": None,
+                    "time": None,
+                    "qty": None,
+                    "units": None,
+                    "duration": None,
+                    "institution_specified": False,
+                },
+            )
 
     def __call__(self, doc: Doc) -> Doc:
         new_entities = []
@@ -55,7 +65,9 @@ class PatternMatcher:
         # rule-based matching based on structure of dosage - HIE medication e.g. take 2 every day, 24 tablets
         expression = r"(?P<dose_string>start [\w\s,-]+ ), (?P<total_dose>\d+) (?P<unit>[a-z]+ )?$"
         for match in re.finditer(expression, dose_string):
-            dose_string = match.group("dose_string")  # remove total dose component for lookup
+            dose_string = match.group(
+                "dose_string"
+            )  # remove total dose component for lookup
             start, end = match.span("total_dose")
             total_dose_span = doc.char_span(start, end, alignment_mode="contract")
             total_dose_span.label_ = "DOSAGE"
@@ -67,7 +79,9 @@ class PatternMatcher:
                 unit_span = doc.char_span(start, end, alignment_mode="contract")
                 unit_span.label_ = "FORM"
                 unit_span._.total_dose = True
-                doc._.results["units"] = unit_span.text  # set unit in results dict as well
+                doc._.results[
+                    "units"
+                ] = unit_span.text  # set unit in results dict as well
                 new_entities.append(unit_span)
 
         # lookup patterns from CALIBERdrugdose - returns dosage results in doc._.results attribute
@@ -80,8 +94,10 @@ class PatternMatcher:
                 #     new_entities.append(dose_span)
                 for key, value in doc._.results.items():
                     if not isnull(dosage[key]) and dosage[key] != value:
-                        log.debug(f"Matched lookup pattern: '{pattern}' at {match.span()}, "
-                                  f"updating {key} results to {dosage[key]}")
+                        log.debug(
+                            f"Matched lookup pattern: '{pattern}' at {match.span()}, "
+                            f"updating {key} results to {dosage[key]}"
+                        )
                         if isinstance(dosage[key], str) and "\\" in dosage[key]:
                             doc._.results[key] = match.group(int(dosage[key][-1]))
                         else:
@@ -90,6 +106,10 @@ class PatternMatcher:
                             doc._.results[key] = float(doc._.results[key])
                         elif key in ["freq", "duration"]:
                             doc._.results[key] = int(doc._.results[key])
+        # convert fiveml back to number
+        if "fiveml" in dose_string:
+            doc._.results["qty"] *= 5
+            doc._.results["units"] = "ml"
 
         # assign new ents to doc
         doc.ents = list(doc.ents) + new_entities

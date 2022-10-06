@@ -16,10 +16,10 @@ def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
         dosage = dosage_processor.process(note.text)
 
         if isnull(doses.dosequantity.values[ind]):
-            assert dosage.dose is None or dosage.dose.quantity is None
+            assert dosage.dose is None or dosage.dose.value is None
         else:
             assert dosage.dose
-            assert float(dosage.dose.quantity) == doses.dosequantity.values[ind]
+            assert float(dosage.dose.value) == doses.dosequantity.values[ind]
 
         if isnull(doses.doselow.values[ind]):
             assert dosage.dose is None or dosage.dose.low is None
@@ -42,8 +42,8 @@ def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
 
         if not isnull(doses.institution_specified.values[ind]):
             assert dosage.frequency
-            assert dosage.frequency.institution_specified == doses.institution_specified.values[ind]
+            assert dosage.frequency.institutionSpecified == doses.institution_specified.values[ind]
 
         if not isnull(doses.precondition_as_required.values[ind]):
             assert dosage.frequency
-            assert dosage.frequency.precondition_asrequired == doses.precondition_as_required.values[ind]
+            assert dosage.frequency.preconditionAsRequired == doses.precondition_as_required.values[ind]

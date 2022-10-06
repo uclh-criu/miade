@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-
+import os
 from pathlib import Path
 from shutil import rmtree
 from typing import Optional
 
 import typer
 import yaml
+import pandas as pd
 from medcat.cat import CAT
 from medcat.config import Config
 from pydantic import BaseModel
@@ -75,15 +76,57 @@ def build_model_pack(
 
 
 @app.command()
-def train(model: Path, data: Path, output: Optional[Path] = typer.Argument(None)):
-    if output is None:
-        output = model
-
-    with data.open('r') as d:
-        training_data = [line.strip() for line in d]
+def train(model: Path, data: Path,
+          checkpoint: int = 5000,
+          train_partial: Optional[int] = None,
+          output: Optional[Path] = typer.Argument(Path.cwd())):
+    if data.suffix == ".csv":
+        print("Loading csv file...")
+        df = pd.read_csv(data)
+        training_data = df.source.to_list()
+        if train_partial:
+            print(f"partial training {train_partial} documents")
+            training_data = training_data[:train_partial]
+    else:
+        with data.open('r') as d:
+            training_data = [line.strip() for line in d]
+    print("training data length: ", len(training_data))
 
     cat = CAT.load_model_pack(str(model))
+    if checkpoint:
+        cat.config.general["checkpoint"]["steps"] = checkpoint
+        cat.config.general["checkpoint"]["output_dir"] = os.path.join(Path.cwd(), "checkpoints")
+
     cat.train(training_data)
+    cat.create_model_pack(str(output))
+
+
+@app.command()
+def train_supervised(model: Path, annotations_path: Path,
+                     nepochs: int = 1,
+                     use_filters=False,
+                     print_stats=True,
+                     train_from_false_positives=True,
+                     is_resumed=False,
+                     output: Optional[Path] = typer.Argument(Path.cwd())):
+    cat = CAT.load_model_pack(str(model))
+
+    fp, fn, tp, p, r, f1, cui_counts, examples = cat.train_supervised(data_path=str(annotations_path),
+                                                                      nepochs=nepochs,
+                                                                      use_filters=use_filters,
+                                                                      print_stats=print_stats,
+                                                                      train_from_false_positives=train_from_false_positives,
+                                                                      is_resumed=is_resumed)
+
+    cat.config.version["performance"]["ner"]["fp"] = fp
+    cat.config.version["performance"]["ner"]["fn"] = fn
+    cat.config.version["performance"]["ner"]["tp"] = tp
+    cat.config.version["performance"]["ner"]["p"] = p
+    cat.config.version["performance"]["ner"]["r"] = r
+    cat.config.version["performance"]["ner"]["f1"] = f1
+    cat.config.version["performance"]["ner"]["cui_counts"] = cui_counts
+    cat.config.version["performance"]["ner"]["examples"] = examples
+
     cat.create_model_pack(str(output))
 
 
