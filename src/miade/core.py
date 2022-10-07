@@ -11,7 +11,9 @@ from medcat.cat import CAT
 from .concept import Concept, Category
 from .dosage import Dosage, Dose, Frequency, Duration, Route
 from .note import Note
-from .dosageprocessor import DosageProcessor
+
+from .conceptfilter import ConceptFilter
+from .dosageextractor import DosageExtractor
 
 
 class DebugMode(Enum):
@@ -30,20 +32,20 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
     """
     # spit into sentences by newline and period
     sents = (
-        re.findall(r"[^\s][^\n]+", text[med.start : next_med.start])
+        re.findall(r"[^\s][^\n]+", text[med.start: next_med.start])
         if next_med is not None
-        else re.findall(r"[^\s][^\n]+", text[med.start :])
+        else re.findall(r"[^\s][^\n]+", text[med.start:])
     )
 
-    concept_name = text[med.start : med.end]
-    next_concept_name = text[next_med.start : next_med.end] if next_med else None
+    concept_name = text[med.start: med.end]
+    next_concept_name = text[next_med.start: next_med.end] if next_med else None
 
     for sent in sents:
         if next_med is not None:
             if concept_name in sent and next_concept_name not in sent:
                 return sent
             elif concept_name in sent and next_concept_name in sent:
-                return text[med.start : next_med.start]
+                return text[med.start: next_med.start]
         else:
             if concept_name in sent:
                 ind = sent.find(concept_name)
@@ -62,7 +64,7 @@ class NoteProcessor:
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
 
-        self.dosage_processor = DosageProcessor()
+        self.dosage_extractor = DosageExtractor()
 
         if debug_config_path is not None:
             with open(debug_config_path, "r") as stream:
@@ -74,7 +76,7 @@ class NoteProcessor:
         self.debug_config = debug_config
 
     def process(
-        self, note: Note, patient_data: Optional[List[Concept]] = None
+            self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
@@ -99,8 +101,10 @@ class NoteProcessor:
                         end=entity["end"],
                     )
                 )
-
         concepts = self.add_dosages_to_concepts(concepts, note)
+
+        if record_concepts is not None:
+            concepts = ConceptFilter(record_concepts, concepts).deduplicate()
 
         return concepts
 
@@ -124,7 +128,7 @@ class NoteProcessor:
             if concept.category == Category.MEDICATION:
                 dosage_string = get_dosage_string(concept, next_med_concept, note.text)
                 if len(dosage_string.split()) > 2:
-                    concept.dosage = self.dosage_processor.process(text=dosage_string)
+                    concept.dosage = self.dosage_extractor.extract(text=dosage_string)
                     # print(concept.dosage)
 
         return concepts

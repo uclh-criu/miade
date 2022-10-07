@@ -15,7 +15,7 @@ class Concept(object):
 
     def __init__(
         self,
-        id: str,
+        id: Optional[str],
         name: str,
         category: Category,
         start: Optional[int] = None,
@@ -25,7 +25,7 @@ class Concept(object):
     ):
 
         self.name: str = name
-        self.id: str = id
+        self.id: Optional[str] = id
         self.category: Category = category
         self.start: int = start
         self.end: int = end
@@ -38,5 +38,14 @@ class Concept(object):
             f" dosage: {self.dosage}, meta: {self.meta}}} "
         )
 
+    def __hash__(self):
+        return hash((self.id, self.name, self.category))
+
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __lt__(self, other):
+        return self.id < other.id
+
+    def __gt__(self, other):
+        return self.id > other.id
