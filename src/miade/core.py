@@ -101,10 +101,10 @@ class NoteProcessor:
                         end=entity["end"],
                     )
                 )
+        # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
-
-        if record_concepts is not None:
-            concepts = ConceptFilter(record_concepts, concepts).deduplicate()
+        # post-processing
+        concepts = ConceptFilter(concepts, record_concepts).deduplicate()
 
         return concepts
 

@@ -106,7 +106,7 @@ def test_duplicate_concepts_record() -> List[Concept]:
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
-        Concept(id=None, name="PEANUTS", category=Category.ALLERGY)
+        Concept(id="0", name="PEANUTS", category=Category.ALLERGY)
     ]
 
 

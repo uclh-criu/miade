@@ -15,7 +15,7 @@ class Concept(object):
 
     def __init__(
         self,
-        id: Optional[str],
+        id: str,
         name: str,
         category: Category,
         start: Optional[int] = None,
@@ -25,7 +25,7 @@ class Concept(object):
     ):
 
         self.name: str = name
-        self.id: Optional[str] = id
+        self.id: str = id
         self.category: Category = category
         self.start: int = start
         self.end: int = end
@@ -45,7 +45,7 @@ class Concept(object):
         return self.__dict__ == other.__dict__
 
     def __lt__(self, other):
-        return self.id < other.id
+        return int(self.id) < int(other.id)
 
     def __gt__(self, other):
-        return self.id > other.id
+        return int(self.id) > int(other.id)
