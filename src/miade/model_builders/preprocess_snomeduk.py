@@ -104,7 +104,6 @@ class Snomed:
                 columns={"id_x": "cui", "term": "name", "typeId": "name_status"},
                 inplace=True,
             )
-            active_snomed_df["cui"] = active_snomed_df.cui.apply(lambda x: f"SNO-{x}")
             active_snomed_df["ontologies"] = "SNOMED-CT"
             active_snomed_df["name_status"] = active_snomed_df["name_status"].replace(
                 ["900000000000003001", "900000000000013009"], ["P", "A"]
