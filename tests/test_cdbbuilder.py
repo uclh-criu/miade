@@ -14,12 +14,12 @@ def test_cdbbuilder(temp_dir, snomed_data_path, fdb_data_path, elg_data_path, cd
     cdb_builder.preprocess()
     cdb = cdb_builder.create_cdb()
     assert cdb.cui2names == {
-        "ELG-1701": {"penicillin"},
-        "ELG-175": {"ibrupfrofen"},
-        "FDB-10": {"paracetamol"},
-        "FDB-20": {"ibruprofen"},
-        "FDB-30": {"co~codamol"},
-        "SNO-1": {"covid"},
-        "SNO-3": {"liver~failure"},
+        "1701": {"penicillin"},
+        "175": {"ibrupfrofen"},
+        "10": {"paracetamol"},
+        "20": {"ibruprofen"},
+        "30": {"co~codamol"},
+        "1": {"covid"},
+        "3": {"liver~failure"},
     }
     cdb.save("./tests/data/cdb.dat")
