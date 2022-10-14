@@ -170,7 +170,8 @@ class NoteProcessor:
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
                     if "reaction" in concept_dict:
-                        meta = concept_dict["reaction"]
+                        meta["reaction"] = concept_dict["reaction"]
+                        meta["severity"] = concept_dict["severity"]
                 elif concept_dict["ontologies"] == "SNOMED CT":
                     category = Category.PROBLEM
                 else:

@@ -26,10 +26,10 @@ Presets:
         cui: 74474003
         name: Gastrointestinal bleeding
         ontologies: SNOMED CT
-        severity:
-          cui: M
-          name: Moderate
-          ontologies: ActCode
+      severity:
+        cui: M
+        name: Moderate
+        ontologies: ActCode
 
 CDA:
   0:
@@ -48,8 +48,8 @@ CDA:
       consumableCodeSystemValue: 2.16.840.1.113883.6.88
     Allergy:
       # the allergy section code to send back - either propensity to adverse reaction or allergy to substance
-      allergySectionCodeName: Propensity to adverse reaction
-      allergySectionCodeValue: 420134006
+      allergySectionCodeName: Allergy to substance
+      allergySectionCodeValue: 419199007
 
 # model options - to be developed
 Model:
