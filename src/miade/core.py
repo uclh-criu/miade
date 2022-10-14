@@ -169,8 +169,10 @@ class NoteProcessor:
                         )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
+                    meta={}
                     if "reaction" in concept_dict:
                         meta["reaction"] = concept_dict["reaction"]
+                    if "severity" in concept_dict:
                         meta["severity"] = concept_dict["severity"]
                 elif concept_dict["ontologies"] == "SNOMED CT":
                     category = Category.PROBLEM
