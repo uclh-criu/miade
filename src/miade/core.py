@@ -1,6 +1,7 @@
 import re
 import yaml
 import pkgutil
+import logging
 
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -14,6 +15,9 @@ from .note import Note
 
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
+
+
+log = logging.getLogger(__name__)
 
 
 class DebugMode(Enum):
@@ -91,7 +95,8 @@ class NoteProcessor:
                 elif entity["ontologies"] == ["ELG"]:
                     category = Category.ALLERGY
                 else:
-                    category = Category.PROBLEM
+                    log.warning(f"Entity has no ontology, skipping: {entity}")
+                    continue
                 concepts.append(
                     Concept(
                         id=entity["cui"],

@@ -106,6 +106,7 @@ def test_duplicate_concepts_record() -> List[Concept]:
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="0", name="PEANUTS", category=Category.ALLERGY)
     ]
 
@@ -119,7 +120,17 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="4", name="test2", category=Category.PROBLEM),
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="5", name="test2", category=Category.PROBLEM),
-        Concept(id="6", name="test2", category=Category.PROBLEM),
-        Concept(id="7", name="PEANUTS", category=Category.ALLERGY)
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
+        Concept(id="8", name="PEANUTS", category=Category.ALLERGY)
     ]
 
+
+@pytest.fixture(scope="function")
+def test_overlapping_meds_allergen_concepts() -> List[Concept]:
+    return [
+        Concept(id="1", name="med", category=Category.MEDICATION, start=30, end=40),
+        Concept(id="2", name="allergen", category=Category.ALLERGY, start=30, end=40),
+        Concept(id="3", name="med2", category=Category.MEDICATION, start=40, end=50),
+    ]
