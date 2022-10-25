@@ -16,7 +16,6 @@ from .note import Note
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
 
-
 log = logging.getLogger(__name__)
 
 
@@ -90,7 +89,7 @@ class NoteProcessor:
                 # print(entity)
                 if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
-                elif entity["ontologies"] == ["SNO"]:
+                elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
                     category = Category.PROBLEM
                 elif entity["ontologies"] == ["ELG"]:
                     category = Category.ALLERGY
@@ -114,7 +113,7 @@ class NoteProcessor:
         return concepts
 
     def add_dosages_to_concepts(
-        self, concepts: List[Concept], note: Note
+            self, concepts: List[Concept], note: Note
     ) -> List[Concept]:
         """
         Gets dosages for medication concepts
@@ -127,7 +126,7 @@ class NoteProcessor:
             next_med_concept = (
                 concepts[ind + 1]
                 if len(concepts) > ind + 1
-                and concepts[ind + 1].category == Category.MEDICATION
+                   and concepts[ind + 1].category == Category.MEDICATION
                 else None
             )
             if concept.category == Category.MEDICATION:
@@ -139,7 +138,7 @@ class NoteProcessor:
         return concepts
 
     def debug(
-        self, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
+            self, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
     ) -> (List[Concept], Dict):
         """
         Returns debug configurations for end-to-end testing of the MiADE unit in NoteReader
@@ -174,7 +173,7 @@ class NoteProcessor:
                         )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
-                    meta={}
+                    meta = {}
                     if "reaction" in concept_dict:
                         meta["reaction"] = concept_dict["reaction"]
                     if "severity" in concept_dict:

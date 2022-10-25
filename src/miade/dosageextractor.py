@@ -5,9 +5,9 @@ from spacy import Language
 from typing import Optional
 
 from .dosage import Dosage
-from .limeade.preprocessor import Preprocessor
-from .limeade.pattern_matcher import PatternMatcher
-from .limeade.entities_refiner import EntitiesRefiner
+from .drugdoseade.preprocessor import Preprocessor
+from .drugdoseade.pattern_matcher import PatternMatcher
+from .drugdoseade.entities_refiner import EntitiesRefiner
 
 
 log = logging.getLogger(__name__)
