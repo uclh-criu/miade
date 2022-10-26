@@ -17,8 +17,8 @@ Presets:
           value: 0.25
           unit: d
         route:
-          code: C38288
-          displayName: Oral
+          value: C38288
+          full_name: Oral
     Penicillins:
       cui: 84874
       ontologies: ELG
@@ -29,7 +29,7 @@ Presets:
       severity:
         cui: M
         name: Moderate
-        ontologies: ActCode
+        ontologies: SeverityObservation
 
 CDA:
   0:

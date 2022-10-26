@@ -43,7 +43,6 @@ class Duration(BaseModel):
 
 
 class Frequency(BaseModel):
-    # TODO: in CDA parser need to add standard deviation and preconditions
     source: Optional[str] = None
     value: Optional[float] = None
     unit: Optional[str] = None
@@ -57,8 +56,8 @@ class Frequency(BaseModel):
 class Route(BaseModel):
     # NCI thesaurus code
     source: Optional[str] = None
-    displayName: Optional[str] = None
-    code: Optional[str] = None
+    full_name: Optional[str] = None
+    value: Optional[str] = None
 
 
 def parse_dose(
@@ -225,16 +224,16 @@ def parse_route(text: str, dose: Optional[Dose]) -> Optional[Route]:
 
     if text is not None:
         if "mouth" in text:
-            route_dosage.displayName = "Oral"
-            route_dosage.code = route_codes["Oral"]
+            route_dosage.full_name = "Oral"
+            route_dosage.value = route_codes["Oral"]
         elif "inhalation" in text:
-            route_dosage.displayName = "Inhalation"
-            route_dosage.code = route_codes["Inhalation"]
+            route_dosage.full_name = "Inhalation"
+            route_dosage.value = route_codes["Inhalation"]
     # could infer some route information from units?
     elif dose is not None and dose.unit is not None:
         if dose.unit == "{puff}":
-            route_dosage.displayName = "Inhalation"
-            route_dosage.code = route_codes["Inhalation"]
+            route_dosage.full_name = "Inhalation"
+            route_dosage.value = route_codes["Inhalation"]
             route_dosage.source = "inferred from unit"
         else:
             return None
@@ -252,11 +251,11 @@ class Dosage(object):
 
     def __init__(
         self,
-        text: str,
         dose: Optional[Dose],
         duration: Optional[Duration],
         frequency: Optional[Frequency],
         route: Optional[Route],
+        text: Optional[str] = None,
     ):
         self.text = text
         self.dose = dose
@@ -349,3 +348,6 @@ class Dosage(object):
 
     def __str__(self):
         return f"{self.__dict__}"
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
