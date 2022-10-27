@@ -97,3 +97,40 @@ def test_miade_doses() -> (List[Note], pd.DataFrame):
 def test_miade_med_concepts() -> List[Concept]:
     data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]
+
+
+@pytest.fixture(scope="function")
+def test_duplicate_concepts_record() -> List[Concept]:
+    return [
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.PROBLEM),
+        Concept(id="3", name="test2", category=Category.PROBLEM),
+        Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="0", name="PEANUTS", category=Category.ALLERGY)
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_duplicate_concepts_note() -> List[Concept]:
+    return [
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.PROBLEM),
+        Concept(id="3", name="test2", category=Category.PROBLEM),
+        Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="5", name="test2", category=Category.PROBLEM),
+        Concept(id="5", name="test2", category=Category.PROBLEM),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
+        Concept(id="8", name="PEANUTS", category=Category.ALLERGY)
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_overlapping_meds_allergen_concepts() -> List[Concept]:
+    return [
+        Concept(id="1", name="med", category=Category.MEDICATION, start=30, end=40),
+        Concept(id="2", name="allergen", category=Category.ALLERGY, start=30, end=40),
+        Concept(id="3", name="med2", category=Category.MEDICATION, start=40, end=50),
+    ]

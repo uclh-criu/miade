@@ -1,6 +1,6 @@
 """ run the drug dosage extractor"""
 
-from miade.dosageprocessor import DosageProcessor
+from miade.dosageextractor import DosageExtractor
 from argparse import ArgumentParser
 from devtools import debug
 
@@ -15,8 +15,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dosage_processor = DosageProcessor()
-    dosage = dosage_processor.process(args.text)
+    dosage_extractor = DosageExtractor()
+    dosage = dosage_extractor.extract(args.text)
     print(dosage)
     debug(dosage.dose)
     debug(dosage.frequency)

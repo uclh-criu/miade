@@ -5,24 +5,25 @@ from spacy import Language
 from typing import Optional
 
 from .dosage import Dosage
-from .dosage_extractor.preprocessor import Preprocessor
-from .dosage_extractor.pattern_matcher import PatternMatcher
-from .dosage_extractor.entities_refiner import EntitiesRefiner
+from .drugdoseade.preprocessor import Preprocessor
+from .drugdoseade.pattern_matcher import PatternMatcher
+from .drugdoseade.entities_refiner import EntitiesRefiner
 
 
 log = logging.getLogger(__name__)
 
 
-class DosageProcessor:
+class DosageExtractor:
     """
     Parses and extracts drug dosage
+    LIMeADE - Long Instruction Medication AI Data Extractor??
     """
 
     def __init__(self, model: str = "en_core_med7_lg"):
         self.model = model
-        self.dosage_extractor = self.create_extractor_pipeline()
+        self.dosage_extractor = self.create_drugdoseade_pipeline()
 
-    def create_extractor_pipeline(self) -> Language:
+    def create_drugdoseade_pipeline(self) -> Language:
         """
         Creates a spacy pipeline with given model (default med7)
         and customised pipeline components for dosage extraction
@@ -35,7 +36,7 @@ class DosageProcessor:
 
         return nlp
 
-    def process(self, text: str, calculate: bool = True) -> Optional[Dosage]:
+    def extract(self, text: str, calculate: bool = True) -> Optional[Dosage]:
         """
         Processes a string that contains dosage instructions (excluding drug concept as this is handled by core)
         :param text: (str) string containing dosage

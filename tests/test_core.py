@@ -6,7 +6,7 @@ from miade.dosage import Dose, Frequency
 def test_core(model_directory_path, debug_path, test_note):
     processor = NoteProcessor(model_directory_path, debug_path)
     assert processor.process(test_note) == [
-        Concept(id="3", name="Liver failure", category=Category.DIAGNOSIS, start=12, end=25),
+        Concept(id="3", name="Liver failure", category=Category.PROBLEM, start=12, end=25),
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION, start=40, end=51),
     ]
 
@@ -28,8 +28,8 @@ def test_core(model_directory_path, debug_path, test_note):
     assert concept_list[1].dosage.frequency.value == 0.25
     assert concept_list[1].dosage.duration.low == "20220606"
     assert concept_list[1].dosage.duration.high == "20220620"
-    assert concept_list[1].dosage.route.code == "C38288"
-    assert concept_list[1].dosage.route.displayName == "Oral"
+    assert concept_list[1].dosage.route.value == "C38288"
+    assert concept_list[1].dosage.route.full_name == "Oral"
 
     assert concept_list[2].name == "Penicillins"
     assert concept_list[2].id == 84874

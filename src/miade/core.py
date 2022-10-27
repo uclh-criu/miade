@@ -1,6 +1,7 @@
 import re
 import yaml
 import pkgutil
+import logging
 
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -11,7 +12,11 @@ from medcat.cat import CAT
 from .concept import Concept, Category
 from .dosage import Dosage, Dose, Frequency, Duration, Route
 from .note import Note
-from .dosageprocessor import DosageProcessor
+
+from .conceptfilter import ConceptFilter
+from .dosageextractor import DosageExtractor
+
+log = logging.getLogger(__name__)
 
 
 class DebugMode(Enum):
@@ -30,20 +35,20 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
     """
     # spit into sentences by newline and period
     sents = (
-        re.findall(r"[^\s][^\n]+", text[med.start : next_med.start])
+        re.findall(r"[^\s][^\n]+", text[med.start: next_med.start])
         if next_med is not None
-        else re.findall(r"[^\s][^\n]+", text[med.start :])
+        else re.findall(r"[^\s][^\n]+", text[med.start:])
     )
 
-    concept_name = text[med.start : med.end]
-    next_concept_name = text[next_med.start : next_med.end] if next_med else None
+    concept_name = text[med.start: med.end]
+    next_concept_name = text[next_med.start: next_med.end] if next_med else None
 
     for sent in sents:
         if next_med is not None:
             if concept_name in sent and next_concept_name not in sent:
                 return sent
             elif concept_name in sent and next_concept_name in sent:
-                return text[med.start : next_med.start]
+                return text[med.start: next_med.start]
         else:
             if concept_name in sent:
                 ind = sent.find(concept_name)
@@ -62,7 +67,7 @@ class NoteProcessor:
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
 
-        self.dosage_processor = DosageProcessor()
+        self.dosage_extractor = DosageExtractor()
 
         if debug_config_path is not None:
             with open(debug_config_path, "r") as stream:
@@ -74,7 +79,7 @@ class NoteProcessor:
         self.debug_config = debug_config
 
     def process(
-        self, note: Note, patient_data: Optional[List[Concept]] = None
+            self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
@@ -84,12 +89,13 @@ class NoteProcessor:
                 # print(entity)
                 if entity["ontologies"] == ["FDB"]:
                     category = Category.MEDICATION
-                elif entity["ontologies"] == ["SNOMED-CT"]:
-                    category = Category.DIAGNOSIS
+                elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
+                    category = Category.PROBLEM
                 elif entity["ontologies"] == ["ELG"]:
                     category = Category.ALLERGY
                 else:
-                    category = Category.DIAGNOSIS
+                    log.warning(f"Entity has no ontology, skipping: {entity}")
+                    continue
                 concepts.append(
                     Concept(
                         id=entity["cui"],
@@ -99,13 +105,15 @@ class NoteProcessor:
                         end=entity["end"],
                     )
                 )
-
+        # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
+        # post-processing
+        concepts = ConceptFilter(concepts, record_concepts).deduplicate()
 
         return concepts
 
     def add_dosages_to_concepts(
-        self, concepts: List[Concept], note: Note
+            self, concepts: List[Concept], note: Note
     ) -> List[Concept]:
         """
         Gets dosages for medication concepts
@@ -118,19 +126,19 @@ class NoteProcessor:
             next_med_concept = (
                 concepts[ind + 1]
                 if len(concepts) > ind + 1
-                and concepts[ind + 1].category == Category.MEDICATION
+                   and concepts[ind + 1].category == Category.MEDICATION
                 else None
             )
             if concept.category == Category.MEDICATION:
                 dosage_string = get_dosage_string(concept, next_med_concept, note.text)
                 if len(dosage_string.split()) > 2:
-                    concept.dosage = self.dosage_processor.process(text=dosage_string)
+                    concept.dosage = self.dosage_extractor.extract(text=dosage_string)
                     # print(concept.dosage)
 
         return concepts
 
     def debug(
-        self, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
+            self, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
     ) -> (List[Concept], Dict):
         """
         Returns debug configurations for end-to-end testing of the MiADE unit in NoteReader
@@ -165,12 +173,15 @@ class NoteProcessor:
                         )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
+                    meta = {}
                     if "reaction" in concept_dict:
-                        meta = concept_dict["reaction"]
+                        meta["reaction"] = concept_dict["reaction"]
+                    if "severity" in concept_dict:
+                        meta["severity"] = concept_dict["severity"]
                 elif concept_dict["ontologies"] == "SNOMED CT":
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 else:
-                    category = Category.DIAGNOSIS
+                    category = Category.PROBLEM
                 concept_list.append(
                     Concept(
                         id=concept_dict["cui"],

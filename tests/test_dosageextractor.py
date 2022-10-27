@@ -2,7 +2,7 @@ import pytest
 from pandas import isnull
 # from devtools import debug
 
-from miade.dosageprocessor import DosageProcessor
+from miade.dosageextractor import DosageExtractor
 
 
 def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
@@ -10,10 +10,10 @@ def test_dosage_extractor(test_miade_doses, test_miade_med_concepts):
 
     notes = test_miade_doses[0]
     doses = test_miade_doses[1]
-    dosage_processor = DosageProcessor()
+    dosage_processor = DosageExtractor()
 
     for ind, note in enumerate(notes):
-        dosage = dosage_processor.process(note.text)
+        dosage = dosage_processor.extract(note.text)
 
         if isnull(doses.dosequantity.values[ind]):
             assert dosage.dose is None or dosage.dose.value is None

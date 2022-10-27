@@ -5,7 +5,7 @@ from .dosage import Dosage
 
 
 class Category(Enum):
-    DIAGNOSIS = 1
+    PROBLEM = 1
     MEDICATION = 2
     ALLERGY = 3
 
@@ -38,5 +38,14 @@ class Concept(object):
             f" dosage: {self.dosage}, meta: {self.meta}}} "
         )
 
+    def __hash__(self):
+        return hash((self.id, self.name, self.category))
+
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __lt__(self, other):
+        return int(self.id) < int(other.id)
+
+    def __gt__(self, other):
+        return int(self.id) > int(other.id)
