@@ -26,10 +26,10 @@ Presets:
         cui: 74474003
         name: Gastrointestinal bleeding
         ontologies: SNOMED CT
-        severity:
-          cui: M
-          name: Moderate
-          ontologies: ActCode
+      severity:
+        cui: M
+        name: Moderate
+        ontologies: SeverityObservation
 
 CDA:
   0:
