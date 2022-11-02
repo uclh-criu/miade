@@ -68,6 +68,7 @@ class NoteProcessor:
         ]
 
         self.dosage_extractor = DosageExtractor()
+        self.concept_filter = ConceptFilter()
 
         if debug_config_path is not None:
             with open(debug_config_path, "r") as stream:
@@ -107,8 +108,9 @@ class NoteProcessor:
                 )
         # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
+        # insert default VMP selection algorithm here
         # post-processing
-        concepts = ConceptFilter(concepts, record_concepts).deduplicate()
+        concepts = self.concept_filter(concepts, record_concepts)
 
         return concepts
 
