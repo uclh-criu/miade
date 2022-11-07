@@ -84,28 +84,14 @@ class NoteProcessor:
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
-
         for annotator in self.annotators:
             for entity in annotator.get_entities(note)["entities"].values():
-                # print(entity)
-                if entity["ontologies"] == ["FDB"]:
-                    category = Category.MEDICATION
-                elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
-                    category = Category.PROBLEM
-                elif entity["ontologies"] == ["ELG"]:
-                    category = Category.ALLERGY
-                else:
-                    log.warning(f"Entity has no ontology, skipping: {entity}")
-                    continue
-                concepts.append(
-                    Concept(
-                        id=entity["cui"],
-                        name=entity["pretty_name"],
-                        category=category,
-                        start=entity["start"],
-                        end=entity["end"],
-                    )
-                )
+                try:
+                    concept = Concept.from_entity(entity)
+                    concepts.append(concept)
+                except ValueError as e:
+                    log.warning(e)
+
         # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
         # insert default VMP selection algorithm here
@@ -154,7 +140,7 @@ class NoteProcessor:
             concept_list = []
             for name, concept_dict in self.debug_config["Presets"][code].items():
                 dosage = None
-                meta = None
+                debug = None
                 if concept_dict["ontologies"] == "FDB":
                     category = Category.MEDICATION
                     if "dosage" in concept_dict:
@@ -175,11 +161,11 @@ class NoteProcessor:
                         )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY
-                    meta = {}
+                    debug = {}
                     if "reaction" in concept_dict:
-                        meta["reaction"] = concept_dict["reaction"]
+                        debug["reaction"] = concept_dict["reaction"]
                     if "severity" in concept_dict:
-                        meta["severity"] = concept_dict["severity"]
+                        debug["severity"] = concept_dict["severity"]
                 elif concept_dict["ontologies"] == "SNOMED CT":
                     category = Category.PROBLEM
                 else:
@@ -190,7 +176,7 @@ class NoteProcessor:
                         name=name,
                         category=category,
                         dosage=dosage,
-                        meta=meta,
+                        debug_deprecated=debug,
                     )
                 )
             return concept_list

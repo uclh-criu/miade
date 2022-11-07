@@ -33,9 +33,9 @@ class Substance(Enum):
     IRRELEVANT = -1
     TAKING = 1
     ALLERGIC = 1
+    ADVERSE_REACTION = 1
     INTOLERANT = 0
-    CONTRAINDICATED = 0
-    ADVERSE_REACTION = 0
+    UNSPECIFIED = 0
 
 
 class Severity(Enum):

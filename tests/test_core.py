@@ -1,6 +1,8 @@
 from miade.core import NoteProcessor, DebugMode
 from miade.concept import Concept, Category
 from miade.dosage import Dose, Frequency
+from miade.metaannotations import MetaAnnotations
+from miade.utils.metaannotationstypes import *
 
 
 def test_core(model_directory_path, debug_path, test_note):
@@ -10,6 +12,16 @@ def test_core(model_directory_path, debug_path, test_note):
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION, start=40, end=51),
     ]
 
+
+def test_concept(test_medcat_concepts):
+    meta_anns = MetaAnnotations.from_dict(test_medcat_concepts["0"]["meta_anns"])
+    assert meta_anns.presence == Presence.NEGATED
+    assert meta_anns.relevance == Relevance.HISTORIC
+    assert meta_anns.laterality == Laterality.NO_LATERALITY
+
+
+def test_debug(model_directory_path, debug_path, test_note):
+    processor = NoteProcessor(model_directory_path, debug_path)
     assert processor.debug(mode=DebugMode.CDA) == {'Problems': {'statusCode': 'active',
                                                                  'actEffectiveTimeHigh': 'None',
                                                                  'observationEffectiveTimeLow': 20200504,

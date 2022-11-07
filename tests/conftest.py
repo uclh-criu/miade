@@ -1,11 +1,12 @@
 import pytest
 import pandas as pd
 
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 
 from miade.note import Note
 from miade.concept import Concept, Category
+from miade.metaannotations import MetaAnnotations
 
 
 @pytest.fixture(scope="function")
@@ -128,9 +129,35 @@ def test_duplicate_concepts_note() -> List[Concept]:
 
 
 @pytest.fixture(scope="function")
-def test_overlapping_meds_allergen_concepts() -> List[Concept]:
-    return [
-        Concept(id="1", name="med", category=Category.MEDICATION, start=30, end=40),
-        Concept(id="2", name="allergen", category=Category.ALLERGY, start=30, end=40),
-        Concept(id="3", name="med2", category=Category.MEDICATION, start=40, end=50),
-    ]
+def test_medcat_concepts() -> Dict:
+    return {
+        "0": {
+            "pretty_name": "problem",
+            "cui": "0",
+            "ontologies": "SNO",
+            "source_value": "problem",
+            "detected_name": "problem",
+            "acc": 0.99,
+            "context_similarity": 0.99,
+            "start": 4,
+            "end": 11,
+            "id": 0,
+            "meta_anns": {
+                "presence": {
+                    "value": "negated",
+                    "confidence": 1,
+                    "name": "presence"
+                },
+                "relevance": {
+                    "value": "historic",
+                    "confidence": 1,
+                    "name": "relevance"
+                },
+                "laterality (generic)": {
+                    "value": "none",
+                    "confidence": 1,
+                    "name": "laterality (generic)"
+                },
+            }
+        },
+    }

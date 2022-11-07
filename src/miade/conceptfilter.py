@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional
 
 from .concept import Concept, Category
+from .utils.metaannotationstypes import *
 
 log = logging.getLogger(__name__)
 
@@ -12,48 +13,26 @@ default_pipeline_config = [
 ]
 
 
-def deduplicate(extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
-    extracted_concepts = sorted(set(extracted_concepts))
-    if record_concepts is not None:
-        filtered_concepts = []
-        for extracted_concept in extracted_concepts:
-            if extracted_concept.id in [record_concept.id for record_concept in record_concepts]:
-                # assume medication code is snomed
-                log.debug(f"Filtered duplicate problem/medication {extracted_concept}")
-                continue
-            if extracted_concept.category == Category.ALLERGY and extracted_concept.name in [
-                record_concept.name for record_concept in record_concepts
-                if record_concept.category == Category.ALLERGY
-            ]:
-                # by text match as epic does not return code
-                log.debug(f"Filtered duplicate allergy {extracted_concept}")
-                continue
+def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> bool:
+    """
+    De-duplicate concepts based on code, can take into account more complex info in future?
+    :param concept:
+    :param record_concepts:
+    :return: Bool whether concept is duplicated or not
+    """
+    if concept.id in [record_concept.id for record_concept in record_concepts]:
+        # assume medication code is snomed
+        log.debug(f"Filtered duplicate problem/medication {concept}")
+        return True
+    if concept.category == Category.ALLERGY and concept.name in [
+        record_concept.name for record_concept in record_concepts
+        if record_concept.category == Category.ALLERGY
+    ]:
+        # by text match as epic does not return code
+        log.debug(f"Filtered duplicate allergy {concept}")
+        return True
 
-            filtered_concepts.append(extracted_concept)
-        extracted_concepts = filtered_concepts
-
-    return extracted_concepts
-
-
-def find_overlapping_med_allergen(extracted_concepts: List[Concept]) -> List[Concept]:
-    """just returns overlapping concepts, to be completed"""
-    concept_spans = {}
-    for concept in extracted_concepts:
-        if concept.start is not None and concept.end is not None:
-            if (concept.start, concept.end) in concept_spans.keys():
-                concept_spans[(concept.start, concept.end)].append(concept)
-            else:
-                concept_spans[(concept.start, concept.end)] = [concept]
-
-    overlapping_concepts = [span[1] for span in concept_spans.items() if len(span[1]) > 1]
-    if len(overlapping_concepts) != 0:
-        overlapping_concepts = overlapping_concepts[0]
-
-        assert Category.ALLERGY and Category.MEDICATION in [
-            concept.category for concept in overlapping_concepts
-        ], "Overlapping concepts that are not Allergy or Medication"
-
-    return overlapping_concepts
+    return False
 
 
 class ConceptFilter(object):
@@ -65,28 +44,56 @@ class ConceptFilter(object):
         if config is None:
             self.config = default_pipeline_config
 
-        self.suspected_lookup = None
-        self.negated_lookup = None
-        self.historic_lookup = None
+        self.suspected_lookup = {}
+        self.negated_lookup = {}
+        self.historic_lookup = {}
 
     def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+        """filters/conversions based on deduplication and meta-annotations"""
+        extracted_concepts = sorted(set(extracted_concepts))
+        filtered_concepts = []
         for concept in extracted_concepts:
+            # meta-annotations
             if concept.category == Category.PROBLEM:
-                self.handle_problem_meta(concept)
+                concept = self.handle_problem_meta(concept)
             if concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
-                self.handle_meds_allergen_meta(concept)
+                concept = self.handle_meds_allergen_meta(concept)
+            # ignore concepts filtered by meta-annotations
+            if concept is None:
+                continue
+            # deduplication
+            if record_concepts is not None:
+                if is_duplicate(concept=concept, record_concepts=record_concepts):
+                    continue
+            filtered_concepts.append(concept)
 
-        # deduplicate after meta-annotations are handled, concepts may be able to be updated
-        concepts = deduplicate(extracted_concepts, record_concepts)
+        return filtered_concepts
 
-        return concepts
-
-    def handle_problem_meta(self, concept: [Concept]) -> Concept:
+    def handle_problem_meta(self, concept: [Concept]) -> Optional[Concept]:
         # add, convert, or ignore concepts
-        pass
+        if concept.meta_annotations is None:
+            return concept
+        meta_anns = concept.meta_annotations
+        if meta_anns.presence.value == 0:
+            if meta_anns.presence == Presence.NEGATED:
+                convert = self.negated_lookup.get(concept.id)
+            elif meta_anns.presence == Presence.SUSPECTED:
+                convert = self.suspected_lookup.get(concept.id)
+            if convert:
+                concept.id = convert
+            else:
+                return None
+        if meta_anns.relevance.value == 0:
+            convert = self.historic_lookup.get(concept.id)
+            if convert:
+                concept.id = convert
+        elif meta_anns.relevance.value == -1:
+            return None
 
-    def handle_meds_allergen_meta(self, concept: [Concept]) -> Concept:
-        pass
+        return concept
+
+    def handle_meds_allergen_meta(self, concept: [Concept]) -> Optional[Concept]:
+        return concept
 
     def __call__(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]] = None):
         return self.filter(extracted_concepts, record_concepts)
