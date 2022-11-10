@@ -22,6 +22,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install ./src/
+          pip uninstall sklearn
+          pip install scikit-learn
           pip list
       - name: download model
         run: |

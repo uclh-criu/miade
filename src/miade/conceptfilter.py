@@ -1,6 +1,10 @@
+import io
 import logging
+import pkgutil
 
 from typing import List, Optional
+
+import pandas as pd
 
 from .concept import Concept, Category
 from .utils.metaannotationstypes import *
@@ -44,9 +48,12 @@ class ConceptFilter(object):
         if config is None:
             self.config = default_pipeline_config
 
-        self.suspected_lookup = {}
-        self.negated_lookup = {}
-        self.historic_lookup = {}
+        negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
+        self.negated_lookup = pd.read_csv(io.BytesIO(negated_data), index_col=0, squeeze=True).T.to_dict()
+        historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
+        self.historic_lookup = pd.read_csv(io.BytesIO(historic_data), index_col=0, squeeze=True).T.to_dict()
+        suspected_data = pkgutil.get_data(__name__, "./data/suspected.csv")
+        self.suspected_lookup = pd.read_csv(io.BytesIO(suspected_data), index_col=0, squeeze=True).T.to_dict()
 
     def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
@@ -71,20 +78,29 @@ class ConceptFilter(object):
 
     def handle_problem_meta(self, concept: [Concept]) -> Optional[Concept]:
         # add, convert, or ignore concepts
-        if concept.meta_annotations is None:
-            return concept
+        # ignore laterality for now
+        convert = False
         meta_anns = concept.meta_annotations
+
+        if meta_anns is None:
+            return concept
+
         if meta_anns.presence.value == 0:
             if meta_anns.presence == Presence.NEGATED:
-                convert = self.negated_lookup.get(concept.id)
+                convert = self.negated_lookup.get(concept.id, False)
             elif meta_anns.presence == Presence.SUSPECTED:
-                convert = self.suspected_lookup.get(concept.id)
+                convert = self.suspected_lookup.get(concept.id, False)
+            # if no appropriate lookup then just delete concept
             if convert:
                 concept.id = convert
             else:
                 return None
+        elif meta_anns.presence.value == -1:
+            return None
+
         if meta_anns.relevance.value == 0:
-            convert = self.historic_lookup.get(concept.id)
+            convert = self.historic_lookup.get(concept.id, False)
+            # if no appropriate lookup then leave as is
             if convert:
                 concept.id = convert
         elif meta_anns.relevance.value == -1:
@@ -97,4 +113,3 @@ class ConceptFilter(object):
 
     def __call__(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]] = None):
         return self.filter(extracted_concepts, record_concepts)
-
