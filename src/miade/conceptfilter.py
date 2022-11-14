@@ -57,13 +57,13 @@ class ConceptFilter(object):
 
     def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
-        extracted_concepts = sorted(set(extracted_concepts))
+        processed_concepts = sorted(set(extracted_concepts))
         filtered_concepts = []
-        for concept in extracted_concepts:
+        for concept in processed_concepts:
             # meta-annotations
             if concept.category == Category.PROBLEM:
                 concept = self.handle_problem_meta(concept)
-            if concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
+            elif concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
                 concept = self.handle_meds_allergen_meta(concept)
             # ignore concepts filtered by meta-annotations
             if concept is None:
@@ -80,31 +80,28 @@ class ConceptFilter(object):
         # add, convert, or ignore concepts
         # ignore laterality for now
         convert = False
+        tag = ""
         meta_anns = concept.meta_annotations
 
         if meta_anns is None:
             return concept
-
-        if meta_anns.presence.value == 0:
-            if meta_anns.presence == Presence.NEGATED:
-                convert = self.negated_lookup.get(concept.id, False)
-            elif meta_anns.presence == Presence.SUSPECTED:
-                convert = self.suspected_lookup.get(concept.id, False)
-            # if no appropriate lookup then just delete concept
-            if convert:
-                concept.id = convert
-            else:
+        if meta_anns.presence is Presence.NEGATED:
+            convert = self.negated_lookup.get(int(concept.id), False)
+            tag = " (negated)"
+        if meta_anns.presence is Presence.SUSPECTED:
+            convert = self.suspected_lookup.get(int(concept.id), False)
+            tag = " (suspected)"
+        if meta_anns.relevance is Relevance.HISTORIC:
+            convert = self.historic_lookup.get(int(concept.id), False)
+            tag = " (historic)"
+        # if no appropriate lookup then just delete concept
+        if convert:
+            concept.id = str(convert)
+            concept.name = concept.name + tag
+        else:
+            if meta_anns.presence is Presence.NEGATED or \
+                    meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
                 return None
-        elif meta_anns.presence.value == -1:
-            return None
-
-        if meta_anns.relevance.value == 0:
-            convert = self.historic_lookup.get(concept.id, False)
-            # if no appropriate lookup then leave as is
-            if convert:
-                concept.id = convert
-        elif meta_anns.relevance.value == -1:
-            return None
 
         return concept
 

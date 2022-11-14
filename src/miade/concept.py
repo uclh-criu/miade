@@ -54,7 +54,7 @@ class Concept(object):
     @meta_annotations.setter
     def meta_annotations(self, meta_anns: [MetaAnnotations]):
         if meta_anns is not None:
-            if isinstance(meta_anns, MetaAnnotations):
+            if not isinstance(meta_anns, MetaAnnotations):
                 raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
             if self.category == Category.PROBLEM:
                 if not (meta_anns.presence and meta_anns.relevance and meta_anns.laterality):
@@ -91,14 +91,14 @@ class Concept(object):
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, type: {self.category.name}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, meta: {self.meta_annotations}}} "
+            f" dosage: {self.dosage}, meta: {None if not self.meta_annotations else self.meta_annotations.__dict__}}} "
         )
 
     def __hash__(self):
         return hash((self.id, self.name, self.category))
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        return self.id == other.id and self.name == other.name and self.category == other.category
 
     def __lt__(self, other):
         return int(self.id) < int(other.id)
