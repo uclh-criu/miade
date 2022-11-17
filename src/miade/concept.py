@@ -3,6 +3,7 @@ from typing import Optional, Dict
 
 from .dosage import Dosage
 from .metaannotations import MetaAnnotations
+from .utils.metaannotationstypes import Presence
 
 
 class Category(Enum):
@@ -56,9 +57,6 @@ class Concept(object):
         if meta_anns is not None:
             if not isinstance(meta_anns, MetaAnnotations):
                 raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
-            if self.category == Category.PROBLEM:
-                if not (meta_anns.presence and meta_anns.relevance and meta_anns.laterality):
-                    raise ValueError("Problem meta-annotations missing presence, relevance, or laterality.")
             if self.category == Category.MEDICATION or self.category == Category.ALLERGY:
                 if not (meta_anns.substance and meta_anns.reaction and meta_anns.severity):
                     raise ValueError("Medications or Allergy meta-annotations missing substance, reaction, or severity.")
@@ -67,9 +65,9 @@ class Concept(object):
 
     @classmethod
     def from_entity(cls, entity: [Dict]):
-        # TODO: assign meds or allergen from meta-annotations here (earlier in the pipeline)
         meta_anns = MetaAnnotations.from_dict(entity["meta_anns"]) if entity["meta_anns"] else None
 
+        # TODO: assign meds or allergen from meta-annotations here (earlier in the pipeline), or add tag in ontologies
         if entity["ontologies"] == ["FDB"]:
             category = Category.MEDICATION
         elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
@@ -78,6 +76,15 @@ class Concept(object):
             category = Category.ALLERGY
         else:
             raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
+
+        if entity["negex"]:
+            if meta_anns is None:
+                meta_anns = MetaAnnotations()
+            if meta_anns.presence:
+                # TODO: function to pick which negation to use
+                pass
+            else:
+                meta_anns.presence = Presence.NEGATED
 
         return Concept(
                 id=entity["cui"],

@@ -8,14 +8,16 @@ class MetaAnnotations(object):
                  presence: Optional[Presence] = None,
                  relevance: Optional[Relevance] = None,
                  laterality: Optional[Laterality] = None,
-                 reaction: Optional[Reaction] = None,
-                 substance: Optional[Substance] = None,
+                 reaction: Optional[ReactionPosition] = None,
+                 substance: Optional[SubstanceCategory] = None,
+                 allergy: Optional[AllergyType] = None,
                  severity: Optional[Severity] = None):
         self.presence = presence
         self.relevance = relevance
         self.laterality = laterality
         self.reaction = reaction
         self.substance = substance
+        self.allergy = allergy
         self.severity = severity
 
     @classmethod
@@ -25,6 +27,7 @@ class MetaAnnotations(object):
         laterality = None
         reaction = None
         substance = None
+        allergy = None
         severity = None
 
         for meta_ann in meta_anns.values():
@@ -51,10 +54,13 @@ class MetaAnnotations(object):
                     laterality = Laterality.RIGHT
                 elif meta_ann["value"] == "bilateral":
                     laterality = Laterality.BILATERAL
+            # TODO: meds/allergy meta
             elif meta_ann["name"] == "reaction":
                 reaction = None
             elif meta_ann["name"] == "substance":
                 substance = None
+            elif meta_ann["name"] == "allergy_type":
+                allergy = None
             elif meta_ann["name"] == "severity":
                 severity = None
 
@@ -63,6 +69,7 @@ class MetaAnnotations(object):
                    laterality=laterality,
                    reaction=reaction,
                    substance=substance,
+                   allergy=allergy,
                    severity=severity)
 
     def __str__(self):
@@ -70,7 +77,4 @@ class MetaAnnotations(object):
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
-
-
-
 

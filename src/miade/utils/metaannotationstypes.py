@@ -22,23 +22,26 @@ class Laterality(Enum):
 
 
 # Medication and Allergy meta-annotation types
-class Reaction(Enum):
+class ReactionPosition(Enum):
     N0T_REACTION = 1
     AFTER_SUBSTANCE = 2
     BEFORE_SUBSTANCE = 3
 
 
-class Substance(Enum):
+class SubstanceCategory(Enum):
     IRRELEVANT = 1
     TAKING = 2
-    ALLERGIC = 3
-    ADVERSE_REACTION = 4
-    INTOLERANT = 5
-    UNSPECIFIED = 6
+    ADVERSE_REACTION = 3
+
+
+class AllergyType(Enum):
+    UNSPECIFIED = 1
+    ALLERGY = 2
+    INTOLERANCE = 3
 
 
 class Severity(Enum):
-    NOT_APPLICABLE = 1
+    UNSPECIFIED = 1
     MILD = 2
     MODERATE = 3
     SEVERE = 4

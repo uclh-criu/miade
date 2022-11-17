@@ -3,6 +3,7 @@ import yaml
 import pkgutil
 import logging
 
+from negspacy.negation import Negex
 from pathlib import Path
 from typing import List, Dict, Optional
 from enum import Enum
@@ -15,6 +16,7 @@ from .note import Note
 
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
+from .utils.miadecat import MiADE_CAT
 
 log = logging.getLogger(__name__)
 
@@ -58,17 +60,19 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(self, model_directory: Path, debug_config_path: Optional[Path] = None):
+    def __init__(self, model_directory: Path, debug_config_path: Optional[Path] = None, use_negex: bool = True):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.annotators = [
-            CAT.load_model_pack(
+            MiADE_CAT.load_model_pack(
                 model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
-
         self.dosage_extractor = DosageExtractor()
         self.concept_filter = ConceptFilter()
+
+        if use_negex:
+            self._add_negex_pipeline()
 
         if debug_config_path is not None:
             with open(debug_config_path, "r") as stream:
@@ -90,7 +94,7 @@ class NoteProcessor:
                     concept = Concept.from_entity(entity)
                     concepts.append(concept)
                 except ValueError as e:
-                    log.warning(e)
+                    log.warning(f"Concept skipped: {e}")
 
         # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
@@ -99,6 +103,12 @@ class NoteProcessor:
         concepts = self.concept_filter(concepts, record_concepts)
 
         return concepts
+
+    def _add_negex_pipeline(self) -> None:
+        for annotator in self.annotators:
+            annotator.pipe.spacy_nlp.add_pipe("sentencizer")
+            annotator.pipe.spacy_nlp.enable_pipe("sentencizer")
+            annotator.pipe.spacy_nlp.add_pipe("negex")
 
     def add_dosages_to_concepts(
             self, concepts: List[Concept], note: Note

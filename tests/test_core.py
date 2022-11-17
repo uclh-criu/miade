@@ -5,11 +5,18 @@ from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
 
 
-def test_core(model_directory_path, debug_path, test_note):
+def test_core(model_directory_path, debug_path, test_note, test_negated_note, test_duplicated_note):
     processor = NoteProcessor(model_directory_path, debug_path)
     assert processor.process(test_note) == [
-        Concept(id="3", name="Liver failure", category=Category.PROBLEM, start=12, end=25),
-        Concept(id="10", name="Paracetamol", category=Category.MEDICATION, start=40, end=51),
+        Concept(id="3", name="Liver failure", category=Category.PROBLEM),
+        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+    ]
+    assert processor.process(test_negated_note) == [
+        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+    ]
+    assert processor.process(test_duplicated_note) == [
+        Concept(id="3", name="Liver failure", category=Category.PROBLEM),
+        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
     ]
 
 

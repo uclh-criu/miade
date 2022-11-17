@@ -26,14 +26,15 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
         # assume medication code is snomed
-        log.debug(f"Filtered duplicate problem/medication {concept}")
+        log.debug(f"Filtered problem/medication {(concept.name, concept.id)}: concept exists in record")
         return True
+    # TODO: modify if allergy is standardised SNOMED
     if concept.category == Category.ALLERGY and concept.name in [
         record_concept.name for record_concept in record_concepts
         if record_concept.category == Category.ALLERGY
     ]:
         # by text match as epic does not return code
-        log.debug(f"Filtered duplicate allergy {concept}")
+        log.debug(f"Filtered allergy {(concept.name, concept.id)}: concept exists in record")
         return True
 
     return False
@@ -57,9 +58,9 @@ class ConceptFilter(object):
 
     def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
-        processed_concepts = sorted(set(extracted_concepts))
+        all_concepts = extracted_concepts
         filtered_concepts = []
-        for concept in processed_concepts:
+        for concept in all_concepts:
             # meta-annotations
             if concept.category == Category.PROBLEM:
                 concept = self.handle_problem_meta(concept)
@@ -74,7 +75,10 @@ class ConceptFilter(object):
                     continue
             filtered_concepts.append(concept)
 
-        return filtered_concepts
+        # should filter for duplicates within list after meta-annotations handling
+        # e.g. the same concept could be negated and historic; this would be filtered if we checked for
+        # duplicates in the beginning
+        return sorted(set(filtered_concepts))
 
     def handle_problem_meta(self, concept: [Concept]) -> Optional[Concept]:
         # add, convert, or ignore concepts
@@ -96,11 +100,13 @@ class ConceptFilter(object):
             tag = " (historic)"
         # if no appropriate lookup then just delete concept
         if convert:
+            log.debug(f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}")
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
             if meta_anns.presence is Presence.NEGATED or \
                     meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
+                log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
                 return None
 
         return concept

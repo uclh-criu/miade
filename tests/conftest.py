@@ -26,6 +26,17 @@ def test_note() -> Note:
 
 
 @pytest.fixture(scope="function")
+def test_negated_note() -> Note:
+    return Note(text="Patient does not have liver failure. Patient is taking paracetamol.")
+
+
+@pytest.fixture(scope="function")
+def test_duplicated_note() -> Note:
+    return Note(text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
+                     "decrease paracetamol dosage.")
+
+
+@pytest.fixture(scope="function")
 def temp_dir() -> Path:
     return Path("./tests/data/temp")
 
@@ -126,6 +137,18 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="8", name="PEANUTS", category=Category.ALLERGY)
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_self_duplicate_concepts_note() -> List[Concept]:
+    return [
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.MEDICATION),
+        Concept(id="2", name="test2", category=Category.MEDICATION),
     ]
 
 
