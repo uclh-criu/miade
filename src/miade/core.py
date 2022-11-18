@@ -72,6 +72,7 @@ class NoteProcessor:
         self.concept_filter = ConceptFilter()
 
         if use_negex:
+            log.info("Using Negex for negation detection, but preference is given to meta-annotations")
             self._add_negex_pipeline()
 
         if debug_config_path is not None:
@@ -130,7 +131,7 @@ class NoteProcessor:
             if concept.category == Category.MEDICATION:
                 dosage_string = get_dosage_string(concept, next_med_concept, note.text)
                 if len(dosage_string.split()) > 2:
-                    concept.dosage = self.dosage_extractor.extract(text=dosage_string)
+                    concept.dosage = self.dosage_extractor(dosage_string)
                     # print(concept.dosage)
 
         return concepts

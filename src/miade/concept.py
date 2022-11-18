@@ -24,6 +24,7 @@ class Concept(object):
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
+        negex: Optional[bool] = False,
         meta_anns: Optional[MetaAnnotations] = None,
         debug_deprecated: Optional[Dict] = None,
     ):
@@ -34,8 +35,9 @@ class Concept(object):
         self.start: int = start
         self.end: int = end
         self.dosage: Dosage = dosage
+        self.negex = negex
         self.meta_annotations = meta_anns
-        self.debug_deprecated = debug_deprecated
+        self._debug_deprecated = debug_deprecated
 
     @property
     def dosage(self):
@@ -57,7 +59,10 @@ class Concept(object):
         if meta_anns is not None:
             if not isinstance(meta_anns, MetaAnnotations):
                 raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
-            if self.category == Category.MEDICATION or self.category == Category.ALLERGY:
+            if self.category is Category.PROBLEM:
+                if not (meta_anns.presence and meta_anns.relevance and meta_anns.laterality):
+                    raise ValueError("Problems meta-annotations missing presence, relevance or laterality.")
+            if self.category is Category.MEDICATION or self.category is Category.ALLERGY:
                 if not (meta_anns.substance and meta_anns.reaction and meta_anns.severity):
                     raise ValueError("Medications or Allergy meta-annotations missing substance, reaction, or severity.")
 
@@ -77,28 +82,21 @@ class Concept(object):
         else:
             raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
 
-        if entity["negex"]:
-            if meta_anns is None:
-                meta_anns = MetaAnnotations()
-            if meta_anns.presence:
-                # TODO: function to pick which negation to use
-                pass
-            else:
-                meta_anns.presence = Presence.NEGATED
-
         return Concept(
                 id=entity["cui"],
                 name=entity["pretty_name"],
                 category=category,
                 start=entity["start"],
                 end=entity["end"],
+                negex=entity["negex"] if entity["negex"] else False,
                 meta_anns=meta_anns,
             )
 
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, type: {self.category.name}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, meta: {None if not self.meta_annotations else self.meta_annotations.__dict__}}} "
+            f" dosage: {self.dosage}, negex: {self.negex},"
+            f" meta: {None if not self.meta_annotations else self.meta_annotations.__dict__}}} "
         )
 
     def __hash__(self):

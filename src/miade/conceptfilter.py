@@ -1,6 +1,7 @@
 import io
 import logging
 import pkgutil
+from copy import deepcopy
 
 from typing import List, Optional
 
@@ -58,7 +59,9 @@ class ConceptFilter(object):
 
     def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
-        all_concepts = extracted_concepts
+
+        # deepcopy so we still have reference to original list of concepts
+        all_concepts = deepcopy(extracted_concepts)
         filtered_concepts = []
         for concept in all_concepts:
             # meta-annotations
@@ -86,28 +89,35 @@ class ConceptFilter(object):
         convert = False
         tag = ""
         meta_anns = concept.meta_annotations
-
-        if meta_anns is None:
-            return concept
-        if meta_anns.presence is Presence.NEGATED:
+        if concept.negex and meta_anns is None:
             convert = self.negated_lookup.get(int(concept.id), False)
             tag = " (negated)"
-        if meta_anns.presence is Presence.SUSPECTED:
-            convert = self.suspected_lookup.get(int(concept.id), False)
-            tag = " (suspected)"
-        if meta_anns.relevance is Relevance.HISTORIC:
-            convert = self.historic_lookup.get(int(concept.id), False)
-            tag = " (historic)"
-        # if no appropriate lookup then just delete concept
+
+        if meta_anns is not None:
+            if meta_anns.presence is Presence.NEGATED:
+                # TODO: account for/pick negex and meta_anns negations
+                convert = self.negated_lookup.get(int(concept.id), False)
+                tag = " (negated)"
+            if meta_anns.presence is Presence.SUSPECTED:
+                convert = self.suspected_lookup.get(int(concept.id), False)
+                tag = " (suspected)"
+            if meta_anns.relevance is Relevance.HISTORIC:
+                convert = self.historic_lookup.get(int(concept.id), False)
+                tag = " (historic)"
+
         if convert:
             log.debug(f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}")
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
-            if meta_anns.presence is Presence.NEGATED or \
-                    meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
-                log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
+            if concept.negex and meta_anns is None:
+                log.debug(f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match")
                 return None
+            if meta_anns:
+                if meta_anns.presence is Presence.NEGATED or \
+                        meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
+                    log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
+                    return None
 
         return concept
 
