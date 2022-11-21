@@ -19,7 +19,8 @@ setup(
         "click==7.1.2",
         "pathlib",
         "pydantic",
-        "negspacy"
+        "negspacy",
+        "scikit-learn",
     ],
     scripts=["scripts/miade"],
 )
