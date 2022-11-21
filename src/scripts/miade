@@ -83,7 +83,7 @@ def train(model: Path, data: Path,
     if data.suffix == ".csv":
         print("Loading csv file...")
         df = pd.read_csv(data)
-        training_data = df.source.to_list()
+        training_data = df.text.to_list()
         if train_partial:
             print(f"partial training {train_partial} documents")
             training_data = training_data[:train_partial]
@@ -125,7 +125,7 @@ def train_supervised(model: Path, annotations_path: Path,
     cat.config.version["performance"]["ner"]["r"] = r
     cat.config.version["performance"]["ner"]["f1"] = f1
     cat.config.version["performance"]["ner"]["cui_counts"] = cui_counts
-    cat.config.version["performance"]["ner"]["examples"] = examples
+    # cat.config.version["performance"]["ner"]["examples"] = examples
 
     cat.create_model_pack(str(output))
 
