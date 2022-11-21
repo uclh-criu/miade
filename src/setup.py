@@ -19,6 +19,7 @@ setup(
         "click==7.1.2",
         "pathlib",
         "pydantic",
+        "scikit-learn",
     ],
     scripts=["scripts/miade"],
 )
