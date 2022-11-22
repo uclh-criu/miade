@@ -48,11 +48,11 @@ def test_meta_annotations(test_meta_annotations_concepts):
     ]
     # test just using negex for negation
     test_meta_annotations_concepts[0].negex = True
-    test_meta_annotations_concepts[0].meta_annotations = None
+    test_meta_annotations_concepts[0].meta = None
     test_meta_annotations_concepts[1].negex = False
-    test_meta_annotations_concepts[1].meta_annotations = None
+    test_meta_annotations_concepts[1].meta = None
     test_meta_annotations_concepts[2].negex = True
-    test_meta_annotations_concepts[2].meta_annotations = None
+    test_meta_annotations_concepts[2].meta = None
 
     assert concept_filter(extracted_concepts=test_meta_annotations_concepts) == [
         Concept(id="1415005", name="Lymphangitis", category=Category.PROBLEM),

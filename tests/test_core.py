@@ -5,8 +5,8 @@ from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
 
 
-def test_core(model_directory_path, debug_path, test_note, test_negated_note, test_duplicated_note):
-    processor = NoteProcessor(model_directory_path, debug_path)
+def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):
+    processor = NoteProcessor(model_directory_path)
     assert processor.process(test_note) == [
         Concept(id="3", name="Liver failure", category=Category.PROBLEM),
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
@@ -28,17 +28,20 @@ def test_concept(test_medcat_concepts):
 
 
 def test_debug(model_directory_path, debug_path, test_note):
-    processor = NoteProcessor(model_directory_path, debug_path)
-    assert processor.debug(mode=DebugMode.CDA) == {'Problems': {'statusCode': 'active',
-                                                                 'actEffectiveTimeHigh': 'None',
-                                                                 'observationEffectiveTimeLow': 20200504,
-                                                                 'observationEffectiveTimeHigh': 20210904},
-                                                   'Medication': {'consumableCodeSystemName': 'RxNorm',
-                                                                  'consumableCodeSystemValue': '2.16.840.1.113883.6.88'},
-                                                   'Allergy': {'allergySectionCodeName': 'Propensity to adverse reaction',
-                                                               'allergySectionCodeValue': 420134006}}
+    processor = NoteProcessor(model_directory_path)
+    assert processor.debug(debug_path, mode=DebugMode.CDA) == {
+        'Problems': {'statusCode': 'active',
+                     'actEffectiveTimeHigh': 'None',
+                     'observationEffectiveTimeLow': 20200504,
+                     'observationEffectiveTimeHigh': 20210904},
+        'Medication': {'consumableCodeSystemName': 'RxNorm',
+                       'consumableCodeSystemValue': '2.16.840.1.113883.6.88'},
+        'Allergy': {
+            'allergySectionCodeName': 'Propensity to adverse reaction',
+            'allergySectionCodeValue': 420134006}
+    }
 
-    concept_list = processor.debug(mode=DebugMode.PRELOADED)
+    concept_list = processor.debug(debug_path, mode=DebugMode.PRELOADED)
     assert concept_list[1].name == "Paracetamol"
     assert concept_list[1].id == 90332006
     assert concept_list[1].category == Category.MEDICATION

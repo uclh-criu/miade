@@ -60,7 +60,7 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(self, model_directory: Path, debug_config_path: Optional[Path] = None, use_negex: bool = True):
+    def __init__(self, model_directory: Path, use_negex: bool = True):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.annotators = [
             MiADE_CAT.load_model_pack(
@@ -74,15 +74,6 @@ class NoteProcessor:
         if use_negex:
             log.info("Using Negex for negation detection, but preference is given to meta-annotations")
             self._add_negex_pipeline()
-
-        if debug_config_path is not None:
-            with open(debug_config_path, "r") as stream:
-                debug_config = yaml.safe_load(stream)
-        else:
-            data = pkgutil.get_data(__name__, "configs/example_debug_config.yml")
-            debug_config = yaml.safe_load(data)
-
-        self.debug_config = debug_config
 
     def process(
             self, note: Note, record_concepts: Optional[List[Concept]] = None
@@ -137,19 +128,23 @@ class NoteProcessor:
         return concepts
 
     def debug(
-            self, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
+            self, debug_config_path: Path, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
     ) -> (List[Concept], Dict):
         """
         Returns debug configurations for end-to-end testing of the MiADE unit in NoteReader
+        :param debug_config_path: Path of debug config file
         :param mode: (DebugCode) which debug mode to use
         :param code: (int) which preset configuration from the config file to use
         :return: (tuple) list of concepts to return and CDA dictionary
         """
         # print(debug_config)
+        with open(debug_config_path, "r") as stream:
+            debug_config = yaml.safe_load(stream)
+
         # use preloaded concepts and cda fields
         if mode == DebugMode.PRELOADED:
             concept_list = []
-            for name, concept_dict in self.debug_config["Presets"][code].items():
+            for name, concept_dict in debug_config["Presets"][code].items():
                 dosage = None
                 debug = None
                 if concept_dict["ontologies"] == "FDB":
@@ -187,13 +182,13 @@ class NoteProcessor:
                         name=name,
                         category=category,
                         dosage=dosage,
-                        debug_deprecated=debug,
+                        debug_dict=debug,
                     )
                 )
             return concept_list
         # detect concepts and return preloaded cda fields
         elif mode == DebugMode.CDA:
-            return self.debug_config["CDA"][code]
+            return debug_config["CDA"][code]
         # switch out models once we have multiple models/version control
         elif mode == DebugMode.MODEL:
             for model in self.annotators:

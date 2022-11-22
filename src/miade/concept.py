@@ -3,7 +3,6 @@ from typing import Optional, Dict
 
 from .dosage import Dosage
 from .metaannotations import MetaAnnotations
-from .utils.metaannotationstypes import Presence
 
 
 class Category(Enum):
@@ -26,18 +25,18 @@ class Concept(object):
         dosage: Optional[Dosage] = None,
         negex: Optional[bool] = False,
         meta_anns: Optional[MetaAnnotations] = None,
-        debug_deprecated: Optional[Dict] = None,
+        debug_dict: Optional[Dict] = None,
     ):
 
-        self.name: str = name
-        self.id: str = id
-        self.category: Category = category
-        self.start: int = start
-        self.end: int = end
-        self.dosage: Dosage = dosage
+        self.name = name
+        self.id = id
+        self.category = category
+        self.start = start
+        self.end = end
+        self.dosage = dosage
         self.negex = negex
-        self.meta_annotations = meta_anns
-        self._debug_deprecated = debug_deprecated
+        self.meta = meta_anns
+        self.debug = debug_dict
 
     @property
     def dosage(self):
@@ -51,11 +50,11 @@ class Concept(object):
         self._dosage = dosage
 
     @property
-    def meta_annotations(self):
+    def meta(self):
         return self._meta_annotations
 
-    @meta_annotations.setter
-    def meta_annotations(self, meta_anns: [MetaAnnotations]):
+    @meta.setter
+    def meta(self, meta_anns: [MetaAnnotations]):
         if meta_anns is not None:
             if not isinstance(meta_anns, MetaAnnotations):
                 raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
@@ -96,7 +95,7 @@ class Concept(object):
         return (
             f"{{name: {self.name}, id: {self.id}, type: {self.category.name}, start: {self.start}, end: {self.end},"
             f" dosage: {self.dosage}, negex: {self.negex},"
-            f" meta: {None if not self.meta_annotations else self.meta_annotations.__dict__}}} "
+            f" meta: {None if not self.meta else self.meta.__dict__}}} "
         )
 
     def __hash__(self):

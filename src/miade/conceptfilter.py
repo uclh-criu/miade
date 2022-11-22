@@ -88,7 +88,7 @@ class ConceptFilter(object):
         # ignore laterality for now
         convert = False
         tag = ""
-        meta_anns = concept.meta_annotations
+        meta_anns = concept.meta
         if concept.negex and meta_anns is None:
             convert = self.negated_lookup.get(int(concept.id), False)
             tag = " (negated)"
