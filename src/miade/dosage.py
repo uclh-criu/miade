@@ -8,6 +8,7 @@ from spacy.tokens import Doc
 
 log = logging.getLogger(__name__)
 
+ROUTE_CODE_SYSTEM = "NCI Thesaurus"
 route_codes = {
     "Inhalation": "C38216",
     "Oral": "C38288",
@@ -58,6 +59,7 @@ class Route(BaseModel):
     source: Optional[str] = None
     full_name: Optional[str] = None
     value: Optional[str] = None
+    code_system: Optional[str] = ROUTE_CODE_SYSTEM
 
 
 def parse_dose(

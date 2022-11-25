@@ -6,7 +6,7 @@ setup(
     description="",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"miade": ["data/*.csv", "configs/*.yml"]},
+    package_data={"miade": ["data/*.csv"]},
     setup_requires=[
         "wheel",
     ],

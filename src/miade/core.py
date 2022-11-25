@@ -1,14 +1,11 @@
 import re
 import yaml
-import pkgutil
 import logging
 
 from negspacy.negation import Negex
 from pathlib import Path
 from typing import List, Dict, Optional
 from enum import Enum
-
-from medcat.cat import CAT
 
 from .concept import Concept, Category
 from .dosage import Dosage, Dose, Frequency, Duration, Route
