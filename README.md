@@ -1,9 +1,8 @@
 # <img src="assets/miade-logo.png" width="40%">
 
-[![Build Status](https://github.com/uclh-criu/miade/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/uclh-criu/miade/actions/workflows/main.yml?query=branch%3Amaster)
+[![Build Status](https://github.com/uclh-criu/miade/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/uclh-criu/miade/actions/workflows/ci.yml?query=Tests)
 
 A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
-
 For the reference server implementation, see: [miade-server](https://github.com/uclh-criu/miade-server).
 
 ## Contents
