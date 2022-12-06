@@ -59,11 +59,12 @@ class Concept(object):
             if not isinstance(meta_anns, MetaAnnotations):
                 raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
             if self.category is Category.PROBLEM:
-                if not (meta_anns.presence and meta_anns.relevance and meta_anns.laterality):
-                    raise ValueError("Problems meta-annotations missing presence, relevance or laterality.")
+                if not (meta_anns.presence or meta_anns.relevance or meta_anns.laterality):
+                    raise ValueError("Problems meta-annotations does not have one of presence, relevance or laterality.")
             if self.category is Category.MEDICATION or self.category is Category.ALLERGY:
-                if not (meta_anns.substance and meta_anns.reaction and meta_anns.severity):
-                    raise ValueError("Medications or Allergy meta-annotations missing substance, reaction, or severity.")
+                if not (meta_anns.substance or meta_anns.reaction or meta_anns.severity):
+                    raise ValueError("Medications or Allergy meta-annotations does not have one of substance, "
+                                     "reaction, or severity.")
 
         self._meta_annotations = meta_anns
 

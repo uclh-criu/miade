@@ -158,7 +158,7 @@ def test_medcat_concepts() -> Dict:
         "0": {
             "pretty_name": "problem",
             "cui": "0",
-            "ontologies": "SNO",
+            "ontologies": ["SNO"],
             "source_value": "problem",
             "detected_name": "problem",
             "acc": 0.99,
@@ -166,6 +166,7 @@ def test_medcat_concepts() -> Dict:
             "start": 4,
             "end": 11,
             "id": 0,
+            "negex": False,
             "meta_anns": {
                 "presence": {
                     "value": "negated",
@@ -177,13 +178,37 @@ def test_medcat_concepts() -> Dict:
                     "confidence": 1,
                     "name": "relevance"
                 },
+            }
+        },
+        "1": {
+            "pretty_name": "problem",
+            "cui": "0",
+            "ontologies": ["SNO"],
+            "source_value": "problem",
+            "detected_name": "problem",
+            "acc": 0.99,
+            "context_similarity": 0.99,
+            "start": 4,
+            "end": 11,
+            "id": 0,
+            "negex": False,
+            "meta_anns": {"presence": {
+                "value": "suspected",
+                "confidence": 1,
+                "name": "presence"
+                },
+                "relevance": {
+                    "value": "irrelevant",
+                    "confidence": 1,
+                    "name": "relevance"
+                },
                 "laterality (generic)": {
                     "value": "none",
                     "confidence": 1,
                     "name": "laterality (generic)"
                 },
             }
-        },
+        }
     }
 
 

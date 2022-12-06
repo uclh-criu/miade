@@ -20,11 +20,21 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
     ]
 
 
-def test_concept(test_medcat_concepts):
-    meta_anns = MetaAnnotations.from_dict(test_medcat_concepts["0"]["meta_anns"])
-    assert meta_anns.presence == Presence.NEGATED
-    assert meta_anns.relevance == Relevance.HISTORIC
-    assert meta_anns.laterality == Laterality.NO_LATERALITY
+def test_meta_from_entity(test_medcat_concepts):
+    assert Concept.from_entity(test_medcat_concepts["0"]) == Concept(
+        id="0", name="problem", category=Category.PROBLEM, start=4, end=11,
+        meta_anns=MetaAnnotations(
+            presence=Presence.NEGATED,
+            relevance=Relevance.HISTORIC,
+            laterality=None)
+    )
+    assert Concept.from_entity(test_medcat_concepts["1"]) == Concept(
+        id="0", name="problem", category=Category.PROBLEM, start=4, end=11,
+        meta_anns=MetaAnnotations(
+            presence=Presence.SUSPECTED,
+            relevance=Relevance.IRRELEVANT,
+            laterality=Laterality.NO_LATERALITY)
+    )
 
 
 def test_debug(model_directory_path, debug_path, test_note):
