@@ -8,16 +8,16 @@ class MetaAnnotations(object):
                  presence: Optional[Presence] = None,
                  relevance: Optional[Relevance] = None,
                  laterality: Optional[Laterality] = None,
-                 reaction: Optional[ReactionPosition] = None,
-                 substance: Optional[SubstanceCategory] = None,
-                 allergy: Optional[AllergyType] = None,
+                 reaction_pos: Optional[ReactionPosition] = None,
+                 substance_category: Optional[SubstanceCategory] = None,
+                 allergy_type: Optional[AllergyType] = None,
                  severity: Optional[Severity] = None):
         self.presence = presence
         self.relevance = relevance
         self.laterality = laterality
-        self.reaction = reaction
-        self.substance = substance
-        self.allergy = allergy
+        self.reaction_pos = reaction_pos
+        self.substance_category = substance_category
+        self.allergy_type = allergy_type
         self.severity = severity
 
     @classmethod
@@ -25,9 +25,9 @@ class MetaAnnotations(object):
         presence = None
         relevance = None
         laterality = None
-        reaction = None
-        substance = None
-        allergy = None
+        reaction_pos = None
+        substance_category = None
+        allergy_type = None
         severity = None
 
         for meta_ann in meta_anns.values():
@@ -55,21 +55,21 @@ class MetaAnnotations(object):
                 elif meta_ann["value"] == "bilateral":
                     laterality = Laterality.BILATERAL
             # TODO: meds/allergy meta
-            elif meta_ann["name"] == "reaction":
-                reaction = None
-            elif meta_ann["name"] == "substance":
-                substance = None
-            elif meta_ann["name"] == "allergy_type":
-                allergy = None
+            elif meta_ann["name"] == "reactionpos":
+                reaction_pos = None
+            elif meta_ann["name"] == "category":
+                substance_category = None
+            elif meta_ann["name"] == "allergytype":
+                allergy_type = None
             elif meta_ann["name"] == "severity":
                 severity = None
 
         return cls(presence=presence,
                    relevance=relevance,
                    laterality=laterality,
-                   reaction=reaction,
-                   substance=substance,
-                   allergy=allergy,
+                   reaction_pos=reaction_pos,
+                   substance_category=substance_category,
+                   allergy_type=allergy_type,
                    severity=severity)
 
     def __str__(self):

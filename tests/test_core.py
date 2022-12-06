@@ -6,7 +6,7 @@ from miade.utils.metaannotationstypes import *
 
 
 def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):
-    processor = NoteProcessor(model_directory_path)
+    processor = NoteProcessor(model_directory_path, problems_model_id="1", meds_allergies_model_id="2")
     assert processor.process(test_note) == [
         Concept(id="3", name="Liver failure", category=Category.PROBLEM),
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
@@ -16,6 +16,25 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
     ]
     assert processor.process(test_duplicated_note) == [
         Concept(id="3", name="Liver failure", category=Category.PROBLEM),
+        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+    ]
+
+
+def test_model_id_override(model_directory_path, test_note):
+    processor = NoteProcessor(model_directory_path, problems_model_id="test_probs")
+    processor.annotators[0].config.version["id"] = "test_probs"
+    processor.annotators[0].config.version["ontology"] = "FDB"
+
+    assert processor.process(test_note) == [
+        Concept(id="3", name="Liver failure", category=Category.PROBLEM),
+        Concept(id="10", name="Paracetamol", category=Category.PROBLEM),
+    ]
+    processor.annotators[0].config.version["id"] = "test_meds"
+    processor.annotators[0].config.version["ontology"] = "SNO"
+    processor.meds_allergies_model_id = "test_meds"
+
+    assert processor.process(test_note) == [
+        Concept(id="3", name="Liver failure", category=Category.MEDICATION),
         Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
     ]
 

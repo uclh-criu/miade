@@ -62,9 +62,9 @@ class Concept(object):
                 if not (meta_anns.presence or meta_anns.relevance or meta_anns.laterality):
                     raise ValueError("Problems meta-annotations does not have one of presence, relevance or laterality.")
             if self.category is Category.MEDICATION or self.category is Category.ALLERGY:
-                if not (meta_anns.substance or meta_anns.reaction or meta_anns.severity):
-                    raise ValueError("Medications or Allergy meta-annotations does not have one of substance, "
-                                     "reaction, or severity.")
+                if not (meta_anns.substance_category or meta_anns.reaction_pos or meta_anns.severity or meta_anns.allergy_type):
+                    raise ValueError("Medications or Allergy meta-annotations does not have one of substance category, "
+                                     "reaction pos, allergy type or severity.")
 
         self._meta_annotations = meta_anns
 
@@ -72,7 +72,7 @@ class Concept(object):
     def from_entity(cls, entity: [Dict]):
         meta_anns = MetaAnnotations.from_dict(entity["meta_anns"]) if entity["meta_anns"] else None
 
-        # TODO: assign meds or allergen from meta-annotations here (earlier in the pipeline), or add tag in ontologies
+        # TODO: REVIEW: keep ontologies-based category assignment?
         if entity["ontologies"] == ["FDB"]:
             category = Category.MEDICATION
         elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
