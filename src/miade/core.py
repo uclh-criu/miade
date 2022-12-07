@@ -79,26 +79,29 @@ class NoteProcessor:
             log.info("Using Negex for negation detection, but preference is given to meta-annotations")
             self._add_negex_pipeline()
 
+        if problems_model_id:
+            log.info(f"Configured problems model {self.problems_model_id}")
+        if meds_allergies_model_id:
+            log.info(f"Configured meds/allergies model {self.meds_allergies_model_id}")
+
     def process(
             self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
         for annotator in self.annotators:
+            annotator_id = annotator.config.version["id"]
             for entity in annotator.get_entities(note)["entities"].values():
                 try:
                     concept = Concept.from_entity(entity)
-                    if annotator.config.version["id"] == self.problems_model_id:
+                    if annotator_id == self.problems_model_id:
                         concept.category = Category.PROBLEM
-                    elif annotator.config.version["id"] == self.meds_allergies_model_id:
+                    elif annotator_id == self.meds_allergies_model_id:
                         if concept.meta is not None:
                             if concept.meta.substance_category == SubstanceCategory.ADVERSE_REACTION:
                                 concept.category = Category.ALLERGY
                             elif concept.meta.substance_category == SubstanceCategory.TAKING:
                                 concept.category = Category.MEDICATION
-                            elif concept.meta.substance_category == SubstanceCategory.IRRELEVANT:
-                                # discard irrelevant
-                                continue
                         else:
                             # TODO: TEMPORARY BEFORE POST-PROCESSING SORTED OUT
                             concept.category = Category.MEDICATION
