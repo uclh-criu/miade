@@ -69,8 +69,11 @@ class ConceptFilter(object):
                 concept = self.handle_problem_meta(concept)
             elif concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
                 # TODO: REVIEW: TEMPORARY- handle reaction and problems duplications in absence of meta-annotations
-                if concept.id in [concept.id for concept in all_concepts if concept.category == Category.PROBLEM]:
-                    continue
+                if concept.start is not None and concept.end is not None:
+                    if (concept.start, concept.end) in [(concept.start, concept.end) for concept in all_concepts
+                                                        if concept.category == Category.PROBLEM]:
+                        log.debug(f"Filtered reaction duplication of problem concept")
+                        continue
                 concept = self.handle_meds_allergen_reaction_meta(concept)
             # ignore concepts filtered by meta-annotations
             if concept is None:
