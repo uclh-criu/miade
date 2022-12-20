@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 import os
-from pathlib import Path
-from shutil import rmtree
-from typing import Optional
+import json
+import logging
 
 import typer
 import yaml
 import pandas as pd
+
+from pathlib import Path
+from shutil import rmtree
+from typing import Optional, List
+from pydantic import BaseModel
+
 from medcat.cat import CAT
 from medcat.config import Config
-from pydantic import BaseModel
+from medcat.meta_cat import MetaCAT
+from medcat.config_meta_cat import ConfigMetaCAT
+from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
 from miade.model_builders import CDBBuilder
 from miade.model_builders import VocabBuilder
+
+
+log = logging.getLogger(__name__)
 
 app = typer.Typer()
 
@@ -79,18 +89,19 @@ def build_model_pack(
 def train(model: Path, data: Path,
           checkpoint: int = 5000,
           train_partial: Optional[int] = None,
+          description: str = None,
           output: Optional[Path] = typer.Argument(Path.cwd())):
     if data.suffix == ".csv":
-        print("Loading csv file...")
+        log.info(f"Loading csv file {data}...")
         df = pd.read_csv(data)
         training_data = df.text.to_list()
         if train_partial:
-            print(f"partial training {train_partial} documents")
+            log.info(f"Partial training {train_partial} documents")
             training_data = training_data[:train_partial]
     else:
         with data.open('r') as d:
             training_data = [line.strip() for line in d]
-    print("training data length: ", len(training_data))
+    log.info("Training data length: ", len(training_data))
 
     cat = CAT.load_model_pack(str(model))
     if checkpoint:
@@ -98,16 +109,22 @@ def train(model: Path, data: Path,
         cat.config.general["checkpoint"]["output_dir"] = os.path.join(Path.cwd(), "checkpoints")
 
     cat.train(training_data)
+
+    if description is None:
+        description = f"MiADE unsupervised trained model trained on text dataset {data.stem}"
+    cat.config.version["description"] = description
+
     cat.create_model_pack(str(output))
 
 
 @app.command()
 def train_supervised(model: Path, annotations_path: Path,
                      nepochs: int = 1,
-                     use_filters=False,
-                     print_stats=True,
-                     train_from_false_positives=True,
-                     is_resumed=False,
+                     use_filters: bool = False,
+                     print_stats: bool = True,
+                     train_from_false_positives: bool = True,
+                     is_resumed:bool = False,
+                     description: str = None,
                      output: Optional[Path] = typer.Argument(Path.cwd())):
     cat = CAT.load_model_pack(str(model))
 
@@ -118,16 +135,101 @@ def train_supervised(model: Path, annotations_path: Path,
                                                                       train_from_false_positives=train_from_false_positives,
                                                                       is_resumed=is_resumed)
 
-    cat.config.version["performance"]["ner"]["fp"] = fp
-    cat.config.version["performance"]["ner"]["fn"] = fn
-    cat.config.version["performance"]["ner"]["tp"] = tp
-    cat.config.version["performance"]["ner"]["p"] = p
-    cat.config.version["performance"]["ner"]["r"] = r
-    cat.config.version["performance"]["ner"]["f1"] = f1
-    cat.config.version["performance"]["ner"]["cui_counts"] = cui_counts
-    # cat.config.version["performance"]["ner"]["examples"] = examples
+    # populate the description field in versioning
+    if description is None:
+        description = f"MiADE supervised trained model with annotations file {annotations_path.stem}"
+    cat.config.version["description"] = description
 
     cat.create_model_pack(str(output))
+
+    # dump the training stats into a json file for reference(they are very long)
+    model_id = cat.config.version["id"]
+    training_stats = {"fp": fp,
+                      "fn": fn,
+                      "tp": tp,
+                      "p": p,
+                      "r": r,
+                      "f1": f1,
+                      "cui_counts": cui_counts}
+
+    # version without training text
+    with open(str(output) + f"problems_model_supervised_training_stats_without_text_{model_id}.json", 'w') as f:
+        json.dump(training_stats, f)
+
+    training_stats["examples"] = examples
+    # version with training text
+    with open(str(output) + f"problems_model_supervised_training_stats_with_text_{model_id}.json", 'w') as f:
+        json.dump(training_stats, f)
+
+
+def train_metacat(model_path: Path, annotation_path: Path,
+                  cntx_left: int = 20,
+                  cntx_right: int = 15,
+                  description: str = None):
+    mc = MetaCAT.load(str(model_path))
+
+    if description is None:
+        description = f"MiADE meta-annotations model {model_path.stem} trained on {annotation_path.stem}"
+
+    mc.config.general["description"] = description
+    mc.config.general["category_name"] = model_path.stem.split("_")[-1]  # meta folder name should be e.g. meta_presence
+    mc.config.general["cntx_left"] = cntx_left
+    mc.config.general["cntx_right"] = cntx_right
+
+    report = mc.train(json_path=str(annotation_path), save_dir_path=str(model_path))
+    training_stats = {mc.config.general["category_name"]: report}
+
+    with open(str(model_path) + "training_report.json", 'w') as f:
+        json.dump(training_stats, f)
+
+
+def add_metacat_models(model: Path, meta_cats_path: List[Path],
+                       description: str = None,
+                       output: Optional[Path] = typer.Argument(Path.cwd())):
+    cat = CAT.load_model_pack(str(model))
+
+    meta_cats = []
+    categories = []
+    stats = []
+    for metacat in meta_cats_path:
+        mc = MetaCAT.load(str(metacat))
+        meta_cats.append(mc)
+        categories.append(mc.config.general["category_name"])
+
+        with open(str(metacat) + "training_report.json") as f:
+            report = json.load(f)
+        stats.append(report)
+
+    cat_w_meta = CAT(cdb=cat.cdb, vocab=cat.vocab, config=cat.config, meta_cats=meta_cats)
+
+    if description is None:
+        description = cat.config.version["description"] + " Packaged with meta models " + ", ".join(categories)
+    cat.config.version["description"] = description
+    for category in categories:
+        cat.config.version["performance"]["meta"][category] = stats[category]
+
+    save_name = model.stem.rsplit("_", 1)[0] + "w_meta"
+    cat_w_meta.create_model_pack(str(output), save_name)
+
+
+def rename_model_pack(model: Path, new_name: str,
+                      description: Optional[str] = None,
+                      location: str = None,
+                      ontology: str = None,
+                      performance: str = None,
+                      output: Optional[Path] = typer.Argument(Path.cwd())):
+    cat = CAT.load_model_pack(str(model))
+
+    cat.config.version["description"] = description
+    cat.config.version["location"] = location
+    cat.config.version["ontology"] = ontology
+    cat.config.version["performance"] = performance
+
+    cat.create_model_pack(str(output), new_name)
+
+    # remove old model
+    os.remove(str(model) + ".zip")
+    rmtree(model)
 
 
 if __name__ == "__main__":
