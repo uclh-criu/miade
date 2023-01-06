@@ -6,6 +6,7 @@ import logging
 
 import typer
 import yaml
+import numpy as np
 import pandas as pd
 
 from pathlib import Path
@@ -15,7 +16,8 @@ from pydantic import BaseModel
 
 from medcat.cat import CAT
 from medcat.meta_cat import MetaCAT
-from medcat.config_meta_cat import ConfigMetaCAT
+from tokenizers import ByteLevelBPETokenizer
+from gensim.models import Word2Vec
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
 from miade.model_builders import CDBBuilder
@@ -60,6 +62,7 @@ def build_model_pack(
     )
     cdb_builder.preprocess()
     cdb = cdb_builder.create_cdb()
+    log.info(f"CDB name2cui check: {list(cdb.cui2names.items())[:10]}")
 
     log.info(f"Creating model pack with vocab from {str(vocab_path)}...")
     vocab_cat = CAT.load_model_pack(str(vocab_path))
@@ -82,6 +85,7 @@ def build_model_pack(
     name = f"miade_{tag}_blank_modelpack_{current_date}" if tag is not None else f"miade_blank_modelpack_{current_date}"
 
     cat.create_model_pack(str(output), name)
+    log.info(f"Saved model pack at {output}/{name}_{cat.config.version['id']}")
 
 
 @app.command()
@@ -132,6 +136,7 @@ def train(
         else f"miade_unsupervised_trained_modelpack_{current_date}"
 
     cat.create_model_pack(str(output), name)
+    log.info(f"Saved model pack at {output}/{name}_{cat.config.version['id']}")
 
 
 @app.command()
@@ -172,6 +177,7 @@ def train_supervised(
         else f"miade_supervised_trained_modelpack_{current_date}"
 
     cat.create_model_pack(str(output), name)
+
     # dump the training stats into a json file for reference(they are very long)
     model_id = cat.config.version["id"]
     training_stats = {"fp": fp,
@@ -180,22 +186,92 @@ def train_supervised(
                       "p": p,
                       "r": r,
                       "f1": f1,
-                      "cui_counts": cui_counts}
-    # version without training text
-    with open(str(output) + f"problems_model_supervised_training_stats_without_text_{model_id}.json", 'w') as f:
+                      "cui_counts": cui_counts,
+                      "examples": examples}
+
+    stats_save_name = os.path.join(output, f"supervised_training_stats_{model_id}.json")
+    with open(stats_save_name, 'w') as f:
         json.dump(training_stats, f)
 
-    training_stats["examples"] = examples
-    # version with training text
-    with open(str(output) + f"problems_model_supervised_training_stats_with_text_{model_id}.json", 'w') as f:
-        json.dump(training_stats, f)
+    log.info(f"Saved training stats at {stats_save_name}")
 
-    log.info(f"Saved training stats at {str(output)}")
+
+@app.command()
+def create_bbpe_tokenizer(
+        train_data: Path,
+        name: Optional[str] = "bbpe_tokenizer",
+        output: Optional[Path] = typer.Argument(Path.cwd())
+):
+    # Create, train on text and save the tokenizer
+    log.info(f"Creating BPE tokenizer and start training on {train_data}...")
+    tokenizer = ByteLevelBPETokenizer()
+    tokenizer.train(str(train_data))
+    tokenizer.add_tokens(['<PAD>'])
+
+    save_path = os.path.join(output, name)
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+
+    tokenizer.save_model(str(save_path), "bbpe")
+    log.info(f"Saved tokenizer model files vocab.json and merges.txt to {save_path}")
+
+    log.info(f"Started tokenizing text from {train_data}...")
+    data = []
+    step = 0
+    with open(train_data) as f:
+        for line in f:
+            if step % 5000 == 0:
+                log.info(f"{step} DONE")
+            data.append(tokenizer.encode(line).tokens)
+            step += 1
+
+    log.info(f"Started training word2vec model with tokenized text...")
+    w2v = Word2Vec(data, vector_size=300, min_count=1)
+
+    log.info(f"Creating embeddings matrix, vocab size {tokenizer.get_vocab_size()}")
+    embeddings = []
+    step = 0
+    for i in range(tokenizer.get_vocab_size()):
+        word = tokenizer.id_to_token(i)
+        if step % 5000 == 0:
+            log.info(f"{step} DONE")
+        if word in w2v.wv:
+            embeddings.append(w2v.wv[word])
+        else:
+            embeddings.append(np.random.rand(300))
+        step += 1
+
+    log.info(f"Embedding length: {len(embeddings)}")
+
+    embeddings_save_name = os.path.join(save_path, "embeddings.npy")
+    np.save(open(str(embeddings_save_name), 'wb'), np.array(embeddings))
+    log.info(f"Saved embeddings at {embeddings_save_name}")
+
+
+@app.command()
+def create_metacats(
+    tokenizer_path: Path,
+    category_names: List[str],
+    output: Optional[Path] = typer.Argument(Path.cwd())
+):
+    log.info(f"Loading tokenizer from {tokenizer_path}/...")
+    tokenizer = TokenizerWrapperBPE.load(str(tokenizer_path))
+    log.info(f"Loading embeddings from embeddings.npy...")
+    embeddings = np.load(str(os.path.join(tokenizer_path, 'embeddings.npy')))
+
+    assert len(embeddings) == tokenizer.get_size(), f"Tokenizer and embeddings not the same size {len(embeddings)}, " \
+                                                    f"{tokenizer.get_size()}"
+
+    metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
+    for category in category_names:
+        metacat.save(str(os.path.join(output, f"meta_{category}")))
+        log.info(f"Saved meta_{category} at {output}")
 
 
 @app.command()
 def train_metacat(
         model_path: Path, annotation_path: Path,
+        nepochs: int = 50,
         cntx_left: int = 20,
         cntx_right: int = 15,
         description: str = None
@@ -209,16 +285,20 @@ def train_metacat(
     mc.config.general["category_name"] = model_path.stem.split("_")[-1]  # meta folder name should be e.g. meta_presence
     mc.config.general["cntx_left"] = cntx_left
     mc.config.general["cntx_right"] = cntx_right
+    mc.config.train["nepochs"] = nepochs
 
     log.info(
-        f"Starting metacat training for {mc.config.general['category_name']} with annotation file {annotation_path}")
+        f"Starting MetaCAT training for {mc.config.general['category_name']} for {nepochs} epoch(s) "
+        f"with annotation file {annotation_path}"
+    )
     report = mc.train(json_path=str(annotation_path), save_dir_path=str(model_path))
     training_stats = {mc.config.general["category_name"]: report}
 
-    with open(str(model_path) + "training_report.json", 'w') as f:
+    report_save_name = os.path.join(model_path, "training_report.json")
+    with open(report_save_name, 'w') as f:
         json.dump(training_stats, f)
 
-    log.info(f"Saved training report at {str(model_path)}")
+    log.info(f"Saved training report at {report_save_name}")
 
 
 @app.command()
@@ -232,29 +312,33 @@ def add_metacat_models(
     meta_cats = []
     categories = []
     stats = {}
-    for metacat in meta_cats_path:
-        mc = MetaCAT.load(str(metacat))
+    for metacat_path in meta_cats_path:
+        mc = MetaCAT.load(str(metacat_path))
         meta_cats.append(mc)
         categories.append(mc.config.general["category_name"])
-        log.info(f"Loaded meta model {categories[-1]}")
+        log.info(f"Loaded MetaCAT model {categories[-1]}")
         # get training stats if there are any
-        report_path = str(metacat) + "training_report.json"
+        report_path = os.path.join(metacat_path, "training_report.json")
         if os.path.exists(report_path):
-            log.info(f"Loading training_report.json from {str(metacat)}...")
-            with open(str(metacat) + "training_report.json") as f:
+            log.info(f"Found training_report.json from {str(metacat_path)}")
+            with open(report_path) as f:
                 report = json.load(f)
             stats[categories[-1]] = report
 
+    log.info(f"Creating CAT with MetaCAT models {categories}...")
     cat_w_meta = CAT(cdb=cat.cdb, vocab=cat.vocab, config=cat.config, meta_cats=meta_cats)
 
     if description is None:
-        description = cat.config.version["description"] + " Packaged with meta models " + ", ".join(categories)
+        log.info("Automatically populating description field of model card...")
+        description = cat.config.version["description"] + " | Packaged with MetaCAT model(s) " + ", ".join(categories)
     cat.config.version["description"] = description
+
     for category in categories:
-        cat.config.version["performance"]["meta"][category] = stats[category]
+        cat.config.version["performance"]["meta"] = stats.get(category)
 
     save_name = model.stem.rsplit("_", 1)[0] + "_w_meta"
     cat_w_meta.create_model_pack(str(output), save_name)
+    log.info(f"Saved model pack at {output}/{save_name}_{cat.config.version['id']}")
 
 
 @app.command()
@@ -282,6 +366,7 @@ def rename_model_pack(
         cat.config.version["performance"] = performance
 
     cat.create_model_pack(str(output), new_name)
+    log.info(f"Saved model pack at {output}/{new_name}_{cat.config.version['id']}")
 
     # remove old model
     if remove_old:
