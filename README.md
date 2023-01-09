@@ -1,8 +1,9 @@
-# MIADE
+# <img src="assets/miade-logo.png" width="40%">
+
+[![Build Status](https://github.com/uclh-criu/miade/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/uclh-criu/miade/actions/workflows/ci.yml?query=Tests)
 
 A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
-
-For the reference server implementation, see: [nlp-engine-server](https://github.com/uclh-criu/nlp-engine-server).
+For the reference server implementation, see: [miade-server](https://github.com/uclh-criu/miade-server).
 
 ## Contents
 
@@ -12,7 +13,7 @@ For the reference server implementation, see: [nlp-engine-server](https://github
 4. [MIADE Notereader Debug Mode](#miade-notereader-debug-mode)
 5. [Contributing](#Contributing)
 6. [Licence](#Licence)
- 
+
 
 ## Contributors
 
@@ -42,7 +43,7 @@ pytest ./tests/*
 > Remember, if using a virtual environment, to install pytest within your environment itself, otherwise you will be using the system python install of pytest, which will use system python and will not find your modules.
 
 ## MIADE Notereader Debug Mode
-The debug mode allows control over the MIADE backend through the EPIC Notereader interface. 
+The debug mode allows control over the MIADE backend through the EPIC Notereader interface.
 Specific pre-configured contents and models can be triggered by typing in keywords in the Notereader text box, allowing users to seamlessly
 test and debug the MIADE integration with EPIC Notereader.
 
