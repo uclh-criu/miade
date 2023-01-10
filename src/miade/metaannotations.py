@@ -4,31 +4,21 @@ from .utils.metaannotationstypes import *
 
 
 class MetaAnnotations(object):
-    def __init__(self,
-                 presence: Optional[Presence] = None,
-                 relevance: Optional[Relevance] = None,
-                 laterality: Optional[Laterality] = None,
-                 reaction_pos: Optional[ReactionPosition] = None,
-                 substance_category: Optional[SubstanceCategory] = None,
-                 allergy_type: Optional[AllergyType] = None,
-                 severity: Optional[Severity] = None):
+    def __init__(
+            self,
+            presence: Optional[Presence] = None,
+            relevance: Optional[Relevance] = None,
+            laterality: Optional[Laterality] = None,
+    ):
         self.presence = presence
         self.relevance = relevance
         self.laterality = laterality
-        self.reaction_pos = reaction_pos
-        self.substance_category = substance_category
-        self.allergy_type = allergy_type
-        self.severity = severity
 
     @classmethod
     def from_dict(cls, meta_anns: [Dict]):
         presence = None
         relevance = None
         laterality = None
-        reaction_pos = None
-        substance_category = None
-        allergy_type = None
-        severity = None
 
         for meta_ann in meta_anns.values():
             if meta_ann["name"] == "presence":
@@ -54,27 +44,15 @@ class MetaAnnotations(object):
                     laterality = Laterality.RIGHT
                 elif meta_ann["value"] == "bilateral":
                     laterality = Laterality.BILATERAL
-            # TODO: meds/allergy meta
-            elif meta_ann["name"] == "reactionpos":
-                reaction_pos = None
-            elif meta_ann["name"] == "category":
-                substance_category = None
-            elif meta_ann["name"] == "allergytype":
-                allergy_type = None
-            elif meta_ann["name"] == "severity":
-                severity = None
 
-        return cls(presence=presence,
-                   relevance=relevance,
-                   laterality=laterality,
-                   reaction_pos=reaction_pos,
-                   substance_category=substance_category,
-                   allergy_type=allergy_type,
-                   severity=severity)
+        return cls(
+            presence=presence,
+            relevance=relevance,
+            laterality=laterality
+        )
 
     def __str__(self):
         return self.__dict__
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
-

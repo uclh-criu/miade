@@ -13,7 +13,6 @@ from .note import Note
 
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
-from .utils.metaannotationstypes import SubstanceCategory
 from .utils.miadecat import MiADE_CAT
 
 log = logging.getLogger(__name__)
@@ -60,12 +59,8 @@ class NoteProcessor:
 
     def __init__(self,
                  model_directory: Path,
-                 problems_model_id: Optional[str] = None,
-                 meds_allergies_model_id: Optional[str] = None,
                  use_negex: bool = True):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
-        self.problems_model_id = problems_model_id
-        self.meds_allergies_model_id = meds_allergies_model_id
         self.annotators = [
             MiADE_CAT.load_model_pack(
                 model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
@@ -79,40 +74,19 @@ class NoteProcessor:
             log.info("Using Negex for negation detection, but preference is given to meta-annotations")
             self._add_negex_pipeline()
 
-        if problems_model_id:
-            log.info(f"Configured problems model {self.problems_model_id}")
-        if meds_allergies_model_id:
-            log.info(f"Configured meds/allergies model {self.meds_allergies_model_id}")
-
     def process(
             self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
         for annotator in self.annotators:
-            annotator_id = annotator.config.version["id"]
             for entity in annotator.get_entities(note)["entities"].values():
                 try:
                     concept = Concept.from_entity(entity)
-                    if annotator_id == self.problems_model_id:
-                        concept.category = Category.PROBLEM
-                    elif annotator_id == self.meds_allergies_model_id:
-                        if concept.meta is not None:
-                            if concept.meta.substance_category == SubstanceCategory.ADVERSE_REACTION:
-                                concept.category = Category.ALLERGY
-                            elif concept.meta.substance_category == SubstanceCategory.TAKING:
-                                concept.category = Category.MEDICATION
-                        else:
-                            # TODO: TEMPORARY BEFORE POST-PROCESSING SORTED OUT
-                            concept.category = Category.MEDICATION
-                        assert concept.category == Category.MEDICATION or Category.ALLERGY
                     concepts.append(concept)
                 except ValueError as e:
                     log.warning(f"Concept skipped: {e}")
 
-        # dosage extraction
-        concepts = self.add_dosages_to_concepts(concepts, note)
-        # insert default VMP selection algorithm here
         # post-processing
         concepts = self.concept_filter(concepts, record_concepts)
 
@@ -160,6 +134,7 @@ class NoteProcessor:
         :return: (tuple) list of concepts to return and CDA dictionary
         """
         # print(debug_config)
+        # TODO: tidy & update debug mode
         with open(debug_config_path, "r") as stream:
             debug_config = yaml.safe_load(stream)
 

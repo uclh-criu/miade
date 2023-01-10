@@ -12,11 +12,6 @@ from .utils.metaannotationstypes import *
 
 log = logging.getLogger(__name__)
 
-default_pipeline_config = [
-    "meta-annotations",
-    "deduplicate",
-]
-
 
 def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> bool:
     """
@@ -26,16 +21,7 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     :return: Bool whether concept is duplicated or not
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
-        # assume medication code is snomed
-        log.debug(f"Filtered problem/medication {(concept.name, concept.id)}: concept exists in record")
-        return True
-    # TODO: modify if allergy is standardised SNOMED
-    if concept.category == Category.ALLERGY and concept.name in [
-        record_concept.name for record_concept in record_concepts
-        if record_concept.category == Category.ALLERGY
-    ]:
-        # by text match as epic does not return code
-        log.debug(f"Filtered allergy {(concept.name, concept.id)}: concept exists in record")
+        log.debug(f"Filtered problem {(concept.name, concept.id)}: concept exists in record")
         return True
 
     return False
@@ -46,10 +32,7 @@ class ConceptFilter(object):
     Post-processing for extracted concepts: deduplication, meta-annotations
     """
 
-    def __init__(self, config: [List] = None):
-        if config is None:
-            self.config = default_pipeline_config
-
+    def __init__(self):
         negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
         self.negated_lookup = pd.read_csv(io.BytesIO(negated_data), index_col=0, squeeze=True).T.to_dict()
         historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
@@ -67,14 +50,6 @@ class ConceptFilter(object):
             # meta-annotations
             if concept.category == Category.PROBLEM:
                 concept = self.handle_problem_meta(concept)
-            elif concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
-                # TODO: REVIEW: TEMPORARY- handle reaction and problems duplications in absence of meta-annotations
-                if concept.start is not None and concept.end is not None:
-                    if (concept.start, concept.end) in [(concept.start, concept.end) for concept in all_concepts
-                                                        if concept.category == Category.PROBLEM]:
-                        log.debug(f"Filtered reaction duplication of problem concept")
-                        continue
-                concept = self.handle_meds_allergen_reaction_meta(concept)
             # ignore concepts filtered by meta-annotations
             if concept is None:
                 continue
@@ -125,9 +100,6 @@ class ConceptFilter(object):
                     log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
                     return None
 
-        return concept
-
-    def handle_meds_allergen_reaction_meta(self, concept: [Concept]) -> Optional[Concept]:
         return concept
 
     def __call__(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]] = None):

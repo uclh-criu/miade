@@ -61,10 +61,6 @@ class Concept(object):
             if self.category is Category.PROBLEM:
                 if not (meta_anns.presence or meta_anns.relevance or meta_anns.laterality):
                     raise ValueError("Problems meta-annotations does not have one of presence, relevance or laterality.")
-            if self.category is Category.MEDICATION or self.category is Category.ALLERGY:
-                if not (meta_anns.substance_category or meta_anns.reaction_pos or meta_anns.severity or meta_anns.allergy_type):
-                    raise ValueError("Medications or Allergy meta-annotations does not have one of substance category, "
-                                     "reaction pos, allergy type or severity.")
 
         self._meta_annotations = meta_anns
 
@@ -72,13 +68,8 @@ class Concept(object):
     def from_entity(cls, entity: [Dict]):
         meta_anns = MetaAnnotations.from_dict(entity["meta_anns"]) if entity["meta_anns"] else None
 
-        # TODO: REVIEW: keep ontologies-based category assignment?
-        if entity["ontologies"] == ["FDB"]:
-            category = Category.MEDICATION
-        elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
+        if entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
             category = Category.PROBLEM
-        elif entity["ontologies"] == ["ELG"]:
-            category = Category.ALLERGY
         else:
             raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
 
