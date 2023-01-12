@@ -9,19 +9,23 @@ class MetaAnnotations(object):
             presence: Optional[Presence] = None,
             relevance: Optional[Relevance] = None,
             laterality: Optional[Laterality] = None,
+            confidences: Optional[Dict] = None,
     ):
         self.presence = presence
         self.relevance = relevance
         self.laterality = laterality
+        self.confidences = confidences
 
     @classmethod
     def from_dict(cls, meta_anns: [Dict]):
         presence = None
         relevance = None
         laterality = None
+        confidences = {}
 
         for meta_ann in meta_anns.values():
             if meta_ann["name"] == "presence":
+                confidences[Presence] = meta_ann["confidence"]
                 if meta_ann["value"] == "confirmed":
                     presence = Presence.CONFIRMED
                 elif meta_ann["value"] == "negated":
@@ -29,6 +33,7 @@ class MetaAnnotations(object):
                 elif meta_ann["value"] == "suspected":
                     presence = Presence.SUSPECTED
             elif meta_ann["name"] == "relevance":
+                confidences[Relevance] = meta_ann["confidence"]
                 if meta_ann["value"] == "present":
                     relevance = Relevance.PRESENT
                 elif meta_ann["value"] == "historic":
@@ -36,6 +41,7 @@ class MetaAnnotations(object):
                 elif meta_ann["value"] == "irrelevant":
                     relevance = Relevance.IRRELEVANT
             elif meta_ann["name"] == "laterality (generic)":
+                confidences[Laterality] = meta_ann["confidence"]
                 if meta_ann["value"] == "none":
                     laterality = Laterality.NO_LATERALITY
                 elif meta_ann["value"] == "left":
@@ -48,7 +54,8 @@ class MetaAnnotations(object):
         return cls(
             presence=presence,
             relevance=relevance,
-            laterality=laterality
+            laterality=laterality,
+            confidences=confidences,
         )
 
     def __str__(self):

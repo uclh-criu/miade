@@ -59,8 +59,12 @@ class NoteProcessor:
 
     def __init__(self,
                  model_directory: Path,
+                 problems_model_id: Optional[str] = None,
+                 meds_allergies_model_id: Optional[str] = None,
                  use_negex: bool = True):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
+        self.problems_model_id = problems_model_id
+        self.meds_allergies_model_id = meds_allergies_model_id
         self.annotators = [
             MiADE_CAT.load_model_pack(
                 model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict

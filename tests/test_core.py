@@ -29,7 +29,8 @@ def test_meta_from_entity(test_medcat_concepts):
         meta_anns=MetaAnnotations(
             presence=Presence.SUSPECTED,
             relevance=Relevance.IRRELEVANT,
-            laterality=Laterality.NO_LATERALITY)
+            laterality=Laterality.NO_LATERALITY,
+            confidences={Presence: 1, Relevance: 1, Laterality: 1})
     )
 
 
