@@ -7,8 +7,9 @@ on:
   pull_request:
     branches:
       - master
+
 env:
-  SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
+  SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
 
 jobs:
   Test:
