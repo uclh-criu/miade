@@ -21,7 +21,9 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     :return: Bool whether concept is duplicated or not
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
-        log.debug(f"Filtered problem {(concept.name, concept.id)}: concept exists in record")
+        log.debug(
+            f"Filtered problem {(concept.name, concept.id)}: concept exists in record"
+        )
         return True
 
     return False
@@ -34,13 +36,23 @@ class ConceptFilter(object):
 
     def __init__(self):
         negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
-        self.negated_lookup = pd.read_csv(io.BytesIO(negated_data), index_col=0, squeeze=True).T.to_dict()
+        self.negated_lookup = pd.read_csv(
+            io.BytesIO(negated_data), index_col=0, squeeze=True
+        ).T.to_dict()
         historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
-        self.historic_lookup = pd.read_csv(io.BytesIO(historic_data), index_col=0, squeeze=True).T.to_dict()
+        self.historic_lookup = pd.read_csv(
+            io.BytesIO(historic_data), index_col=0, squeeze=True
+        ).T.to_dict()
         suspected_data = pkgutil.get_data(__name__, "./data/suspected.csv")
-        self.suspected_lookup = pd.read_csv(io.BytesIO(suspected_data), index_col=0, squeeze=True).T.to_dict()
+        self.suspected_lookup = pd.read_csv(
+            io.BytesIO(suspected_data), index_col=0, squeeze=True
+        ).T.to_dict()
 
-    def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+    def filter(
+        self,
+        extracted_concepts: List[Concept],
+        record_concepts: Optional[List[Concept]],
+    ) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
 
         # deepcopy so we still have reference to original list of concepts
@@ -87,20 +99,33 @@ class ConceptFilter(object):
                 tag = " (historic)"
 
         if convert:
-            log.debug(f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}")
+            log.debug(
+                f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}"
+            )
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
             if concept.negex and meta_anns is None:
-                log.debug(f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match")
+                log.debug(
+                    f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
+                )
                 return None
             if meta_anns:
-                if meta_anns.presence is Presence.NEGATED or \
-                        meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
-                    log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
+                if (
+                    meta_anns.presence is Presence.NEGATED
+                    or meta_anns.presence is Presence.SUSPECTED
+                    or meta_anns.relevance is Relevance.IRRELEVANT
+                ):
+                    log.debug(
+                        f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant"
+                    )
                     return None
 
         return concept
 
-    def __call__(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]] = None):
+    def __call__(
+        self,
+        extracted_concepts: List[Concept],
+        record_concepts: Optional[List[Concept]] = None,
+    ):
         return self.filter(extracted_concepts, record_concepts)

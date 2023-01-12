@@ -18,34 +18,47 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
 
 def test_meta_from_entity(test_medcat_concepts):
     assert Concept.from_entity(test_medcat_concepts["0"]) == Concept(
-        id="0", name="problem", category=Category.PROBLEM, start=4, end=11,
+        id="0",
+        name="problem",
+        category=Category.PROBLEM,
+        start=4,
+        end=11,
         meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED,
-            relevance=Relevance.HISTORIC,
-            laterality=None)
+            presence=Presence.NEGATED, relevance=Relevance.HISTORIC, laterality=None
+        ),
     )
     assert Concept.from_entity(test_medcat_concepts["1"]) == Concept(
-        id="0", name="problem", category=Category.PROBLEM, start=4, end=11,
+        id="0",
+        name="problem",
+        category=Category.PROBLEM,
+        start=4,
+        end=11,
         meta_anns=MetaAnnotations(
             presence=Presence.SUSPECTED,
             relevance=Relevance.IRRELEVANT,
             laterality=Laterality.NO_LATERALITY,
-            confidences={Presence: 1, Relevance: 1, Laterality: 1})
+            confidences={Presence: 1, Relevance: 1, Laterality: 1},
+        ),
     )
 
 
 def test_debug(model_directory_path, debug_path, test_note):
     processor = NoteProcessor(model_directory_path)
     assert processor.debug(debug_path, mode=DebugMode.CDA) == {
-        'Problems': {'statusCode': 'active',
-                     'actEffectiveTimeHigh': 'None',
-                     'observationEffectiveTimeLow': 20200504,
-                     'observationEffectiveTimeHigh': 20210904},
-        'Medication': {'consumableCodeSystemName': 'RxNorm',
-                       'consumableCodeSystemValue': '2.16.840.1.113883.6.88'},
-        'Allergy': {
-            'allergySectionCodeName': 'Propensity to adverse reaction',
-            'allergySectionCodeValue': 420134006}
+        "Problems": {
+            "statusCode": "active",
+            "actEffectiveTimeHigh": "None",
+            "observationEffectiveTimeLow": 20200504,
+            "observationEffectiveTimeHigh": 20210904,
+        },
+        "Medication": {
+            "consumableCodeSystemName": "RxNorm",
+            "consumableCodeSystemValue": "2.16.840.1.113883.6.88",
+        },
+        "Allergy": {
+            "allergySectionCodeName": "Propensity to adverse reaction",
+            "allergySectionCodeValue": 420134006,
+        },
     }
 
     concept_list = processor.debug(debug_path, mode=DebugMode.PRELOADED)
@@ -74,17 +87,17 @@ def test_dosage_text_splitter(model_directory_path, test_med_concepts, test_med_
     assert concepts[2].dosage.text == "aspirin IM q daily x 2 weeks with concurrent "
     assert concepts[3].dosage.text == "DOXYCYCLINE 500mg tablets for two weeks"
 
-    assert concepts[0].dosage.dose == Dose(source='75 mg',
-                                           value=75,
-                                           unit='mg',
-                                           low=None,
-                                           high=None)
+    assert concepts[0].dosage.dose == Dose(
+        source="75 mg", value=75, unit="mg", low=None, high=None
+    )
 
-    assert concepts[0].dosage.frequency == Frequency(source='start 75 mg every day ',
-                                                     value=1.0,
-                                                     unit='d',
-                                                     low=None,
-                                                     high=None,
-                                                     standardDeviation=None,
-                                                     institutionSpecified=False,
-                                                     preconditionAsRequired=False)
+    assert concepts[0].dosage.frequency == Frequency(
+        source="start 75 mg every day ",
+        value=1.0,
+        unit="d",
+        low=None,
+        high=None,
+        standardDeviation=None,
+        institutionSpecified=False,
+        preconditionAsRequired=False,
+    )

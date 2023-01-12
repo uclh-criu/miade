@@ -27,13 +27,17 @@ def test_note() -> Note:
 
 @pytest.fixture(scope="function")
 def test_negated_note() -> Note:
-    return Note(text="Patient does not have liver failure. Patient is taking paracetamol.")
+    return Note(
+        text="Patient does not have liver failure. Patient is taking paracetamol."
+    )
 
 
 @pytest.fixture(scope="function")
 def test_duplicated_note() -> Note:
-    return Note(text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
-                     "decrease paracetamol dosage.")
+    return Note(
+        text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
+        "decrease paracetamol dosage."
+    )
 
 
 @pytest.fixture(scope="function")
@@ -87,29 +91,50 @@ def cdb_csv_paths() -> List[Path]:
 
 @pytest.fixture(scope="function")
 def test_med_note() -> Note:
-    return Note(text="Magnesium hydroxide 75mg daily \nparacetamol 500mg po 3 times a day as needed.\n"
-                     "Patient treated with aspirin IM q daily x 2 weeks with concurrent DOXYCYCLINE 500mg tablets for "
-                     "two weeks")
+    return Note(
+        text="Magnesium hydroxide 75mg daily \nparacetamol 500mg po 3 times a day as needed.\n"
+        "Patient treated with aspirin IM q daily x 2 weeks with concurrent DOXYCYCLINE 500mg tablets for "
+        "two weeks"
+    )
 
 
 @pytest.fixture(scope="function")
 def test_med_concepts() -> List[Concept]:
-    return [Concept(id="0", name="Magnesium hydroxide", category=Category.MEDICATION, start=0, end=19),
-            Concept(id="1", name="Paracetamol", category=Category.MEDICATION, start=32, end=43),
-            Concept(id="2", name="Aspirin", category=Category.MEDICATION, start=99, end=107),
-            Concept(id="3", name="Doxycycline", category=Category.MEDICATION, start=144, end=156)]
+    return [
+        Concept(
+            id="0",
+            name="Magnesium hydroxide",
+            category=Category.MEDICATION,
+            start=0,
+            end=19,
+        ),
+        Concept(
+            id="1", name="Paracetamol", category=Category.MEDICATION, start=32, end=43
+        ),
+        Concept(
+            id="2", name="Aspirin", category=Category.MEDICATION, start=99, end=107
+        ),
+        Concept(
+            id="3", name="Doxycycline", category=Category.MEDICATION, start=144, end=156
+        ),
+    ]
 
 
 @pytest.fixture(scope="function")
 def test_miade_doses() -> (List[Note], pd.DataFrame):
     extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
-    return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
+    return [
+        Note(text=dose) for dose in extracted_doses.dosestring.to_list()
+    ], extracted_doses
 
 
 @pytest.fixture(scope="function")
 def test_miade_med_concepts() -> List[Concept]:
     data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
-    return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]
+    return [
+        Concept(id="387337001", name=drug, category=Category.MEDICATION)
+        for drug in data.drug.to_list()
+    ]
 
 
 @pytest.fixture(scope="function")
@@ -160,17 +185,13 @@ def test_medcat_concepts() -> Dict:
             "id": 0,
             "negex": False,
             "meta_anns": {
-                "presence": {
-                    "value": "negated",
-                    "confidence": 1,
-                    "name": "presence"
-                },
+                "presence": {"value": "negated", "confidence": 1, "name": "presence"},
                 "relevance": {
                     "value": "historic",
                     "confidence": 1,
-                    "name": "relevance"
+                    "name": "relevance",
                 },
-            }
+            },
         },
         "1": {
             "pretty_name": "problem",
@@ -184,43 +205,104 @@ def test_medcat_concepts() -> Dict:
             "end": 11,
             "id": 0,
             "negex": False,
-            "meta_anns": {"presence": {
-                "value": "suspected",
-                "confidence": 1,
-                "name": "presence"
-                },
+            "meta_anns": {
+                "presence": {"value": "suspected", "confidence": 1, "name": "presence"},
                 "relevance": {
                     "value": "irrelevant",
                     "confidence": 1,
-                    "name": "relevance"
+                    "name": "relevance",
                 },
                 "laterality (generic)": {
                     "value": "none",
                     "confidence": 1,
-                    "name": "laterality (generic)"
+                    "name": "laterality (generic)",
                 },
-            }
-        }
+            },
+        },
     }
 
 
 @pytest.fixture(scope="function")
 def test_meta_annotations_concepts() -> List[Concept]:
     return [
-        Concept(id="563001", name="Nystagmus", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.LEFT)),
-        Concept(id="1415005", name="Lymphangitis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="123", name="negated concept", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="3723001", name="Arthritis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="4556007", name="Gastritis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="0000", name="suspected concept", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="1847009", name="Endophthalmitis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.CONFIRMED, relevance=Relevance.HISTORIC, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="1912002", name="Fall", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.CONFIRMED, relevance=Relevance.IRRELEVANT, laterality=Laterality.NO_LATERALITY)),
+        Concept(
+            id="563001",
+            name="Nystagmus",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.LEFT,
+            ),
+        ),
+        Concept(
+            id="1415005",
+            name="Lymphangitis",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="123",
+            name="negated concept",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="3723001",
+            name="Arthritis",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="4556007",
+            name="Gastritis",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="0000",
+            name="suspected concept",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="1847009",
+            name="Endophthalmitis",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.CONFIRMED,
+                relevance=Relevance.HISTORIC,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="1912002",
+            name="Fall",
+            category=Category.PROBLEM,
+            meta_anns=MetaAnnotations(
+                presence=Presence.CONFIRMED,
+                relevance=Relevance.IRRELEVANT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
     ]

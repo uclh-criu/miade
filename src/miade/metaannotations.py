@@ -5,11 +5,11 @@ from .utils.metaannotationstypes import *
 
 class MetaAnnotations(object):
     def __init__(
-            self,
-            presence: Optional[Presence] = None,
-            relevance: Optional[Relevance] = None,
-            laterality: Optional[Laterality] = None,
-            confidences: Optional[Dict] = None,
+        self,
+        presence: Optional[Presence] = None,
+        relevance: Optional[Relevance] = None,
+        laterality: Optional[Laterality] = None,
+        confidences: Optional[Dict] = None,
     ):
         self.presence = presence
         self.relevance = relevance

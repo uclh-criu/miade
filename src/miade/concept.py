@@ -46,7 +46,9 @@ class Concept(object):
     def dosage(self, dosage: [Dosage]):
         if dosage is not None:
             if self.category is not Category.MEDICATION:
-                raise ValueError(f"Dosage can only be assigned to Medication, not {self.category}.")
+                raise ValueError(
+                    f"Dosage can only be assigned to Medication, not {self.category}."
+                )
         self._dosage = dosage
 
     @property
@@ -57,16 +59,26 @@ class Concept(object):
     def meta(self, meta_anns: [MetaAnnotations]):
         if meta_anns is not None:
             if not isinstance(meta_anns, MetaAnnotations):
-                raise TypeError(f"Type should be MetaAnnotations, not {type(meta_anns)}")
+                raise TypeError(
+                    f"Type should be MetaAnnotations, not {type(meta_anns)}"
+                )
             if self.category is Category.PROBLEM:
-                if not (meta_anns.presence or meta_anns.relevance or meta_anns.laterality):
-                    raise ValueError("Problems meta-annotations does not have one of presence, relevance or laterality.")
+                if not (
+                    meta_anns.presence or meta_anns.relevance or meta_anns.laterality
+                ):
+                    raise ValueError(
+                        "Problems meta-annotations does not have one of presence, relevance or laterality."
+                    )
 
         self._meta_annotations = meta_anns
 
     @classmethod
     def from_entity(cls, entity: [Dict]):
-        meta_anns = MetaAnnotations.from_dict(entity["meta_anns"]) if entity["meta_anns"] else None
+        meta_anns = (
+            MetaAnnotations.from_dict(entity["meta_anns"])
+            if entity["meta_anns"]
+            else None
+        )
 
         if entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
             category = Category.PROBLEM
@@ -74,14 +86,14 @@ class Concept(object):
             raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
 
         return Concept(
-                id=entity["cui"],
-                name=entity["pretty_name"],
-                category=category,
-                start=entity["start"],
-                end=entity["end"],
-                negex=entity["negex"] if entity["negex"] else False,
-                meta_anns=meta_anns,
-            )
+            id=entity["cui"],
+            name=entity["pretty_name"],
+            category=category,
+            start=entity["start"],
+            end=entity["end"],
+            negex=entity["negex"] if entity["negex"] else False,
+            meta_anns=meta_anns,
+        )
 
     def __str__(self):
         return (
@@ -94,7 +106,11 @@ class Concept(object):
         return hash((self.id, self.name, self.category))
 
     def __eq__(self, other):
-        return self.id == other.id and self.name == other.name and self.category == other.category
+        return (
+            self.id == other.id
+            and self.name == other.name
+            and self.category == other.category
+        )
 
     def __lt__(self, other):
         return int(self.id) < int(other.id)
