@@ -1,0 +1,23 @@
+[project]
+name = "miade"
+version = "0.2"
+dependencies = [
+    "medcat==1.2.8",
+    "spacy==3.1.0",
+    "typing==3.7.4.3",
+    "pandas",
+    "typer==0.3.2",
+    "click==7.1.2",
+    "pathlib",
+    "pydantic",
+    "scikit-learn",
+]
+
+[project.scripts]
+build_model_pack = "src.miade:app"
+
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+    "setuptools_scm >= 2.0.0, <3"
+]
