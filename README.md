@@ -135,6 +135,6 @@ allergySectionCodeValue: the SNOMED code for the allergy section code
 ```
 
 ## Contributing
-See [contributing](CONTRIUBUTING.md)
+See [contributing](CONTRIBUTING.md)
 
 ## Licence
