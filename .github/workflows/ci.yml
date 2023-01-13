@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
-          pip install ./src/
+          pip install ./
           pip list
       - name: download model
         run: |
