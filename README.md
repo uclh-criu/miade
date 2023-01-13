@@ -30,7 +30,7 @@ pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_c
 ```
 Then install MiADE:
 ```bash
-pip install -e ./src
+pip install -e .
 ```
 The `-e` flag sets the install to auto-update, useful when developing. Remove for production.
 
@@ -135,5 +135,6 @@ allergySectionCodeValue: the SNOMED code for the allergy section code
 ```
 
 ## Contributing
+See [contributing](CONTRIUBUTING.md)
 
 ## Licence
