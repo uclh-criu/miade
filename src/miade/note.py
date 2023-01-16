@@ -23,7 +23,7 @@ class Note(object):
             elif re.match(r"medications?|mx", heading.lower()):
                 category = Category.MEDICATION
             elif re.match(r"problems?|diagnos(is|ses)", heading.lower()):
-                category = Category.DIAGNOSIS
+                category = Category.PROBLEM
 
             self.sections.append(
                 NoteSection(heading=heading, body=body, category=category)

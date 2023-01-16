@@ -21,9 +21,9 @@ class DosageExtractor:
 
     def __init__(self, model: str = "en_core_med7_lg"):
         self.model = model
-        self.dosage_extractor = self.create_drugdoseade_pipeline()
+        self.dosage_extractor = self._create_drugdoseade_pipeline()
 
-    def create_drugdoseade_pipeline(self) -> Language:
+    def _create_drugdoseade_pipeline(self) -> Language:
         """
         Creates a spacy pipeline with given model (default med7)
         and customised pipeline components for dosage extraction
@@ -61,3 +61,6 @@ class DosageExtractor:
             return None
 
         return dosage
+
+    def __call__(self, text: str, calculate: bool = True):
+        return self.extract(text, calculate)
