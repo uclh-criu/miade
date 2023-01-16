@@ -8,6 +8,7 @@ from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
+from miade.utils.xml import Block
 
 
 @pytest.fixture(scope="function")
@@ -306,3 +307,20 @@ def test_meta_annotations_concepts() -> List[Concept]:
             ),
         ),
     ]
+
+
+@pytest.fixture(scope="function")
+def test_xml() -> (str, Block):
+    return ("""
+<text>
+<content>NARRATIVE:<br/>Joy is a 67 year old woman who attends her general practice because she
+has been feeling tired and noticed swelling of her ankles over the past month. She has not
+had any chest pain or palpitations. Her past medical history includes pneumonia 5 years
+previously and appendicitis 10 years previously. She has type 2 diabetes well controlled on
+metformin, and also experiences hayfever in the summer months.
+</content>
+<br/>
+</text>
+""",
+Block(["text"]),
+            )
