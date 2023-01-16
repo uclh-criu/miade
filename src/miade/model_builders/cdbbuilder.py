@@ -60,7 +60,9 @@ class CDBBuilder(object):
         print("Exporting preprocessed SNOMED to csv...")
 
         if self.snomed_subset_path is not None:
-            snomed_subset = pd.read_csv(self.snomed_subset_path, header=0, dtype={'cui': object})
+            snomed_subset = pd.read_csv(
+                self.snomed_subset_path, header=0, dtype={"cui": object}
+            )
         else:
             snomed_subset = None
 
