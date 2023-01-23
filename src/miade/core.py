@@ -82,18 +82,26 @@ class NoteProcessor:
             )
             self._add_negex_pipeline()
 
+        if problems_model_id is not None:
+            log.info(f"Configured to use problems model {self.problems_model_id}")
+        else:
+            log.info(f"Problems model ID not configured, using all models in model path {model_directory}")
+
     def process(
         self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
         for annotator in self.annotators:
-            for entity in annotator.get_entities(note)["entities"].values():
-                try:
-                    concept = Concept.from_entity(entity)
-                    concepts.append(concept)
-                except ValueError as e:
-                    log.warning(f"Concept skipped: {e}")
+            if annotator.config.version["id"] == self.problems_model_id:
+                for entity in annotator.get_entities(note)["entities"].values():
+                    try:
+                        concept = Concept.from_entity(entity)
+                        concepts.append(concept)
+                    except ValueError as e:
+                        log.warning(f"Concept skipped: {e}")
+            else:
+                log.warning(f"Model {annotator.config.version['id']} is not a problems model and will not be used")
 
         # post-processing
         concepts = self.concept_filter(concepts, record_concepts)
