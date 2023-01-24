@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "python",
+            "name": "makenotes",
+            "arguments": ["makenotes.py"],
+        },
+
+    ]
+}
