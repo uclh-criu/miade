@@ -82,21 +82,21 @@ class ConceptFilter(object):
         convert = False
         tag = ""
         meta_anns = concept.meta
-        if concept.negex and meta_anns is None:
+        # only get meta results if negex is positive
+        if concept.negex:
             convert = self.negated_lookup.get(int(concept.id), False)
             tag = " (negated)"
 
-        if meta_anns is not None:
-            if meta_anns.presence is Presence.NEGATED:
-                # TODO: account for/pick negex and meta_anns negations
-                convert = self.negated_lookup.get(int(concept.id), False)
-                tag = " (negated)"
-            if meta_anns.presence is Presence.SUSPECTED:
-                convert = self.suspected_lookup.get(int(concept.id), False)
-                tag = " (suspected)"
-            if meta_anns.relevance is Relevance.HISTORIC:
-                convert = self.historic_lookup.get(int(concept.id), False)
-                tag = " (historic)"
+            if meta_anns is not None:
+                if meta_anns.presence is Presence.NEGATED:
+                    convert = self.negated_lookup.get(int(concept.id), False)
+                    tag = " (negated)"
+                if meta_anns.presence is Presence.SUSPECTED:
+                    convert = self.suspected_lookup.get(int(concept.id), False)
+                    tag = " (suspected)"
+                if meta_anns.relevance is Relevance.HISTORIC:
+                    convert = self.historic_lookup.get(int(concept.id), False)
+                    tag = " (historic)"
 
         if convert:
             log.debug(
