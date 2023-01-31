@@ -11,7 +11,9 @@ class MetaAnnotations(object):
                  reaction_pos: Optional[ReactionPosition] = None,
                  substance_category: Optional[SubstanceCategory] = None,
                  allergy_type: Optional[AllergyType] = None,
-                 severity: Optional[Severity] = None):
+                 severity: Optional[Severity] = None,
+                 confidences: Optional[Dict] = None,
+    ):
         self.presence = presence
         self.relevance = relevance
         self.laterality = laterality
@@ -19,6 +21,7 @@ class MetaAnnotations(object):
         self.substance_category = substance_category
         self.allergy_type = allergy_type
         self.severity = severity
+        self.confidences = confidences
 
     @classmethod
     def from_dict(cls, meta_anns: [Dict]):
@@ -29,9 +32,11 @@ class MetaAnnotations(object):
         substance_category = None
         allergy_type = None
         severity = None
+        confidences = {}
 
         for meta_ann in meta_anns.values():
             if meta_ann["name"] == "presence":
+                confidences[Presence] = meta_ann["confidence"]
                 if meta_ann["value"] == "confirmed":
                     presence = Presence.CONFIRMED
                 elif meta_ann["value"] == "negated":
@@ -39,6 +44,7 @@ class MetaAnnotations(object):
                 elif meta_ann["value"] == "suspected":
                     presence = Presence.SUSPECTED
             elif meta_ann["name"] == "relevance":
+                confidences[Relevance] = meta_ann["confidence"]
                 if meta_ann["value"] == "present":
                     relevance = Relevance.PRESENT
                 elif meta_ann["value"] == "historic":
@@ -46,6 +52,7 @@ class MetaAnnotations(object):
                 elif meta_ann["value"] == "irrelevant":
                     relevance = Relevance.IRRELEVANT
             elif meta_ann["name"] == "laterality (generic)":
+                confidences[Laterality] = meta_ann["confidence"]
                 if meta_ann["value"] == "none":
                     laterality = Laterality.NO_LATERALITY
                 elif meta_ann["value"] == "left":
@@ -70,7 +77,8 @@ class MetaAnnotations(object):
                    reaction_pos=reaction_pos,
                    substance_category=substance_category,
                    allergy_type=allergy_type,
-                   severity=severity)
+                   severity=severity,
+                   confidences=confidences)
 
     def __str__(self):
         return self.__dict__
