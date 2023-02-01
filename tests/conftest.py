@@ -229,6 +229,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="563001",
             name="Nystagmus",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.NEGATED,
                 relevance=Relevance.PRESENT,
@@ -239,6 +240,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="1415005",
             name="Lymphangitis",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.NEGATED,
                 relevance=Relevance.PRESENT,
@@ -249,6 +251,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="123",
             name="negated concept",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.NEGATED,
                 relevance=Relevance.PRESENT,
@@ -259,6 +262,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="3723001",
             name="Arthritis",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -269,6 +273,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="4556007",
             name="Gastritis",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -279,6 +284,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="0000",
             name="suspected concept",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -289,6 +295,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="1847009",
             name="Endophthalmitis",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.CONFIRMED,
                 relevance=Relevance.HISTORIC,
@@ -299,6 +306,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="1912002",
             name="Fall",
             category=Category.PROBLEM,
+            negex=True,
             meta_anns=MetaAnnotations(
                 presence=Presence.CONFIRMED,
                 relevance=Relevance.IRRELEVANT,

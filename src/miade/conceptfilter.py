@@ -82,21 +82,18 @@ class ConceptFilter(object):
         convert = False
         tag = ""
         meta_anns = concept.meta
-        if concept.negex and meta_anns is None:
+        # only get meta results if negex is positive
+        if concept.negex:
             convert = self.negated_lookup.get(int(concept.id), False)
             tag = " (negated)"
 
-        if meta_anns is not None:
-            if meta_anns.presence is Presence.NEGATED:
-                # TODO: account for/pick negex and meta_anns negations
-                convert = self.negated_lookup.get(int(concept.id), False)
-                tag = " (negated)"
-            if meta_anns.presence is Presence.SUSPECTED:
-                convert = self.suspected_lookup.get(int(concept.id), False)
-                tag = " (suspected)"
-            if meta_anns.relevance is Relevance.HISTORIC:
-                convert = self.historic_lookup.get(int(concept.id), False)
-                tag = " (historic)"
+            if meta_anns is not None:
+                if meta_anns.presence is Presence.SUSPECTED:
+                    convert = self.suspected_lookup.get(int(concept.id), False)
+                    tag = " (suspected)"
+                if meta_anns.relevance is Relevance.HISTORIC:
+                    convert = self.historic_lookup.get(int(concept.id), False)
+                    tag = " (historic)"
 
         if convert:
             log.debug(
@@ -105,19 +102,19 @@ class ConceptFilter(object):
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
-            if concept.negex and meta_anns is None:
+            if concept.negex:
                 log.debug(
                     f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
                 )
                 return None
-            if meta_anns:
+            if concept.negex and meta_anns is not None:
                 if (
-                    meta_anns.presence is Presence.NEGATED
-                    or meta_anns.presence is Presence.SUSPECTED
+                    meta_anns.presence is Presence.SUSPECTED
                     or meta_anns.relevance is Relevance.IRRELEVANT
                 ):
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant"
+                        f"Filtered concept {(concept.name, concept.id)}: either suspected with no conversion "
+                        f"match or irrelevant"
                     )
                     return None
 
