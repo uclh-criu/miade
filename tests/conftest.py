@@ -215,20 +215,92 @@ def test_medcat_concepts() -> Dict:
 @pytest.fixture(scope="function")
 def test_meta_annotations_concepts() -> List[Concept]:
     return [
-        Concept(id="563001", name="Nystagmus", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.LEFT)),
-        Concept(id="1415005", name="Lymphangitis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="123", name="negated concept", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.NEGATED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="3723001", name="Arthritis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="4556007", name="Gastritis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="0000", name="suspected concept", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.SUSPECTED, relevance=Relevance.PRESENT, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="1847009", name="Endophthalmitis", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.CONFIRMED, relevance=Relevance.HISTORIC, laterality=Laterality.NO_LATERALITY)),
-        Concept(id="1912002", name="Fall", category=Category.PROBLEM, meta_anns=MetaAnnotations(
-            presence=Presence.CONFIRMED, relevance=Relevance.IRRELEVANT, laterality=Laterality.NO_LATERALITY)),
+        Concept(
+            id="563001",
+            name="Nystagmus",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.LEFT,
+            ),
+        ),
+        Concept(
+            id="1415005",
+            name="Lymphangitis",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="123",
+            name="negated concept",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.NEGATED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="3723001",
+            name="Arthritis",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="4556007",
+            name="Gastritis",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="0000",
+            name="suspected concept",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.SUSPECTED,
+                relevance=Relevance.PRESENT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="1847009",
+            name="Endophthalmitis",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.CONFIRMED,
+                relevance=Relevance.HISTORIC,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="1912002",
+            name="Fall",
+            category=Category.PROBLEM,
+            negex=True,
+            meta_anns=MetaAnnotations(
+                presence=Presence.CONFIRMED,
+                relevance=Relevance.IRRELEVANT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
     ]

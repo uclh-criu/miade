@@ -12,11 +12,6 @@ from .utils.metaannotationstypes import *
 
 log = logging.getLogger(__name__)
 
-default_pipeline_config = [
-    "meta-annotations",
-    "deduplicate",
-]
-
 
 def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> bool:
     """
@@ -51,10 +46,7 @@ class ConceptFilter(object):
     Post-processing for extracted concepts: deduplication, meta-annotations
     """
 
-    def __init__(self, config: [List] = None):
-        if config is None:
-            self.config = default_pipeline_config
-
+    def __init__(self):
         negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
         self.negated_lookup = pd.read_csv(
             io.BytesIO(negated_data), index_col=0, squeeze=True
@@ -116,21 +108,18 @@ class ConceptFilter(object):
         convert = False
         tag = ""
         meta_anns = concept.meta
-        if concept.negex and meta_anns is None:
+        # only get meta results if negex is positive
+        if concept.negex:
             convert = self.negated_lookup.get(int(concept.id), False)
             tag = " (negated)"
 
-        if meta_anns is not None:
-            if meta_anns.presence is Presence.NEGATED:
-                # TODO: account for/pick negex and meta_anns negations
-                convert = self.negated_lookup.get(int(concept.id), False)
-                tag = " (negated)"
-            if meta_anns.presence is Presence.SUSPECTED:
-                convert = self.suspected_lookup.get(int(concept.id), False)
-                tag = " (suspected)"
-            if meta_anns.relevance is Relevance.HISTORIC:
-                convert = self.historic_lookup.get(int(concept.id), False)
-                tag = " (historic)"
+            if meta_anns is not None:
+                if meta_anns.presence is Presence.SUSPECTED:
+                    convert = self.suspected_lookup.get(int(concept.id), False)
+                    tag = " (suspected)"
+                if meta_anns.relevance is Relevance.HISTORIC:
+                    convert = self.historic_lookup.get(int(concept.id), False)
+                    tag = " (historic)"
 
         if convert:
             log.debug(
@@ -139,19 +128,19 @@ class ConceptFilter(object):
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
-            if concept.negex and meta_anns is None:
+            if concept.negex:
                 log.debug(
                     f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
                 )
                 return None
-            if meta_anns:
+            if concept.negex and meta_anns is not None:
                 if (
-                    meta_anns.presence is Presence.NEGATED
-                    or meta_anns.presence is Presence.SUSPECTED
+                    meta_anns.presence is Presence.SUSPECTED
                     or meta_anns.relevance is Relevance.IRRELEVANT
                 ):
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant"
+                        f"Filtered concept {(concept.name, concept.id)}: either suspected with no conversion "
+                        f"match or irrelevant"
                     )
                     return None
 
