@@ -205,9 +205,7 @@ def parse_duration(
 
     # convert all time units to days
     low = datetime.today()
-    high = datetime.today() + timedelta(
-        days=float(duration_dosage.value)
-    )
+    high = datetime.today() + timedelta(days=float(duration_dosage.value))
     duration_dosage.low = low.strftime("%Y%m%d")
     duration_dosage.high = high.strftime("%Y%m%d")
     duration_dosage.unit = "d"

@@ -35,20 +35,20 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
     """
     # spit into sentences by newline and period
     sents = (
-        re.findall(r"[^\s][^\n]+", text[med.start: next_med.start])
+        re.findall(r"[^\s][^\n]+", text[med.start : next_med.start])
         if next_med is not None
-        else re.findall(r"[^\s][^\n]+", text[med.start:])
+        else re.findall(r"[^\s][^\n]+", text[med.start :])
     )
 
-    concept_name = text[med.start: med.end]
-    next_concept_name = text[next_med.start: next_med.end] if next_med else None
+    concept_name = text[med.start : med.end]
+    next_concept_name = text[next_med.start : next_med.end] if next_med else None
 
     for sent in sents:
         if next_med is not None:
             if concept_name in sent and next_concept_name not in sent:
                 return sent
             elif concept_name in sent and next_concept_name in sent:
-                return text[med.start: next_med.start]
+                return text[med.start : next_med.start]
         else:
             if concept_name in sent:
                 ind = sent.find(concept_name)
@@ -58,11 +58,13 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 class NoteProcessor:
     """docstring for NoteProcessor."""
 
-    def __init__(self,
-                 model_directory: Path,
-                 problems_model_id: Optional[str] = None,
-                 meds_allergies_model_id: Optional[str] = None,
-                 use_negex: bool = True):
+    def __init__(
+        self,
+        model_directory: Path,
+        problems_model_id: Optional[str] = None,
+        meds_allergies_model_id: Optional[str] = None,
+        use_negex: bool = True,
+    ):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.problems_model_id = problems_model_id
         self.meds_allergies_model_id = meds_allergies_model_id
@@ -76,7 +78,9 @@ class NoteProcessor:
         self.concept_filter = ConceptFilter()
 
         if use_negex:
-            log.info("Using Negex for negation detection, but preference is given to meta-annotations")
+            log.info(
+                "Using Negex for negation detection, but preference is given to meta-annotations"
+            )
             self._add_negex_pipeline()
 
         if problems_model_id:
@@ -85,7 +89,7 @@ class NoteProcessor:
             log.info(f"Configured meds/allergies model {self.meds_allergies_model_id}")
 
     def process(
-            self, note: Note, record_concepts: Optional[List[Concept]] = None
+        self, note: Note, record_concepts: Optional[List[Concept]] = None
     ) -> List[Concept]:
 
         concepts: List[Concept] = []
@@ -98,14 +102,22 @@ class NoteProcessor:
                         concept.category = Category.PROBLEM
                     elif annotator_id == self.meds_allergies_model_id:
                         if concept.meta is not None:
-                            if concept.meta.substance_category == SubstanceCategory.ADVERSE_REACTION:
+                            if (
+                                concept.meta.substance_category
+                                == SubstanceCategory.ADVERSE_REACTION
+                            ):
                                 concept.category = Category.ALLERGY
-                            elif concept.meta.substance_category == SubstanceCategory.TAKING:
+                            elif (
+                                concept.meta.substance_category
+                                == SubstanceCategory.TAKING
+                            ):
                                 concept.category = Category.MEDICATION
                         else:
                             # TODO: TEMPORARY BEFORE POST-PROCESSING SORTED OUT
                             concept.category = Category.MEDICATION
-                        assert concept.category == Category.MEDICATION or Category.ALLERGY
+                        assert (
+                            concept.category == Category.MEDICATION or Category.ALLERGY
+                        )
                     concepts.append(concept)
                 except ValueError as e:
                     log.warning(f"Concept skipped: {e}")
@@ -125,7 +137,7 @@ class NoteProcessor:
             annotator.pipe.spacy_nlp.add_pipe("negex")
 
     def add_dosages_to_concepts(
-            self, concepts: List[Concept], note: Note
+        self, concepts: List[Concept], note: Note
     ) -> List[Concept]:
         """
         Gets dosages for medication concepts
@@ -138,7 +150,7 @@ class NoteProcessor:
             next_med_concept = (
                 concepts[ind + 1]
                 if len(concepts) > ind + 1
-                   and concepts[ind + 1].category == Category.MEDICATION
+                and concepts[ind + 1].category == Category.MEDICATION
                 else None
             )
             if concept.category == Category.MEDICATION:
@@ -150,7 +162,10 @@ class NoteProcessor:
         return concepts
 
     def debug(
-            self, debug_config_path: Path, mode: DebugMode = DebugMode.PRELOADED, code: Optional[int] = 0
+        self,
+        debug_config_path: Path,
+        mode: DebugMode = DebugMode.PRELOADED,
+        code: Optional[int] = 0,
     ) -> (List[Concept], Dict):
         """
         Returns debug configurations for end-to-end testing of the MiADE unit in NoteReader
@@ -174,18 +189,12 @@ class NoteProcessor:
                     if "dosage" in concept_dict:
                         dosage = Dosage(
                             text="debug mode",
-                            dose=Dose(
-                                **concept_dict["dosage"].get("dose")
-                            ),
+                            dose=Dose(**concept_dict["dosage"].get("dose")),
                             frequency=Frequency(
                                 **concept_dict["dosage"].get("frequency")
                             ),
-                            duration=Duration(
-                                **concept_dict["dosage"].get("duration")
-                            ),
-                            route=Route(
-                                **concept_dict["dosage"].get("route")
-                            ),
+                            duration=Duration(**concept_dict["dosage"].get("duration")),
+                            route=Route(**concept_dict["dosage"].get("route")),
                         )
                 elif concept_dict["ontologies"] == "ELG":
                     category = Category.ALLERGY

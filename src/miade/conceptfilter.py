@@ -27,15 +27,20 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
         # assume medication code is snomed
-        log.debug(f"Filtered problem/medication {(concept.name, concept.id)}: concept exists in record")
+        log.debug(
+            f"Filtered problem/medication {(concept.name, concept.id)}: concept exists in record"
+        )
         return True
     # TODO: modify if allergy is standardised SNOMED
     if concept.category == Category.ALLERGY and concept.name in [
-        record_concept.name for record_concept in record_concepts
+        record_concept.name
+        for record_concept in record_concepts
         if record_concept.category == Category.ALLERGY
     ]:
         # by text match as epic does not return code
-        log.debug(f"Filtered allergy {(concept.name, concept.id)}: concept exists in record")
+        log.debug(
+            f"Filtered allergy {(concept.name, concept.id)}: concept exists in record"
+        )
         return True
 
     return False
@@ -51,13 +56,23 @@ class ConceptFilter(object):
             self.config = default_pipeline_config
 
         negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
-        self.negated_lookup = pd.read_csv(io.BytesIO(negated_data), index_col=0, squeeze=True).T.to_dict()
+        self.negated_lookup = pd.read_csv(
+            io.BytesIO(negated_data), index_col=0, squeeze=True
+        ).T.to_dict()
         historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
-        self.historic_lookup = pd.read_csv(io.BytesIO(historic_data), index_col=0, squeeze=True).T.to_dict()
+        self.historic_lookup = pd.read_csv(
+            io.BytesIO(historic_data), index_col=0, squeeze=True
+        ).T.to_dict()
         suspected_data = pkgutil.get_data(__name__, "./data/suspected.csv")
-        self.suspected_lookup = pd.read_csv(io.BytesIO(suspected_data), index_col=0, squeeze=True).T.to_dict()
+        self.suspected_lookup = pd.read_csv(
+            io.BytesIO(suspected_data), index_col=0, squeeze=True
+        ).T.to_dict()
 
-    def filter(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+    def filter(
+        self,
+        extracted_concepts: List[Concept],
+        record_concepts: Optional[List[Concept]],
+    ) -> List[Concept]:
         """filters/conversions based on deduplication and meta-annotations"""
 
         # deepcopy so we still have reference to original list of concepts
@@ -67,11 +82,17 @@ class ConceptFilter(object):
             # meta-annotations
             if concept.category == Category.PROBLEM:
                 concept = self.handle_problem_meta(concept)
-            elif concept.category == Category.ALLERGY or concept.category == Category.MEDICATION:
+            elif (
+                concept.category == Category.ALLERGY
+                or concept.category == Category.MEDICATION
+            ):
                 # TODO: REVIEW: TEMPORARY- handle reaction and problems duplications in absence of meta-annotations
                 if concept.start is not None and concept.end is not None:
-                    if (concept.start, concept.end) in [(concept.start, concept.end) for concept in all_concepts
-                                                        if concept.category == Category.PROBLEM]:
+                    if (concept.start, concept.end) in [
+                        (concept.start, concept.end)
+                        for concept in all_concepts
+                        if concept.category == Category.PROBLEM
+                    ]:
                         log.debug(f"Filtered reaction duplication of problem concept")
                         continue
                 concept = self.handle_meds_allergen_reaction_meta(concept)
@@ -112,23 +133,38 @@ class ConceptFilter(object):
                 tag = " (historic)"
 
         if convert:
-            log.debug(f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}")
+            log.debug(
+                f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}"
+            )
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
             if concept.negex and meta_anns is None:
-                log.debug(f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match")
+                log.debug(
+                    f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
+                )
                 return None
             if meta_anns:
-                if meta_anns.presence is Presence.NEGATED or \
-                        meta_anns.presence is Presence.SUSPECTED or meta_anns.relevance is Relevance.IRRELEVANT:
-                    log.debug(f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant")
+                if (
+                    meta_anns.presence is Presence.NEGATED
+                    or meta_anns.presence is Presence.SUSPECTED
+                    or meta_anns.relevance is Relevance.IRRELEVANT
+                ):
+                    log.debug(
+                        f"Filtered concept {(concept.name, concept.id)}: either no conversion match or irrelevant"
+                    )
                     return None
 
         return concept
 
-    def handle_meds_allergen_reaction_meta(self, concept: [Concept]) -> Optional[Concept]:
+    def handle_meds_allergen_reaction_meta(
+        self, concept: [Concept]
+    ) -> Optional[Concept]:
         return concept
 
-    def __call__(self, extracted_concepts: List[Concept], record_concepts: Optional[List[Concept]] = None):
+    def __call__(
+        self,
+        extracted_concepts: List[Concept],
+        record_concepts: Optional[List[Concept]] = None,
+    ):
         return self.filter(extracted_concepts, record_concepts)

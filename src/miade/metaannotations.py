@@ -4,15 +4,16 @@ from .utils.metaannotationstypes import *
 
 
 class MetaAnnotations(object):
-    def __init__(self,
-                 presence: Optional[Presence] = None,
-                 relevance: Optional[Relevance] = None,
-                 laterality: Optional[Laterality] = None,
-                 reaction_pos: Optional[ReactionPosition] = None,
-                 substance_category: Optional[SubstanceCategory] = None,
-                 allergy_type: Optional[AllergyType] = None,
-                 severity: Optional[Severity] = None,
-                 confidences: Optional[Dict] = None,
+    def __init__(
+        self,
+        presence: Optional[Presence] = None,
+        relevance: Optional[Relevance] = None,
+        laterality: Optional[Laterality] = None,
+        reaction_pos: Optional[ReactionPosition] = None,
+        substance_category: Optional[SubstanceCategory] = None,
+        allergy_type: Optional[AllergyType] = None,
+        severity: Optional[Severity] = None,
+        confidences: Optional[Dict] = None,
     ):
         self.presence = presence
         self.relevance = relevance
@@ -71,18 +72,19 @@ class MetaAnnotations(object):
             elif meta_ann["name"] == "severity":
                 severity = None
 
-        return cls(presence=presence,
-                   relevance=relevance,
-                   laterality=laterality,
-                   reaction_pos=reaction_pos,
-                   substance_category=substance_category,
-                   allergy_type=allergy_type,
-                   severity=severity,
-                   confidences=confidences)
+        return cls(
+            presence=presence,
+            relevance=relevance,
+            laterality=laterality,
+            reaction_pos=reaction_pos,
+            substance_category=substance_category,
+            allergy_type=allergy_type,
+            severity=severity,
+            confidences=confidences,
+        )
 
     def __str__(self):
         return self.__dict__
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
-
