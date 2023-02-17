@@ -66,7 +66,7 @@ class NoteProcessor:
         use_negex: bool = True,
         log_level: int = logging.INFO,
     ):
-        log.setLevel(log_level)
+        logging.getLogger("miade").setLevel(log_level)
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.problems_model_id = problems_model_id
         self.meds_allergies_model_id = meds_allergies_model_id
