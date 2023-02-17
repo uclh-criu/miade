@@ -23,7 +23,7 @@ class Laterality(Enum):
 
 # Medication and Allergy meta-annotation types
 class ReactionPosition(Enum):
-    N0T_REACTION = 1
+    NOT_REACTION = 1
     AFTER_SUBSTANCE = 2
     BEFORE_SUBSTANCE = 3
 

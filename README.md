@@ -5,6 +5,8 @@
 A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
 For the reference server implementation, see: [miade-server](https://github.com/uclh-criu/miade-server).
 
+Built with Cogstack's [MedCAT](https://github.com/CogStack/MedCAT) package.
+
 ## Contents
 
 1. [Contributors](#Contributors)

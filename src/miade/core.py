@@ -64,6 +64,7 @@ class NoteProcessor:
         problems_model_id: Optional[str] = None,
         meds_allergies_model_id: Optional[str] = None,
         use_negex: bool = True,
+        log_level: int = logging.INFO,
     ):
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.problems_model_id = problems_model_id
@@ -77,9 +78,10 @@ class NoteProcessor:
         self.dosage_extractor = DosageExtractor()
         self.concept_filter = ConceptFilter()
 
+        log.setLevel(log_level)
         if use_negex:
             log.info(
-                "Using Negex for negation detection, but preference is given to meta-annotations"
+                "Using Negex as priority for meta context detection"
             )
             self._add_negex_pipeline()
 
@@ -175,6 +177,7 @@ class NoteProcessor:
         :return: (tuple) list of concepts to return and CDA dictionary
         """
         # print(debug_config)
+        # TODO: tidy & update debug mode
         with open(debug_config_path, "r") as stream:
             debug_config = yaml.safe_load(stream)
 

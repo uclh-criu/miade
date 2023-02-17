@@ -123,7 +123,7 @@ class ConceptFilter(object):
 
         if convert:
             log.debug(
-                f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}"
+                f"Converted concept {(concept.name, concept.id)} to {(concept.name + tag, str(convert))}"
             )
             concept.id = str(convert)
             concept.name = concept.name + tag

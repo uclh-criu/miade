@@ -17,7 +17,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-__pycache__
+*_version.py
+__pycache__/
+.ipynb_checkpoints/
+.idea/
 
 # Pytest
 .pytest_cache/
