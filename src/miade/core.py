@@ -65,6 +65,7 @@ class NoteProcessor:
         use_negex: bool = True,
         log_level: int = logging.INFO,
     ):
+        log.setLevel(log_level)
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.problems_model_id = problems_model_id
         self.meds_allergies_model_id = meds_allergies_model_id
@@ -77,7 +78,6 @@ class NoteProcessor:
         self.dosage_extractor = DosageExtractor()
         self.concept_filter = ConceptFilter()
 
-        log.setLevel(log_level)
         if use_negex:
             log.info(
                 "Using Negex as priority for meta context detection"
