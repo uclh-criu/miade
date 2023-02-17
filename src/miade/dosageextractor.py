@@ -34,6 +34,8 @@ class DosageExtractor:
         nlp.add_pipe("pattern_matcher", before="ner")
         nlp.add_pipe("entities_refiner", after="ner")
 
+        log.info(f"Loaded drug dosage extractor with model {self.model}")
+
         return nlp
 
     def extract(self, text: str, calculate: bool = True) -> Optional[Dosage]:
@@ -43,14 +45,14 @@ class DosageExtractor:
         :param calculate: (bool) whether to calculate duration from total and daily dose, if given
         :return: dosage: (Dosage) dosage object with parsed dosages in CDA format
         """
-        log.info(f"Processing dose string: {text}")
+        log.debug(f"Processing dose string: {text}")
 
         doc = self.dosage_extractor(text)
 
         log.debug(
-            f"Med7 results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}"
+            f"NER results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}"
         )
-        log.info(f"Parsing dosage from lookup results: {doc._.results}")
+        log.debug(f"Lookup results: {doc._.results}")
 
         dosage = Dosage.from_doc(doc=doc, calculate=calculate)
 

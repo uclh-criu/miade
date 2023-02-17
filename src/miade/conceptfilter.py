@@ -22,7 +22,7 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
         log.debug(
-            f"Filtered problem {(concept.name, concept.id)}: concept exists in record"
+            f"Filtered concept {(concept.name, concept.id)}: concept exists in record"
         )
         return True
 
@@ -97,7 +97,7 @@ class ConceptFilter(object):
 
         if convert:
             log.debug(
-                f"{(concept.name, concept.id)} converted to {(concept.name + tag, str(convert))}"
+                f"Converted concept {(concept.name, concept.id)} to {(concept.name + tag, str(convert))}"
             )
             concept.id = str(convert)
             concept.name = concept.name + tag
