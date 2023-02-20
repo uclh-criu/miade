@@ -10,5 +10,4 @@ from .utils.logger import add_handlers
 __all__ = ["Note", "Concept", "NoteProcessor", "DosageExtractor", "ConceptFilter"]
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 add_handlers(log)

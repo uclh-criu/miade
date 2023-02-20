@@ -63,7 +63,9 @@ class NoteProcessor:
         problems_model_id: Optional[str] = None,
         meds_allergies_model_id: Optional[str] = None,
         use_negex: bool = True,
+        log_level: int = logging.INFO,
     ):
+        logging.getLogger("miade").setLevel(log_level)
         meta_cat_config_dict = {"general": {"device": "cpu"}}
         self.problems_model_id = problems_model_id
         self.meds_allergies_model_id = meds_allergies_model_id
@@ -78,7 +80,7 @@ class NoteProcessor:
 
         if use_negex:
             log.info(
-                "Using Negex for negation detection, but preference is given to meta-annotations"
+                "Using Negex as priority for meta context detection"
             )
             self._add_negex_pipeline()
 
