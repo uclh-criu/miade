@@ -76,7 +76,7 @@ class NoteProcessor:
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
         self.dosage_extractor = DosageExtractor()
-        self.concept_filter = ConceptFilter()
+        self.concept_filter = ConceptFilter(use_negex=use_negex)
 
         if use_negex:
             log.info(
