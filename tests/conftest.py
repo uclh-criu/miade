@@ -239,7 +239,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             category=Category.PROBLEM,
             negex=True,
             meta_anns=MetaAnnotations(
-                presence=Presence.NEGATED,
+                presence=Presence.CONFIRMED,
                 relevance=Relevance.PRESENT,
                 laterality=Laterality.LEFT,
             ),
@@ -270,7 +270,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="3723001",
             name="Arthritis",
             category=Category.PROBLEM,
-            negex=True,
+            negex=False,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -281,7 +281,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="4556007",
             name="Gastritis",
             category=Category.PROBLEM,
-            negex=True,
+            negex=False,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -292,7 +292,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="0000",
             name="suspected concept",
             category=Category.PROBLEM,
-            negex=True,
+            negex=False,
             meta_anns=MetaAnnotations(
                 presence=Presence.SUSPECTED,
                 relevance=Relevance.PRESENT,
@@ -303,7 +303,7 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="1847009",
             name="Endophthalmitis",
             category=Category.PROBLEM,
-            negex=True,
+            negex=False,
             meta_anns=MetaAnnotations(
                 presence=Presence.CONFIRMED,
                 relevance=Relevance.HISTORIC,
@@ -314,10 +314,21 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="1912002",
             name="Fall",
             category=Category.PROBLEM,
-            negex=True,
+            negex=False,
             meta_anns=MetaAnnotations(
                 presence=Presence.CONFIRMED,
                 relevance=Relevance.IRRELEVANT,
+                laterality=Laterality.NO_LATERALITY,
+            ),
+        ),
+        Concept(
+            id="0000",
+            name="historic concept",
+            category=Category.PROBLEM,
+            negex=False,
+            meta_anns=MetaAnnotations(
+                presence=Presence.CONFIRMED,
+                relevance=Relevance.HISTORIC,
                 laterality=Laterality.NO_LATERALITY,
             ),
         ),
