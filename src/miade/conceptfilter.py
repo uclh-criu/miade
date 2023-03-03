@@ -48,6 +48,9 @@ class ConceptFilter(object):
         self.suspected_lookup = pd.read_csv(
             io.BytesIO(suspected_data), index_col=0, squeeze=True
         ).T.to_dict()
+        blacklist_data = pkgutil.get_data(__name__, "./data/problem_blacklist.csv")
+        self.filtering_blacklist = pd.read_csv(
+            io.BytesIO(blacklist_data), header=None)
 
     def filter(
         self,
@@ -62,6 +65,8 @@ class ConceptFilter(object):
         for concept in all_concepts:
             # meta-annotations
             if concept.category == Category.PROBLEM:
+                if int(concept.id) in self.filtering_blacklist.values:
+                    continue
                 concept = self.handle_problem_meta(concept)
             # ignore concepts filtered by meta-annotations
             if concept is None:
