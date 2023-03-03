@@ -86,3 +86,10 @@ def test_meta_annotations(test_meta_annotations_concepts):
             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
         ),  # negex false, meta processed
     ]
+
+
+def test_problems_filtering_list(test_filtering_list_concepts):
+    concept_filter = ConceptFilter()
+    assert concept_filter(extracted_concepts=test_filtering_list_concepts) == [
+        Concept(id="123", name="real concept", category=Category.PROBLEM),
+    ]
