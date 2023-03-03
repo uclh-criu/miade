@@ -325,3 +325,14 @@ def test_meta_annotations_concepts() -> List[Concept]:
             ),
         ),
     ]
+
+
+@pytest.fixture(scope="function")
+def test_filtering_list_concepts() -> List[Concept]:
+    return [
+        Concept(id="2704003", name="Acute disease", category=Category.PROBLEM),
+        Concept(id="13543005", name="Pressure", category=Category.PROBLEM),
+        Concept(id="19342008", name="Subacute disease", category=Category.PROBLEM),
+        Concept(id="76797004", name="Failure", category=Category.PROBLEM),
+        Concept(id="123", name="real concept", category=Category.PROBLEM)
+    ]
