@@ -16,6 +16,7 @@ from .dosageextractor import DosageExtractor
 from .utils.miadecat import MiADE_CAT
 
 log = logging.getLogger(__name__)
+log.setLevel("DEBUG")
 
 
 class DebugMode(Enum):
@@ -105,6 +106,7 @@ class NoteProcessor:
             else:
                 log.warning(f"Model {annotator.config.version['id']} is not a problems model and will not be used")
 
+        log.debug(f"Detected concepts: {[(concept.id, concept.name, concept.category.name) for concept in concepts]}")
         # post-processing
         concepts = self.concept_filter(concepts, record_concepts)
 
