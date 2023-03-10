@@ -21,9 +21,6 @@ def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> 
     :return: Bool whether concept is duplicated or not
     """
     if concept.id in [record_concept.id for record_concept in record_concepts]:
-        log.debug(
-            f"Filtered concept {(concept.name, concept.id)}: concept exists in record"
-        )
         return True
 
     return False
@@ -66,6 +63,7 @@ class ConceptFilter(object):
             # meta-annotations
             if concept.category == Category.PROBLEM:
                 if int(concept.id) in self.filtering_blacklist.values:
+                    log.debug(f"Filtered concept ({concept.id} | {concept.name}): concept in problems blacklist")
                     continue
                 concept = self.handle_problem_meta(concept)
             # ignore concepts filtered by meta-annotations
@@ -74,6 +72,9 @@ class ConceptFilter(object):
             # deduplication
             if record_concepts is not None:
                 if is_duplicate(concept=concept, record_concepts=record_concepts):
+                    log.debug(
+                        f"Filtered concept ({concept.id} | {concept.name}): concept exists in record"
+                    )
                     continue
             filtered_concepts.append(concept)
 
@@ -114,35 +115,36 @@ class ConceptFilter(object):
 
         if convert:
             log.debug(
-                f"Converted concept {(concept.name, concept.id)} to {(concept.name + tag, str(convert))}"
+                f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag})"
             )
             concept.id = str(convert)
             concept.name = concept.name + tag
         else:
             if concept.negex:
                 log.debug(
-                    f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
+                    f"Filtered concept ({concept.id} | {concept.name}): negation (negex) with no conversion match"
                 )
                 return None
             if concept.meta is not None:
                 if not self.use_negex and concept.meta.presence == Presence.NEGATED:
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: negation with no conversion match"
+                        f"Filtered concept ({concept.id} | {concept.name}): negation (meta model) with no conversion "
+                        f"match"
                     )
                     return None
                 if concept.meta.presence == Presence.SUSPECTED:
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: suspected with no conversion match"
+                        f"Filtered concept ({concept.id} | {concept.name}): suspected with no conversion match"
                     )
                     return None
                 if concept.meta.relevance == Relevance.IRRELEVANT:
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: irrelevant concept"
+                        f"Filtered concept ({concept.id} | {concept.name}): irrelevant concept"
                     )
                     return None
                 if concept.meta.relevance == Relevance.HISTORIC:
                     log.debug(
-                        f"Filtered concept {(concept.name, concept.id)}: historic with no conversion match"
+                        f"Filtered concept ({concept.id} | {concept.name}): historic with no conversion match"
                     )
                     return None
 
