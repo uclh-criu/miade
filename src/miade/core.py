@@ -16,7 +16,6 @@ from .dosageextractor import DosageExtractor
 from .utils.miadecat import MiADE_CAT
 
 log = logging.getLogger(__name__)
-log.setLevel("DEBUG")
 
 
 class DebugMode(Enum):

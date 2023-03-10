@@ -11,7 +11,7 @@ from .concept import Concept, Category
 from .utils.metaannotationstypes import *
 
 log = logging.getLogger(__name__)
-log.setLevel("DEBUG")
+
 
 def is_duplicate(concept: Concept, record_concepts: Optional[List[Concept]]) -> bool:
     """
