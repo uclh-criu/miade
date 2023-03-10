@@ -124,6 +124,7 @@ class NoteProcessor:
                 except ValueError as e:
                     log.warning(f"Concept skipped: {e}")
 
+        log.debug(f"Detected concepts: {[(concept.id, concept.name, concept.category.name) for concept in concepts]}")
         # dosage extraction
         concepts = self.add_dosages_to_concepts(concepts, note)
         # insert default VMP selection algorithm here
