@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 from copy import deepcopy
 
 from typing import Union, List, Tuple, Optional, Dict, Iterable, Set
@@ -111,6 +112,7 @@ class MiADE_CAT(CAT):
 
     def train_supervised(self,
                          data_path: str,
+                         synthetic_data_path: Optional[str] = None,
                          reset_cui_count: bool = False,
                          nepochs: int = 1,
                          print_stats: int = 0,
@@ -200,7 +202,6 @@ class MiADE_CAT(CAT):
                     spacy_doc: Doc = self(doc['text'])
 
                     # Compatibility with old output where annotations are a list
-                    # TODO: CHANGES MADE HERE
                     doc_annotations = self._get_doc_annotations(doc)
                     for ann in doc_annotations:
                         if not ann.get('killed', False):
@@ -230,6 +231,23 @@ class MiADE_CAT(CAT):
                     latest_trained_step += 1
                     if checkpoint is not None and checkpoint.steps is not None and latest_trained_step % checkpoint.steps == 0:
                         checkpoint.save(self.cdb, latest_trained_step)
+
+            if synthetic_data_path is not None:
+                synth_data = pd.read_csv(synthetic_data_path)
+                self.log.info(f"Training with additional {len(synth_data)} synthetic data points from {synthetic_data_path}")
+                for i in range(len(synth_data)):
+                    spacy_doc: Doc = self(synth_data.text.values[i])
+                    cui = synth_data.cui.values[i]
+                    name = synth_data.name.values[i]
+                    start = synth_data.start.values[i]
+                    end = synth_data.end.values[i]
+                    spacy_entity = tkns_from_doc(spacy_doc=spacy_doc, start=start, end=end)
+                    self.add_and_train_concept(cui=cui,
+                                               name=name,
+                                               spacy_doc=spacy_doc,
+                                               spacy_entity=spacy_entity,
+                                               negative=False,
+                                               devalue_others=devalue_others)
 
             if terminate_last and not never_terminate:
                 # Remove entities that were terminated, but after all training is done
