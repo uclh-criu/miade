@@ -113,6 +113,8 @@ class MiADE_MetaCAT(MetaCAT):
 
         if synthetic_csv_path is not None:
             synth_data_loaded = pd.read_csv(synthetic_csv_path)
+            self.log.info(
+                f"Training with additional {len(synth_data_loaded)} synthetic data points from {synthetic_csv_path}")
             synth_data = prepare_from_miade_csv(synth_data_loaded,
                                                 cntx_left=g_config['cntx_left'],
                                                 cntx_right=g_config['cntx_right'],
