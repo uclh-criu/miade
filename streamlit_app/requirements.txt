@@ -1,0 +1,6 @@
+pandas
+streamlit
+streamlit-aggrid
+streamlit-scrollable-textbox
+seaborn
+medcat
