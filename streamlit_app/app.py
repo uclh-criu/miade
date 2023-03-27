@@ -61,7 +61,7 @@ st.write(
 )
 
 model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
-model_path = os.path.join(os.getenv("MODELS_DIR"), model_path.split("/")[-1])
+model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
 
 mc = load_model(model_path)
 model_name = mc.config.general["category_name"]
