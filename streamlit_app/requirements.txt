@@ -4,3 +4,4 @@ streamlit-aggrid
 streamlit-scrollable-textbox
 seaborn
 medcat
+python-dotenv
