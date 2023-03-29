@@ -80,7 +80,7 @@ st.sidebar.subheader("Create MedCAT modelpack")
 st.sidebar.selectbox("Select MedCAT modelpack to package with:", ["miade_example_model"])
 st.sidebar.button("Save")
 
-tab1, tab2, tab3, tab4 = st.tabs(["🗃 Data", "Train", "Test", "Try"])
+tab1, tab2, tab3, tab4 = st.tabs(["Data", "Train", "Test", "Try"])
 
 
 def present_confusion_matrix(model, data):
@@ -171,10 +171,8 @@ with tab2:
         label_counts = synth_df[model_name].value_counts().to_dict()
         synthetic_label_counts = synth_df[model_name].value_counts().to_dict()
 
-        assert len(category_labels) == 3
-        assert category_labels[0] in list(synthetic_label_counts.keys()) \
-               and category_labels[1] in list(synthetic_label_counts.keys()) and category_labels[2] in list(
-            synthetic_label_counts.keys())
+        assert len(category_labels) > 0
+        assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
 
         label_0_num = st.slider(category_labels[0] + " (synthetic)", min_value=0,
                                 max_value=len(synth_df[synth_df[model_name] == category_labels[0]]),
@@ -208,8 +206,10 @@ with tab2:
     if st.button('Train'):
         with st.spinner("Training MetaCAT..."):
             date_id = datetime.now().strftime("%y%m%d%H%M%S")
-            data_save_name = "./data/" + "train_df_" + date_id + ".csv"
-            model_save_name = "/".join(model_path.split("/")[:-2]) + "/" + date_id + "/meta_" + model_name
+            save_dir = "/".join(model_path.split("/")[:-2]) + "/" + date_id
+            data_save_name = save_dir + "train_df" + ".csv"
+            model_save_name = save_dir + "/meta_" + model_name
+            # save the generated train dataset
             train_df.to_csv(data_save_name)
 
             mc.config.general["cntx_left"] = cntx_left
@@ -221,7 +221,7 @@ with tab2:
                 output = st.empty()
                 with st_capture(output.code):
                     report = mc.train(json_path=train_json_path,
-                                      # synthetic_data_df=train_df,
+                                      synthetic_data_df=train_df,
                                       save_dir_path=model_save_name)
         st.success(f"Done! Model saved at {model_save_name}")
         st.write("Training report:")
