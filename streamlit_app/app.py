@@ -56,8 +56,12 @@ st.write(
 model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
 model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
 
-mc = MiADE_MetaCAT.load(model_path)
-model_name = mc.config.general["category_name"]
+try:
+    mc = MiADE_MetaCAT.load(model_path)
+    model_name = mc.config.general["category_name"]
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    mc = None
 
 st.sidebar.subheader("Set training parameters")
 cntx_left = st.sidebar.number_input("cntx_left", 5, step=1)
@@ -159,62 +163,71 @@ with tab2:
         synth_csv_path = st.selectbox("Select synthetic data file:", SYNTH_DATA_OPTIONS)
         synth_csv_path = os.path.join(os.getenv("SYNTH_CSV_DIR"), synth_csv_path)
         synth_df = pd.read_csv(synth_csv_path)
+        if mc is not None:
+            category_labels = list(mc.config.general["category_value2id"].keys())
+            label_counts = TRAIN_DATA_DF[model_name].value_counts().to_dict()
+            synthetic_label_counts = synth_df[model_name].value_counts().to_dict()
+            max_class = max(label_counts.values())
 
-        category_labels = list(mc.config.general["category_value2id"].keys())
-        label_counts = TRAIN_DATA_DF[model_name].value_counts().to_dict()
-        synthetic_label_counts = synth_df[model_name].value_counts().to_dict()
-        max_class = max(label_counts.values())
+            assert len(category_labels) > 0
+            assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
 
-        assert len(category_labels) > 0
-        assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
-
-        synth_add_dict = {}
-        for i in range(len(category_labels)):
-            synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)", min_value=0,
-                                                           max_value=synthetic_label_counts[category_labels[i]],
-                                                           value=max_class - label_counts[category_labels[i]])
+            synth_add_dict = {}
+            for i in range(len(category_labels)):
+                synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)", min_value=0,
+                                                               max_value=synthetic_label_counts[category_labels[i]],
+                                                               value=max_class - label_counts[category_labels[i]])
     with col2:
         st.markdown("**Visualise** the ratio of real and synthetic in your overall training set:")
-        chart_data = pd.DataFrame(
-            {"real": [label_counts[category_labels[i]] for i in range(len(category_labels))],
-             "synthetic": synth_add_dict.values()},
-            index=category_labels)
+        if mc is not None:
+            chart_data = pd.DataFrame(
+                {"real": [label_counts[category_labels[i]] for i in range(len(category_labels))],
+                 "synthetic": synth_add_dict.values()},
+                index=category_labels)
 
-        st.bar_chart(chart_data, height=500)
+            st.bar_chart(chart_data, height=500)
 
-        train_df = pd.concat([synth_df[synth_df[model_name] == label][:synth_add_dict[label]]
-                              for label in category_labels],
-                             ignore_index=True)
+            train_df = pd.concat([synth_df[synth_df[model_name] == label][:synth_add_dict[label]]
+                                  for label in category_labels],
+                                 ignore_index=True)
 
     with col3:
         st.markdown("**Inspect** the sample of synthetic data selected:")
-        st.dataframe(train_df[["text", model_name]], height=500)
+        if mc is not None:
+            st.dataframe(train_df[["text", model_name]], height=500)
 
     if st.button('Train'):
-        with st.spinner("Training MetaCAT..."):
-            date_id = datetime.now().strftime("%y%m%d%H%M%S")
-            save_dir = "/".join(model_path.split("/")[:-2]) + "/" + date_id
-            data_save_name = save_dir + "/synth_train_df.csv"
-            model_save_name = save_dir + "/meta_" + model_name
+        if mc is not None:
+            with st.spinner("Training MetaCAT..."):
+                date_id = datetime.now().strftime("%y%m%d%H%M%S")
+                save_dir = "/".join(model_path.split("/")[:-2]) + "/" + date_id
+                data_save_name = save_dir + "/synth_train_df.csv"
+                model_save_name = save_dir + "/meta_" + model_name
 
-            mc.config.general["cntx_left"] = cntx_left
-            mc.config.general["cntx_right"] = cntx_right
-            mc.config.train["nepochs"] = n_epochs
-            mc.config.general["replace_center"] = replace_center
-            mc.config.model["last_trained_on"] = date_id
+                mc.config.general["cntx_left"] = cntx_left
+                mc.config.general["cntx_right"] = cntx_right
+                mc.config.train["nepochs"] = n_epochs
+                mc.config.general["replace_center"] = replace_center
+                mc.config.model["last_trained_on"] = date_id
 
-            with st.expander("Expand to see training logs"):
-                output = st.empty()
-                with st_capture(output.code):
-                    report = mc.train(json_path=train_json_path,
-                                      synthetic_data_df=train_df,
-                                      save_dir_path=model_save_name)
-        # save the generated train dataset
-        train_df.to_csv(data_save_name)
+                if len(train_df) == 0:
+                    train_df = None
 
-        st.success(f"Done! Model saved at {model_save_name}")
-        st.write("Training report:")
-        st.write(report)
+                with st.expander("Expand to see training logs"):
+                    output = st.empty()
+                    with st_capture(output.code):
+                        report = mc.train(json_path=train_json_path,
+                                          synthetic_data_df=train_df,
+                                          save_dir_path=model_save_name)
+            # save the generated train dataset
+            if train_df is not None:
+                train_df.to_csv(data_save_name)
+
+            st.success(f"Done! Model saved at {model_save_name}")
+            st.write("Training report:")
+            st.write(report)
+        else:
+            st.error("No model loaded")
 
 with tab3:
     col1, col2 = st.columns(2)
@@ -225,8 +238,11 @@ with tab3:
     with col2:
         cm = st.empty()
         if is_test:
-            plt = present_confusion_matrix(mc, test_path)
-            cm.pyplot(plt)
+            if mc is not None:
+                plt = present_confusion_matrix(mc, test_path)
+                cm.pyplot(plt)
+            else:
+                st.error("No model loaded")
         out = st.empty()
 
 with tab4:
