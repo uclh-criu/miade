@@ -11,5 +11,5 @@ streamlit run app.py
 In Docker:
 ```bash
  docker build -t streamlit:miade-dashboard .
- docker run -d --name miade-dashboard --mount "type=bind,source=./,target=/app"  -p 8501:8501 streamlit:miade-dashboard
+ docker run -d --name miade-dashboard -p 8501:8501 streamlit:miade-dashboard
 ```

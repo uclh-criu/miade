@@ -1,15 +1,18 @@
 import json
+import logging
 import os
 import torch
 import pandas as pd
 from datetime import datetime
 
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 
 from medcat.meta_cat import MetaCAT
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBase
 from medcat.utils.meta_cat.data_utils import prepare_from_json, encode_category_values
 from medcat.utils.meta_cat.ml_utils import train_model
+
+logger = logging.getLogger("meta_cat")
 
 
 def prepare_from_miade_csv(
@@ -112,7 +115,7 @@ class MiADE_MetaCAT(MetaCAT):
         data = data[category_name]
 
         if synthetic_data_df is not None:
-            self.log.info(
+            logger.info(
                 f"Training with additional {len(synthetic_data_df)} synthetic data points")
             synth_data = prepare_from_miade_csv(synthetic_data_df,
                                                 cntx_left=g_config['cntx_left'],
@@ -136,10 +139,10 @@ class MiADE_MetaCAT(MetaCAT):
 
         # Make sure the config number of classes is the same as the one found in the data
         if len(category_value2id) != self.config.model['nclasses']:
-            self.log.warning(
+            logger.warning(
                 "The number of classes set in the config is not the same as the one found in the data: {} vs {}".format(
                     self.config.model['nclasses'], len(category_value2id)))
-            self.log.warning("Auto-setting the nclasses value in config and rebuilding the model.")
+            logger.warning("Auto-setting the nclasses value in config and rebuilding the model.")
             self.config.model['nclasses'] = len(category_value2id)
             self.model = self.get_model(embeddings=self.embeddings)
 

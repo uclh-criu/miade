@@ -44,7 +44,7 @@ MIN_HEIGHT = 27
 MAX_HEIGHT = 800
 ROW_HEIGHT = 35
 
-VIZ_DATA = pd.read_csv(os.getenv("VIZ_DATA_PATH"))
+TRAIN_DATA_DF = pd.read_csv(os.getenv("VIZ_DATA_PATH"))
 
 SYNTH_DATA_OPTIONS = [f for f in os.listdir(os.getenv("SYNTH_CSV_DIR")) if ".csv" in f]
 TRAIN_JSON_OPTIONS = [f for f in os.listdir(os.getenv("TRAIN_JSON_DIR")) if ".json" in f]
@@ -149,7 +149,7 @@ with tab1:
     data_path = st.selectbox("Select dataset to interact with:", ["MiADE train data (400)"])
     is_load = st.checkbox("Show interactive table")
     if is_load:
-        selection = aggrid_interactive_table(df=VIZ_DATA)
+        selection = aggrid_interactive_table(df=TRAIN_DATA_DF)
         if selection:
             st.write("You selected:")
             st.json(selection["selected_rows"])
@@ -168,35 +168,29 @@ with tab2:
         synth_df = pd.read_csv(synth_csv_path)
 
         category_labels = list(mc.config.general["category_value2id"].keys())
-        label_counts = synth_df[model_name].value_counts().to_dict()
+        label_counts = TRAIN_DATA_DF[model_name].value_counts().to_dict()
         synthetic_label_counts = synth_df[model_name].value_counts().to_dict()
+        max_class = max(label_counts.values())
 
         assert len(category_labels) > 0
         assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
 
-        label_0_num = st.slider(category_labels[0] + " (synthetic)", min_value=0,
-                                max_value=len(synth_df[synth_df[model_name] == category_labels[0]]),
-                                value=label_counts[category_labels[0]])
-        label_1_num = st.slider(category_labels[1] + " (synthetic)", min_value=0,
-                                max_value=len(synth_df[synth_df[model_name] == category_labels[1]]),
-                                value=label_counts[category_labels[1]])
-        label_2_num = st.slider(category_labels[2] + " (synthetic)", min_value=0,
-                                max_value=len(synth_df[synth_df[model_name] == category_labels[2]]),
-                                value=label_counts[category_labels[2]])
+        synth_add_dict = {}
+        for i in range(len(category_labels)):
+            synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)", min_value=0,
+                                                           max_value=synthetic_label_counts[category_labels[i]],
+                                                           value=max_class - label_counts[category_labels[i]])
     with col2:
         st.markdown("**Visualise** the ratio of real and synthetic in your overall training set:")
         chart_data = pd.DataFrame(
-            {"real": [label_counts[category_labels[0]],
-                      label_counts[category_labels[1]],
-                      label_counts[category_labels[2]]],
-             "synthetic": [label_0_num, label_1_num, label_2_num]},
-            index=[category_labels[0], category_labels[1], category_labels[2]])
+            {"real": [label_counts[category_labels[i]] for i in range(len(category_labels))],
+             "synthetic": synth_add_dict.values()},
+            index=category_labels)
 
         st.bar_chart(chart_data, height=500)
 
-        train_df = pd.concat([synth_df[synth_df[model_name] == category_labels[0]][:label_0_num],
-                              synth_df[synth_df[model_name] == category_labels[1]][:label_1_num],
-                              synth_df[synth_df[model_name] == category_labels[2]][:label_2_num]],
+        train_df = pd.concat([synth_df[synth_df[model_name] == label][:synth_add_dict[label]]
+                              for label in category_labels],
                              ignore_index=True)
 
     with col3:
@@ -207,15 +201,14 @@ with tab2:
         with st.spinner("Training MetaCAT..."):
             date_id = datetime.now().strftime("%y%m%d%H%M%S")
             save_dir = "/".join(model_path.split("/")[:-2]) + "/" + date_id
-            data_save_name = save_dir + "train_df" + ".csv"
+            data_save_name = save_dir + "/synth_train_df.csv"
             model_save_name = save_dir + "/meta_" + model_name
-            # save the generated train dataset
-            train_df.to_csv(data_save_name)
 
             mc.config.general["cntx_left"] = cntx_left
             mc.config.general["cntx_right"] = cntx_right
             mc.config.train["nepochs"] = n_epochs
             mc.config.general["replace_center"] = replace_center
+            mc.config.model["last_trained_on"] = date_id
 
             with st.expander("Expand to see training logs"):
                 output = st.empty()
@@ -223,6 +216,9 @@ with tab2:
                     report = mc.train(json_path=train_json_path,
                                       synthetic_data_df=train_df,
                                       save_dir_path=model_save_name)
+        # save the generated train dataset
+        train_df.to_csv(data_save_name)
+
         st.success(f"Done! Model saved at {model_save_name}")
         st.write("Training report:")
         st.write(report)
