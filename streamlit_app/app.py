@@ -33,13 +33,6 @@ def st_capture(output_func):
         yield
 
 
-@st.cache_resource
-def load_model(model_path):
-    model = MiADE_MetaCAT.load(model_path)
-    st.sidebar.success("Loaded MetaCAT model!")
-    return model
-
-
 MIN_HEIGHT = 27
 MAX_HEIGHT = 800
 ROW_HEIGHT = 35
@@ -63,7 +56,7 @@ st.write(
 model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
 model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
 
-mc = load_model(model_path)
+mc = MiADE_MetaCAT.load(model_path)
 model_name = mc.config.general["category_name"]
 
 st.sidebar.subheader("Set training parameters")
