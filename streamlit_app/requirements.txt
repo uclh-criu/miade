@@ -1,6 +1,5 @@
-pandas
 streamlit
 streamlit-aggrid
+pandas
 seaborn
-medcat
 python-dotenv

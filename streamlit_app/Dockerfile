@@ -1,8 +1,10 @@
 # app/Dockerfile
 
-FROM python:3.9-slim
+FROM python:3.8.10
 
-WORKDIR /app
+ENV SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
+
+RUN python -m pip install --upgrade pip
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -11,9 +13,14 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+ADD . /home/miade
 
-RUN pip3 install -r requirements.txt
+RUN pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/9633b53e7f9488408eae5dfff51b831b3b787657/en_core_med7_lg-any-py3-none-any.whl
+RUN pip install /home/miade
+
+WORKDIR /home/miade/streamlit_app
+
+RUN pip install -r requirements.txt
 
 EXPOSE 8501
 

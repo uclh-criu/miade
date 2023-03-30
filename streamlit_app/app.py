@@ -14,7 +14,7 @@ from contextlib import contextmanager, redirect_stdout
 from io import StringIO
 from dotenv import load_dotenv, find_dotenv
 
-from utils import MiADE_MetaCAT
+from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 load_dotenv(find_dotenv())
 
@@ -62,6 +62,7 @@ try:
 except Exception as e:
     st.error(f"Error loading model: {e}")
     mc = None
+    model_name = None
 
 st.sidebar.subheader("Set training parameters")
 cntx_left = st.sidebar.number_input("cntx_left", 5, step=1)
@@ -71,6 +72,7 @@ is_replace_center = st.sidebar.checkbox("Replace centre token?", value=True)
 replace_center = None
 if is_replace_center:
     replace_center = st.sidebar.text_input("replace_center", "disease")
+class_weights = st.sidebar.checkbox("Balance class weights?", value=False)
 
 # TODO
 st.sidebar.subheader("Create MedCAT modelpack")
@@ -203,6 +205,13 @@ with tab2:
                 save_dir = "/".join(model_path.split("/")[:-2]) + "/" + date_id
                 data_save_name = save_dir + "/synth_train_df.csv"
                 model_save_name = save_dir + "/meta_" + model_name
+                # make dir to save in
+                os.makedirs(save_dir, exist_ok=True)
+                # save the generated train dataset
+                if len(train_df) > 0:
+                    train_df.to_csv(data_save_name)
+                else:
+                    data_save_name = None
 
                 mc.config.general["cntx_left"] = cntx_left
                 mc.config.general["cntx_right"] = cntx_right
@@ -210,18 +219,12 @@ with tab2:
                 mc.config.general["replace_center"] = replace_center
                 mc.config.model["last_trained_on"] = date_id
 
-                if len(train_df) == 0:
-                    train_df = None
-
                 with st.expander("Expand to see training logs"):
                     output = st.empty()
                     with st_capture(output.code):
                         report = mc.train(json_path=train_json_path,
-                                          synthetic_data_df=train_df,
+                                          synthetic_csv_path=data_save_name,
                                           save_dir_path=model_save_name)
-            # save the generated train dataset
-            if train_df is not None:
-                train_df.to_csv(data_save_name)
 
             st.success(f"Done! Model saved at {model_save_name}")
             st.write("Training report:")
