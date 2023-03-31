@@ -39,10 +39,10 @@ def load_csv_data(csv_path):
     return pd.read_csv(csv_path)
 
 @st.cache_data
-def get_label_counts(model_name, train, synth):
-    real_label_counts = train[model_name].value_counts().to_dict()
-    synthetic_label_counts = synth[model_name].value_counts().to_dict()
-    return real_label_counts, synthetic_label_counts
+def get_label_counts(name, train, synth):
+    real_counts = train[name].value_counts().to_dict()
+    synthetic_counts = synth[name].value_counts().to_dict()
+    return real_counts, synthetic_counts
 
 @st.cache_data
 def get_chart_data(labels, label_count, synth_add_count):
@@ -264,8 +264,6 @@ with tab2:
         else:
             st.error("No model loaded")
 
-    if st.button("Abort"):
-        st.experimental_rerun()
 
 with tab3:
     col1, col2 = st.columns(2)
@@ -279,14 +277,10 @@ with tab3:
             if mc is not None:
                 plt = present_confusion_matrix(mc, test_path)
                 cm.pyplot(plt)
-                img = io.BytesIO()
-                plt.savefig(img, format='png')
-                st.download_button(
-                    label="Download to model folder",
-                    data=img,
-                    file_name=model_path + '/confusion_matrix.png',
-                    mime='image/png',
-                )
+                try:
+                    plt.savefig(model_path + "/confusion_matrix.png", format='png')
+                except Exception as e:
+                    st.error(f"Couldn't save image: {e}")
             else:
                 st.error("No model loaded")
         out = st.empty()
