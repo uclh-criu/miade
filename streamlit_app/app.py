@@ -1,4 +1,6 @@
+import io
 import os
+from time import sleep
 
 import numpy as np
 import pandas as pd
@@ -32,12 +34,46 @@ def st_capture(output_func):
         stdout.write = new_write
         yield
 
+@st.cache_data
+def load_csv_data(csv_path):
+    return pd.read_csv(csv_path)
+
+@st.cache_data
+def get_label_counts(model_name, train, synth):
+    real_label_counts = train[model_name].value_counts().to_dict()
+    synthetic_label_counts = synth[model_name].value_counts().to_dict()
+    return real_label_counts, synthetic_label_counts
+
+@st.cache_data
+def get_chart_data(labels, label_count, synth_add_count):
+    return pd.DataFrame(
+        {"real": [label_count[labels[i]] for i in range(len(labels))],
+         "synthetic": synth_add_count.values()},
+        index=category_labels)
+
+@st.cache_data
+def make_train_data(synth_df, name, labels, synth_add_count):
+    return pd.concat([synth_df[synth_df[name] == label][:synth_add_count[label]]
+                      for label in labels],
+                     ignore_index=True)
+
+@st.cache_resource
+def load_metacat_model(path):
+    try:
+        model = MiADE_MetaCAT.load(path)
+        name = model.config.general["category_name"]
+        sleep(0.5)
+        st.sidebar.success(f"{name} model loaded from {model_path}")
+    except Exception as e:
+        st.sidebar.error(f"Error loading model: {e}")
+        model = None
+        name = None
+    return model, name
+
 
 MIN_HEIGHT = 27
 MAX_HEIGHT = 800
 ROW_HEIGHT = 35
-
-TRAIN_DATA_DF = pd.read_csv(os.getenv("VIZ_DATA_PATH"))
 
 SYNTH_DATA_OPTIONS = [f for f in os.listdir(os.getenv("SYNTH_CSV_DIR")) if ".csv" in f]
 TRAIN_JSON_OPTIONS = [f for f in os.listdir(os.getenv("TRAIN_JSON_DIR")) if ".json" in f]
@@ -46,38 +82,37 @@ MODEL_OPTIONS = ["/".join(f[0].split("/")[-2:]) for f in os.walk(os.getenv("MODE
                  if 'meta_' in f[0].split("/")[-1] and ".ipynb_checkpoints" not in f[0]]
 
 st.set_page_config(
-    layout="wide", page_icon="🖱️", page_title="Interactive train app"
+    layout="wide", page_icon="🖱️", page_title="MiADE train app"
 )
 st.title("🖱️ MiADE Training Dashboard")
 st.write(
-    """Miade MedCAT training dashboard"""
+    """Train, test, and experiment with MedCAT models used in MiADE"""
 )
+
 
 model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
 model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
-
-try:
-    mc = MiADE_MetaCAT.load(model_path)
-    model_name = mc.config.general["category_name"]
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    mc = None
-    model_name = None
 
 st.sidebar.subheader("Set training parameters")
 cntx_left = st.sidebar.number_input("cntx_left", 5, step=1)
 cntx_right = st.sidebar.number_input("cntx_right", 5, step=1)
 n_epochs = st.sidebar.number_input("n_epochs", value=50, step=1, min_value=1)
+
 is_replace_center = st.sidebar.checkbox("Replace centre token?", value=True)
 replace_center = None
 if is_replace_center:
     replace_center = st.sidebar.text_input("replace_center", "disease")
-class_weights = st.sidebar.checkbox("Balance class weights?", value=False)
+
+class_weights = st.sidebar.checkbox("Balance class weights? (Experimental)", value=False)
 
 # TODO
 st.sidebar.subheader("Create MedCAT modelpack")
 st.sidebar.selectbox("Select MedCAT modelpack to package with:", ["miade_example_model"])
 st.sidebar.button("Save")
+
+# load data and models
+train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
+mc, model_name = load_metacat_model(model_path)
 
 tab1, tab2, tab3, tab4 = st.tabs(["Data", "Train", "Test", "Try"])
 
@@ -146,9 +181,9 @@ def aggrid_interactive_table(df: pd.DataFrame):
 with tab1:
     # hard coded
     data_path = st.selectbox("Select dataset to interact with:", ["MiADE train data (400)"])
-    is_load = st.checkbox("Show interactive table")
+    is_load = st.checkbox("Show table")
     if is_load:
-        selection = aggrid_interactive_table(df=TRAIN_DATA_DF)
+        selection = aggrid_interactive_table(df=train_data_df)
         if selection:
             st.write("You selected:")
             st.json(selection["selected_rows"])
@@ -164,39 +199,36 @@ with tab2:
 
         synth_csv_path = st.selectbox("Select synthetic data file:", SYNTH_DATA_OPTIONS)
         synth_csv_path = os.path.join(os.getenv("SYNTH_CSV_DIR"), synth_csv_path)
-        synth_df = pd.read_csv(synth_csv_path)
+
+        all_synth_df = load_csv_data(synth_csv_path)
         if mc is not None:
             category_labels = list(mc.config.general["category_value2id"].keys())
-            label_counts = TRAIN_DATA_DF[model_name].value_counts().to_dict()
-            synthetic_label_counts = synth_df[model_name].value_counts().to_dict()
-            max_class = max(label_counts.values())
+            real_label_counts, synthetic_label_counts = get_label_counts(
+                model_name, train_data_df, all_synth_df
+            )
+            max_class = max(real_label_counts.values())
 
             assert len(category_labels) > 0
             assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
 
             synth_add_dict = {}
             for i in range(len(category_labels)):
-                synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)", min_value=0,
+                synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)",
+                                                               min_value=0,
                                                                max_value=synthetic_label_counts[category_labels[i]],
-                                                               value=max_class - label_counts[category_labels[i]])
+                                                               value=max_class - real_label_counts[category_labels[i]])
     with col2:
         st.markdown("**Visualise** the ratio of real and synthetic in your overall training set:")
         if mc is not None:
-            chart_data = pd.DataFrame(
-                {"real": [label_counts[category_labels[i]] for i in range(len(category_labels))],
-                 "synthetic": synth_add_dict.values()},
-                index=category_labels)
-
+            chart_data = get_chart_data(category_labels, real_label_counts, synth_add_dict)
             st.bar_chart(chart_data, height=500)
 
-            train_df = pd.concat([synth_df[synth_df[model_name] == label][:synth_add_dict[label]]
-                                  for label in category_labels],
-                                 ignore_index=True)
+            synth_train_df = make_train_data(all_synth_df, model_name, category_labels, synth_add_dict)
 
     with col3:
         st.markdown("**Inspect** the sample of synthetic data selected:")
         if mc is not None:
-            st.dataframe(train_df[["text", model_name]], height=500)
+            st.dataframe(synth_train_df[["text", model_name]], height=500)
 
     if st.button('Train'):
         if mc is not None:
@@ -208,8 +240,8 @@ with tab2:
                 # make dir to save in
                 os.makedirs(save_dir, exist_ok=True)
                 # save the generated train dataset
-                if len(train_df) > 0:
-                    train_df.to_csv(data_save_name)
+                if len(synth_train_df) > 0:
+                    synth_train_df.to_csv(data_save_name, index=False)
                 else:
                     data_save_name = None
 
@@ -232,6 +264,9 @@ with tab2:
         else:
             st.error("No model loaded")
 
+    if st.button("Abort"):
+        st.experimental_rerun()
+
 with tab3:
     col1, col2 = st.columns(2)
     with col1:
@@ -244,6 +279,14 @@ with tab3:
             if mc is not None:
                 plt = present_confusion_matrix(mc, test_path)
                 cm.pyplot(plt)
+                img = io.BytesIO()
+                plt.savefig(img, format='png')
+                st.download_button(
+                    label="Download to model folder",
+                    data=img,
+                    file_name=model_path + '/confusion_matrix.png',
+                    mime='image/png',
+                )
             else:
                 st.error("No model loaded")
         out = st.empty()
