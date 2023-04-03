@@ -3,3 +3,4 @@ streamlit-aggrid
 pandas
 seaborn
 python-dotenv
+spacy-streamlit

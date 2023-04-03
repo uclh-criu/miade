@@ -16,7 +16,7 @@ from st_aggrid.shared import GridUpdateMode
 from contextlib import contextmanager, redirect_stdout
 from io import StringIO
 from dotenv import load_dotenv, find_dotenv
-# from spacy_streamlit import visualize_ner
+from spacy_streamlit import visualize_ner
 
 from medcat.cat import CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
@@ -222,20 +222,9 @@ with st.sidebar.form(key="model"):
 # load data
 train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
 
-tab1, tab2, tab3, tab4 = st.tabs(["Data", "Train", "Test", "Try"])
-
+tab1, tab2, tab3, tab4 = st.tabs(["Train", "Test", "Data", "Try"])
 
 with tab1:
-    # hard coded
-    data_path = st.selectbox("Select dataset to interact with:", ["MiADE train data (400)"])
-    is_load = st.checkbox("Show table")
-    if is_load:
-        selection = aggrid_interactive_table(df=train_data_df)
-        if selection:
-            st.write("You selected:")
-            st.json(selection["selected_rows"])
-
-with tab2:
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -314,10 +303,9 @@ with tab2:
             st.error("No model loaded")
 
 
-with tab3:
+with tab2:
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("**Note** - you need to re-select the model you want to evaluate from the side bar")
         model_path = st.selectbox("Select MetaCAT model to evaluate", MODEL_OPTIONS)
         model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
 
@@ -339,8 +327,19 @@ with tab3:
                 st.error("No model loaded")
         out = st.empty()
 
+
+with tab3:
+    # hard coded
+    data_path = st.selectbox("Select dataset to interact with:", ["MiADE train data (400)"])
+    is_load = st.checkbox("Show table")
+    if is_load:
+        selection = aggrid_interactive_table(df=train_data_df)
+        if selection:
+            st.write("You selected:")
+            st.json(selection["selected_rows"])
+
+
 with tab4:
-    # TODO
     col4, col5 = st.columns(2)
     with col4:
         st.markdown("Try it out!")
@@ -354,6 +353,6 @@ with tab4:
         if submit:
             cat = load_medcat_model(medcat_path)
             output = cat.get_entities(text)
-            # doc = cat(text)
-            # visualize_ner(doc, labels=cat.nlp.get_pipe("ner").labels)
+            doc = cat(text)
+            visualize_ner(doc, title=None, show_table=False, displacy_options={"colors":{"concept":"#F17156"}})
             st.write(output)
