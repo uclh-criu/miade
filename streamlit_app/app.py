@@ -1,4 +1,3 @@
-import io
 import os
 from time import sleep
 
@@ -10,12 +9,16 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 from datetime import datetime
+from typing import List
+
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
 from st_aggrid.shared import GridUpdateMode
 from contextlib import contextmanager, redirect_stdout
 from io import StringIO
 from dotenv import load_dotenv, find_dotenv
+# from spacy_streamlit import visualize_ner
 
+from medcat.cat import CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 load_dotenv(find_dotenv())
@@ -65,11 +68,19 @@ def load_metacat_model(path):
         sleep(0.5)
         st.sidebar.success(f"{name} model loaded from {model_path}")
     except Exception as e:
-        st.sidebar.error(f"Error loading model: {e}")
+        st.error(f"Error loading model: {e}")
         model = None
         name = None
     return model, name
 
+@st.cache_resource
+def load_medcat_model(path):
+    try:
+        model = CAT.load_model_pack(path)
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        model = None
+    return model
 
 MIN_HEIGHT = 27
 MAX_HEIGHT = 800
@@ -78,6 +89,8 @@ ROW_HEIGHT = 35
 SYNTH_DATA_OPTIONS = [f for f in os.listdir(os.getenv("SYNTH_CSV_DIR")) if ".csv" in f]
 TRAIN_JSON_OPTIONS = [f for f in os.listdir(os.getenv("TRAIN_JSON_DIR")) if ".json" in f]
 TEST_JSON_OPTIONS = [f for f in os.listdir(os.getenv("TEST_JSON_DIR")) if ".json" in f]
+
+MEDCAT_OPTIONS = [f for f in os.listdir(os.getenv("SAVE_DIR")) if ".zip" in f]
 MODEL_OPTIONS = ["/".join(f[0].split("/")[-2:]) for f in os.walk(os.getenv("MODELS_DIR"))
                  if 'meta_' in f[0].split("/")[-1] and ".ipynb_checkpoints" not in f[0]]
 
@@ -88,33 +101,6 @@ st.title("🖱️ MiADE Training Dashboard")
 st.write(
     """Train, test, and experiment with MedCAT models used in MiADE"""
 )
-
-
-model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
-model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
-
-st.sidebar.subheader("Set training parameters")
-cntx_left = st.sidebar.number_input("cntx_left", 5, step=1)
-cntx_right = st.sidebar.number_input("cntx_right", 5, step=1)
-n_epochs = st.sidebar.number_input("n_epochs", value=50, step=1, min_value=1)
-
-is_replace_center = st.sidebar.checkbox("Replace centre token?", value=True)
-replace_center = None
-if is_replace_center:
-    replace_center = st.sidebar.text_input("replace_center", "disease")
-
-class_weights = st.sidebar.checkbox("Balance class weights? (Experimental)", value=False)
-
-# TODO
-st.sidebar.subheader("Create MedCAT modelpack")
-st.sidebar.selectbox("Select MedCAT modelpack to package with:", ["miade_example_model"])
-st.sidebar.button("Save")
-
-# load data and models
-train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
-mc, model_name = load_metacat_model(model_path)
-
-tab1, tab2, tab3, tab4 = st.tabs(["Data", "Train", "Test", "Try"])
 
 
 def present_confusion_matrix(model, data):
@@ -148,6 +134,32 @@ def present_confusion_matrix(model, data):
     return plt
 
 
+def add_metacat_models(
+        model: str,
+        meta_cats_path: List,
+):
+    out_dir = os.getenv("SAVE_DIR", "./")
+    cat = CAT.load_model_pack(str(model))
+
+    meta_cats = []
+    categories = []
+    for metacat_path in meta_cats_path:
+        metacat = MiADE_MetaCAT.load(metacat_path)
+        meta_cats.append(metacat)
+        categories.append(metacat.config.general["category_name"])
+
+    cat_w_meta = CAT(cdb=cat.cdb, vocab=cat.vocab, config=cat.config, meta_cats=meta_cats)
+
+    description = cat.config.version["description"] + " | Packaged with MetaCAT model(s) " + ", ".join(categories)
+    cat.config.version["description"] = description
+    save_name = Path(model).stem.rsplit("_", 1)[0] + "_w_meta"
+    try:
+        cat_w_meta.create_model_pack(save_dir_path=out_dir, model_pack_name=save_name)
+        st.success("Saved MedCAT modelpack at " + out_dir + save_name + "_" + cat_w_meta.config.version["id"])
+    except Exception as e:
+        st.error(f"Error saving MedCAT model: {e}")
+
+
 def aggrid_interactive_table(df: pd.DataFrame):
     """Creates an st-aggrid interactive table based on a dataframe.
 
@@ -176,6 +188,41 @@ def aggrid_interactive_table(df: pd.DataFrame):
     )
 
     return selection
+
+# side bar
+st.sidebar.subheader("Select model to train")
+model_path = st.sidebar.selectbox("Select MetaCAT model path", MODEL_OPTIONS)
+model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
+mc, model_name = load_metacat_model(model_path)
+
+st.sidebar.subheader("Set training parameters")
+cntx_left = st.sidebar.number_input("cntx_left", 5, step=1)
+cntx_right = st.sidebar.number_input("cntx_right", 5, step=1)
+n_epochs = st.sidebar.number_input("n_epochs", value=50, step=1, min_value=1)
+
+is_replace_center = st.sidebar.checkbox("Replace centre token?", value=True)
+replace_center = None
+if is_replace_center:
+    replace_center = st.sidebar.text_input("replace_center", "disease")
+
+class_weights = st.sidebar.checkbox("Balance class weights? (Experimental)", value=False)
+
+st.sidebar.subheader("Save with MedCAT modelpack")
+with st.sidebar.form(key="model"):
+    selected_models = st.multiselect("Select MetaCAT models:", MODEL_OPTIONS)
+    metacat_paths = [os.path.join(os.getenv("MODELS_DIR"), "/".join(path.split("/")[-2:])) for path in selected_models]
+    selected_medcat = st.selectbox("Select MedCAT modelpack to package with:", MEDCAT_OPTIONS)
+    medcat_path = os.getenv("SAVE_DIR") + selected_medcat
+    submit = st.form_submit_button(label='Save')
+    if submit:
+        add_metacat_models(medcat_path, metacat_paths)
+        MEDCAT_OPTIONS = [f for f in os.listdir(os.getenv("SAVE_DIR")) if ".zip" in f]
+
+
+# load data
+train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
+
+tab1, tab2, tab3, tab4 = st.tabs(["Data", "Train", "Test", "Try"])
 
 
 with tab1:
@@ -261,6 +308,8 @@ with tab2:
             st.success(f"Done! Model saved at {model_save_name}")
             st.write("Training report:")
             st.write(report)
+            MODEL_OPTIONS = ["/".join(f[0].split("/")[-2:]) for f in os.walk(os.getenv("MODELS_DIR"))
+                             if 'meta_' in f[0].split("/")[-1] and ".ipynb_checkpoints" not in f[0]]
         else:
             st.error("No model loaded")
 
@@ -268,24 +317,43 @@ with tab2:
 with tab3:
     col1, col2 = st.columns(2)
     with col1:
+        st.markdown("**Note** - you need to re-select the model you want to evaluate from the side bar")
+        model_path = st.selectbox("Select MetaCAT model to evaluate", MODEL_OPTIONS)
+        model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
+
         test_path = st.selectbox("Select a test set to evaluate your model against:", TEST_JSON_OPTIONS)
         test_path = os.path.join(os.getenv("TEST_JSON_DIR"), test_path)
+
         is_test = st.button("Test")
     with col2:
         cm = st.empty()
         if is_test:
-            if mc is not None:
-                plt = present_confusion_matrix(mc, test_path)
-                cm.pyplot(plt)
-                try:
-                    plt.savefig(model_path + "/confusion_matrix.png", format='png')
-                except Exception as e:
-                    st.error(f"Couldn't save image: {e}")
+            eval_mc, model_name = load_metacat_model(model_path)
+            plt = present_confusion_matrix(eval_mc, test_path)
+            cm.pyplot(plt)
+            try:
+                plt.savefig(model_path + "/confusion_matrix.png", format='png')
+            except Exception as e:
+                st.error(f"Could not save image: {e}")
             else:
                 st.error("No model loaded")
         out = st.empty()
 
 with tab4:
     # TODO
-    st.text_area("Text")
-    st.button("Submit")
+    col4, col5 = st.columns(2)
+    with col4:
+        st.markdown("Try it out!")
+        selected_medcat = st.selectbox("Select a MedCAT modelpack to load:", MEDCAT_OPTIONS)
+        medcat_path = os.getenv("SAVE_DIR") + selected_medcat
+        if st.button("Load MedCAT model"):
+            cat = load_medcat_model(medcat_path)
+        text = st.text_area("Text")
+        submit = st.button("Submit")
+    with col5:
+        if submit:
+            cat = load_medcat_model(medcat_path)
+            output = cat.get_entities(text)
+            # doc = cat(text)
+            # visualize_ner(doc, labels=cat.nlp.get_pipe("ner").labels)
+            st.write(output)
