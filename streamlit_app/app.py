@@ -152,7 +152,7 @@ def add_metacat_models(
 
     description = cat.config.version["description"] + " | Packaged with MetaCAT model(s) " + ", ".join(categories)
     cat.config.version["description"] = description
-    save_name = Path(model).stem.rsplit("_", 1)[0] + "_w_meta"
+    save_name = Path(model).stem.rsplit("_", 3)[0] + "_w_meta_" + datetime.now().strftime('%b_%Y').lower()
     try:
         cat_w_meta.create_model_pack(save_dir_path=out_dir, model_pack_name=save_name)
         st.success("Saved MedCAT modelpack at " + out_dir + save_name + "_" + cat_w_meta.config.version["id"])
@@ -216,6 +216,7 @@ with st.sidebar.form(key="model"):
     submit = st.form_submit_button(label='Save')
     if submit:
         add_metacat_models(medcat_path, metacat_paths)
+        # update options probably a better way to do this
         MEDCAT_OPTIONS = [f for f in os.listdir(os.getenv("SAVE_DIR")) if ".zip" in f]
 
 
@@ -307,11 +308,12 @@ with tab2:
     col1, col2 = st.columns(2)
     with col1:
         model_path = st.selectbox("Select MetaCAT model to evaluate", MODEL_OPTIONS)
-        model_path = os.path.join(os.getenv("MODELS_DIR"), "/".join(model_path.split("/")[-2:]))
+        model_path = os.path.join(os.getenv("MODELS_DIR", "./"), "/".join(model_path.split("/")[-2:]))
 
         test_path = st.selectbox("Select a test set to evaluate your model against:", TEST_JSON_OPTIONS)
         test_path = os.path.join(os.getenv("TEST_JSON_DIR"), test_path)
 
+        is_save = st.checkbox("Save confusion matrix figure to model directory")
         is_test = st.button("Test")
     with col2:
         cm = st.empty()
@@ -319,12 +321,12 @@ with tab2:
             eval_mc, model_name = load_metacat_model(model_path)
             plt = present_confusion_matrix(eval_mc, test_path)
             cm.pyplot(plt)
-            try:
-                plt.savefig(model_path + "/confusion_matrix.png", format='png')
-            except Exception as e:
-                st.error(f"Could not save image: {e}")
-            else:
-                st.error("No model loaded")
+            if is_save:
+                try:
+                    plt.savefig(model_path + "/confusion_matrix.png", format='png', bbox_inches="tight", dpi=200)
+                except Exception as e:
+                    st.error(f"Could not save image: {e}")
+
         out = st.empty()
 
 
