@@ -13,7 +13,7 @@ from .note import Note
 
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
-from .utils.miadecat import MiADE_CAT
+from .utils.miade_cat import MiADE_CAT
 
 log = logging.getLogger(__name__)
 
