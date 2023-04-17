@@ -282,11 +282,22 @@ with tab1:
                 else:
                     data_save_name = None
 
+                if class_weights:
+                    weights = []
+                    for label in mc.config.general["category_value2id"].keys():
+                        train_count = train_data_df[model_name].value_counts().to_dict()
+                        synth_count = synth_train_df[model_name].value_counts().to_dict()
+                        total_count = len(train_data_df) + len(synth_train_df)
+                        class_count = train_count.get(label, 0) + synth_count.get(label, 0)
+                        weight = 1 - (class_count / total_count)
+                        weights.append(weight)
+                st.write(weights)
                 mc.config.general["cntx_left"] = cntx_left
                 mc.config.general["cntx_right"] = cntx_right
-                mc.config.train["nepochs"] = n_epochs
                 mc.config.general["replace_center"] = replace_center
                 mc.config.model["last_trained_on"] = date_id
+                mc.config.train["nepochs"] = n_epochs
+                mc.config.train["class_weights"] = weights
 
                 with st.expander("Expand to see training logs"):
                     output = st.empty()
