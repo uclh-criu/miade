@@ -163,14 +163,18 @@ def parse_frequency(text: str, results: Dict) -> Optional[Frequency]:
         frequency_dosage.institutionSpecified = results["institution_specified"]
 
     if results["freq"] is not None and results["time"] is not None:
-        frequency_dosage.value = results["time"] / results["freq"]
+        try:
+            frequency_dosage.value = results["time"] / results["freq"]
+        except ZeroDivisionError as e:
+            frequency_dosage.value = None
         # here i convert time to hours if not institution specified
         # (every X hrs as opposed to X times day) but it's arbitrary really...
-        if not frequency_dosage.institutionSpecified and results["time"] < 1:
-            frequency_dosage.value = round(frequency_dosage.value * 24)
-            frequency_dosage.unit = "h"
-        else:
-            frequency_dosage.unit = "d"
+        if frequency_dosage is not None:
+            if not frequency_dosage.institutionSpecified and results["time"] < 1:
+                frequency_dosage.value = round(frequency_dosage.value * 24)
+                frequency_dosage.unit = "h"
+            else:
+                frequency_dosage.unit = "d"
 
     if "when needed" in text:
         frequency_dosage.preconditionAsRequired = True
