@@ -34,17 +34,32 @@ class ConceptFilter(object):
     def __init__(self, use_negex: bool = True):
         self.use_negex = use_negex
         negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
-        self.negated_lookup = pd.read_csv(
-            io.BytesIO(negated_data), index_col=0, squeeze=True
-        ).T.to_dict()
+        self.negated_lookup = (
+            pd.read_csv(
+                io.BytesIO(negated_data),
+                index_col=0,
+            )
+            .squeeze("columns")
+            .T.to_dict()
+        )
         historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
-        self.historic_lookup = pd.read_csv(
-            io.BytesIO(historic_data), index_col=0, squeeze=True
-        ).T.to_dict()
+        self.historic_lookup = (
+            pd.read_csv(
+                io.BytesIO(historic_data),
+                index_col=0,
+            )
+            .squeeze("columns")
+            .T.to_dict()
+        )
         suspected_data = pkgutil.get_data(__name__, "./data/suspected.csv")
-        self.suspected_lookup = pd.read_csv(
-            io.BytesIO(suspected_data), index_col=0, squeeze=True
-        ).T.to_dict()
+        self.suspected_lookup = (
+            pd.read_csv(
+                io.BytesIO(suspected_data),
+                index_col=0,
+            )
+            .squeeze("columns")
+            .T.to_dict()
+        )
         blacklist_data = pkgutil.get_data(__name__, "./data/problem_blacklist.csv")
         self.filtering_blacklist = pd.read_csv(io.BytesIO(blacklist_data), header=None)
 

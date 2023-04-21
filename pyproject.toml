@@ -17,7 +17,7 @@ dynamic = ["version"]
 dependencies = [
     "medcat==1.7.0",
     "spacy>=3.4.2, <3.5.0",  # need to be compatible with latest med7 model
-    "pandas<=1.5.3, <2",  # pandas updated to 2.0.0 recently, should we update too?
+    "pandas>=1.4.2",  # support 2.0.0
     "typer>=0.7.0",
     'click>=8.0.4',
     "pathlib>=1.0.1",
