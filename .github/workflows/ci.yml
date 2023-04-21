@@ -8,9 +8,6 @@ on:
     branches:
       - master
 
-env:
-  SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
-
 jobs:
   Test:
     runs-on: ubuntu-20.04
@@ -29,6 +26,6 @@ jobs:
       - name: download model
         run: |
           python -m spacy download en_core_web_md
-          pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/9633b53e7f9488408eae5dfff51b831b3b787657/en_core_med7_lg-any-py3-none-any.whl
+          pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
       - name: run pytest
         run: pytest ./tests/*

@@ -14,7 +14,7 @@ from .note import Note
 from .conceptfilter import ConceptFilter
 from .dosageextractor import DosageExtractor
 from .utils.metaannotationstypes import SubstanceCategory
-from .utils.miadecat import MiADE_CAT
+from .utils.miade_cat import MiADE_CAT
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class NoteProcessor:
         self.meds_allergies_model_id = meds_allergies_model_id
         self.annotators = [
             MiADE_CAT.load_model_pack(
-                model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
+                str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
@@ -80,9 +80,7 @@ class NoteProcessor:
         self.concept_filter = ConceptFilter(use_negex=use_negex)
 
         if use_negex:
-            log.info(
-                "Using Negex as priority for meta context detection"
-            )
+            log.info("Using Negex as priority for meta context detection")
             self._add_negex_pipeline()
 
         if problems_model_id:

@@ -99,13 +99,13 @@ class CDBBuilder(object):
     def preprocess(self):
         self.vocab_files = []
         if self.snomed:
-            self.vocab_files.append(self.preprocess_snomed(self.temp_dir))
+            self.vocab_files.append(str(self.preprocess_snomed(self.temp_dir)))
         if self.fdb_data_path:
-            self.vocab_files.append(self.preprocess_fdb(self.temp_dir))
+            self.vocab_files.append(str(self.preprocess_fdb(self.temp_dir)))
         if self.elg_data_path:
-            self.vocab_files.append(self.preprocess_elg(self.temp_dir))
+            self.vocab_files.append(str(self.preprocess_elg(self.temp_dir)))
         if self.custom_data_paths:
-            self.vocab_files += self.custom_data_paths
+            self.vocab_files += str(self.custom_data_paths)
 
     def create_cdb(self) -> CDB:
         cdb = self.maker.prepare_csvs(self.vocab_files, full_build=True)
