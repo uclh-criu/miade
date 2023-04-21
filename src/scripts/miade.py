@@ -154,6 +154,7 @@ def train(
 def train_supervised(
     model: Path,
     annotations_path: Path,
+    synthetic_data_path: Optional[Path] = None,
     nepochs: int = 1,
     use_filters: bool = False,
     print_stats: bool = True,
@@ -168,6 +169,7 @@ def train_supervised(
     log.info(f"Starting {nepochs} epoch(s) supervised training with {annotations_path}")
     fp, fn, tp, p, r, f1, cui_counts, examples = cat.train_supervised(
         data_path=str(annotations_path),
+        synthetic_data_path=str(synthetic_data_path),
         nepochs=nepochs,
         use_filters=use_filters,
         print_stats=print_stats,
@@ -292,6 +294,7 @@ def create_metacats(
 def train_metacat(
     model_path: Path,
     annotation_path: Path,
+    synthetic_data_path: Optional[Path] = None,
     nepochs: int = 50,
     cntx_left: int = 20,
     cntx_right: int = 15,
@@ -314,9 +317,11 @@ def train_metacat(
         f"Starting MetaCAT training for {mc.config.general['category_name']} for {nepochs} epoch(s) "
         f"with annotation file {annotation_path}"
     )
-    report = mc.train(json_path=str(annotation_path),
-                      synthetic_csv_path=str(synthetic_data_path),
-                      save_dir_path=str(model_path))
+    report = mc.train(
+        json_path=str(annotation_path),
+        synthetic_csv_path=str(synthetic_data_path),
+        save_dir_path=str(model_path),
+    )
     training_stats = {mc.config.general["category_name"]: report}
 
     report_save_name = os.path.join(model_path, "training_report.json")
