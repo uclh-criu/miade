@@ -4,13 +4,14 @@ A helper streamlit app for data visualisation, training MedCAT models, and demo-
 
 ### To run locally:
 ```bash
-pip install -r requirements.txt
+pip install '../[dashboard]'
 streamlit run app.py
 ```
 ### Docker:
 Use docker-compose in `miade/`:
 ```bash
-docker compose up -d
+cd ..
+docker-compose up -d
 ```
 Or standalone:
 ```bash

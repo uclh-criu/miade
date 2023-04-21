@@ -2,8 +2,6 @@
 
 FROM python:3.8.10
 
-ENV SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
-
 RUN python -m pip install --upgrade pip
 
 RUN apt-get update && apt-get install -y \
@@ -15,12 +13,9 @@ RUN apt-get update && apt-get install -y \
 
 ADD . /home/miade
 
-# RUN pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/9633b53e7f9488408eae5dfff51b831b3b787657/en_core_med7_lg-any-py3-none-any.whl
-RUN pip install /home/miade
+RUN pip install '/home/miade[dashboard]'
 
 WORKDIR /home/miade/streamlit_app
-
-RUN pip install -r requirements.txt
 
 EXPOSE 8501
 
