@@ -17,9 +17,14 @@ log = logging.getLogger(__name__)
 @spacy.registry.misc("singleword_lookup_dict.v1")
 def create_singleword_dict():
     singlewords_data = pkgutil.get_data(__name__, "../data/singlewords.csv")
-    singlewords_dict = pd.read_csv(
-        io.BytesIO(singlewords_data), index_col=0, squeeze=True
-    ).to_dict()
+    singlewords_dict = (
+        pd.read_csv(
+            io.BytesIO(singlewords_data),
+            index_col=0,
+        )
+        .squeeze("columns")
+        .to_dict()
+    )
 
     return singlewords_dict
 
@@ -27,9 +32,14 @@ def create_singleword_dict():
 @spacy.registry.misc("multiword_lookup_dict.v1")
 def create_multiword_dict():
     multiwords_data = pkgutil.get_data(__name__, "../data/multiwords.csv")
-    multiwords_dict = pd.read_csv(
-        io.BytesIO(multiwords_data), index_col=0, squeeze=True
-    ).to_dict()
+    multiwords_dict = (
+        pd.read_csv(
+            io.BytesIO(multiwords_data),
+            index_col=0,
+        )
+        .squeeze("columns")
+        .to_dict()
+    )
 
     return multiwords_dict
 

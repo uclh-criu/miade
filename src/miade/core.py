@@ -71,7 +71,7 @@ class NoteProcessor:
         self.meds_allergies_model_id = meds_allergies_model_id
         self.annotators = [
             MiADE_CAT.load_model_pack(
-                model_pack_filepath, meta_cat_config_dict=meta_cat_config_dict
+                str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict
             )
             for model_pack_filepath in model_directory.glob("*.zip")
         ]
@@ -79,15 +79,15 @@ class NoteProcessor:
         self.concept_filter = ConceptFilter(use_negex=use_negex)
 
         if use_negex:
-            log.info(
-                "Using Negex as priority for meta context detection"
-            )
+            log.info("Using Negex as priority for meta context detection")
             self._add_negex_pipeline()
 
         if problems_model_id is not None:
             log.info(f"Configured to use problems model {self.problems_model_id}")
         else:
-            log.info(f"Problems model ID not configured, using all models in model path {model_directory}")
+            log.info(
+                f"Problems model ID not configured, using all models in model path {model_directory}"
+            )
 
     def process(
         self, note: Note, record_concepts: Optional[List[Concept]] = None
@@ -103,9 +103,13 @@ class NoteProcessor:
                     except ValueError as e:
                         log.warning(f"Concept skipped: {e}")
             else:
-                log.warning(f"Model {annotator.config.version['id']} is not a problems model and will not be used")
+                log.warning(
+                    f"Model {annotator.config.version['id']} is not a problems model and will not be used"
+                )
 
-        log.debug(f"Detected concepts: {[(concept.id, concept.name, concept.category.name) for concept in concepts]}")
+        log.debug(
+            f"Detected concepts: {[(concept.id, concept.name, concept.category.name) for concept in concepts]}"
+        )
         # post-processing
         concepts = self.concept_filter(concepts, record_concepts)
 
