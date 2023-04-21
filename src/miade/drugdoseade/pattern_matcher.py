@@ -18,9 +18,11 @@ log = logging.getLogger(__name__)
 @spacy.registry.misc("patterns_lookup_table.v1")
 def create_patterns_dict():
     patterns_data = pkgutil.get_data(__name__, "../data/patterns.csv")
-    patterns_dict = pd.read_csv(
-        io.BytesIO(patterns_data), index_col=0, squeeze=True
-    ).T.to_dict()
+    patterns_dict = (
+        pd.read_csv(io.BytesIO(patterns_data), index_col=0)
+        .squeeze("columns")
+        .T.to_dict()
+    )
 
     return patterns_dict
 

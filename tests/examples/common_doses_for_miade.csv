@@ -50,7 +50,7 @@ Clobetasone 0.05% cream,Apply Thinly Once Or Twice A Day,,,,,0.5,d,TRUE,FALSE,
 Adapalene 0.1% gel,"Apply Thinly At Night,45 gram",,,,g,1,d,FALSE,FALSE,
 Amoxicillin 500mg capsules,"One To Be Taken Three Times A Day,21 capsule",1,,,{cap},0.333333333333333,d,TRUE,FALSE,7
 ViATIM vaccine suspension for injection 1ml pre-filled syringes (Sanofi Pasteur),"Immediately,1 pre-filled disposable injection",1,,,{injection},,,,,1
-Amitriptyline 10mg tablets,"take one at night, building gradually to five at night,56 tablet",5,,,{tbl},1,d,FALSE,FALSE,
+Amitriptyline 10mg tablets,"take one at night, building gradually to five at night,56 tablet",1,,,{tbl},1,d,FALSE,FALSE,
 Propranolol 40mg tablets,"One To Be Taken Twice A Day,2 x 28 tablet",1,,,{tbl},0.5,d,TRUE,FALSE,28
 Sumatriptan 10mg/0.1ml nasal spray unit dose,"one spray as directed,2 x 2 unit dose",1,,,{unit},,,,,
 Phenoxymethylpenicillin 250mg tablets,"TAKE TWO TABLETS EVERY SIX HOURS FOR SEVEN DAYS,64 tablet",2,,,{tbl},6,h,FALSE,FALSE,7
