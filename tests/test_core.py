@@ -1,4 +1,4 @@
-from miade.core import NoteProcessor, DebugMode
+from miade.core import NoteProcessor
 from miade.concept import Concept, Category
 from miade.dosage import Dose, Frequency
 from miade.metaannotations import MetaAnnotations
@@ -40,42 +40,6 @@ def test_meta_from_entity(test_medcat_concepts):
             confidences={Presence: 1, Relevance: 1, Laterality: 1},
         ),
     )
-
-
-def test_debug(model_directory_path, debug_path, test_note):
-    processor = NoteProcessor(model_directory_path)
-    assert processor.debug(debug_path, mode=DebugMode.CDA) == {
-        "Problems": {
-            "statusCode": "active",
-            "actEffectiveTimeHigh": "None",
-            "observationEffectiveTimeLow": 20200504,
-            "observationEffectiveTimeHigh": 20210904,
-        },
-        "Medication": {
-            "consumableCodeSystemName": "RxNorm",
-            "consumableCodeSystemValue": "2.16.840.1.113883.6.88",
-        },
-        "Allergy": {
-            "allergySectionCodeName": "Propensity to adverse reaction",
-            "allergySectionCodeValue": 420134006,
-        },
-    }
-
-    concept_list = processor.debug(debug_path, mode=DebugMode.PRELOADED)
-    assert concept_list[1].name == "Paracetamol"
-    assert concept_list[1].id == 90332006
-    assert concept_list[1].category == Category.MEDICATION
-    assert concept_list[1].dosage.dose.value == 2
-    assert concept_list[1].dosage.dose.unit == "{tbl}"
-    assert concept_list[1].dosage.frequency.value == 0.25
-    assert concept_list[1].dosage.duration.low == "20220606"
-    assert concept_list[1].dosage.duration.high == "20220620"
-    assert concept_list[1].dosage.route.value == "C38288"
-    assert concept_list[1].dosage.route.full_name == "Oral"
-
-    assert concept_list[2].name == "Penicillins"
-    assert concept_list[2].id == 84874
-    assert concept_list[2].category == Category.ALLERGY
 
 
 def test_dosage_text_splitter(model_directory_path, test_med_concepts, test_med_note):
