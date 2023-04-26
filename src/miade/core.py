@@ -19,12 +19,6 @@ from .utils.miade_cat import MiADE_CAT
 log = logging.getLogger(__name__)
 
 
-class DebugMode(Enum):
-    PRELOADED = 1
-    CDA = 2
-    MODEL = 3
-
-
 def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> str:
     """
     Finds chunks of text that contain single dosage instructions to input into DosageProcessor
@@ -162,67 +156,3 @@ class NoteProcessor:
 
         return concepts
 
-    def debug(
-        self,
-        debug_config_path: Path,
-        mode: DebugMode = DebugMode.PRELOADED,
-        code: Optional[int] = 0,
-    ) -> (List[Concept], Dict):
-        """
-        Returns debug configurations for end-to-end testing of the MiADE unit in NoteReader
-        :param debug_config_path: Path of debug config file
-        :param mode: (DebugCode) which debug mode to use
-        :param code: (int) which preset configuration from the config file to use
-        :return: (tuple) list of concepts to return and CDA dictionary
-        """
-        # print(debug_config)
-        # TODO: tidy & update debug mode
-        with open(debug_config_path, "r") as stream:
-            debug_config = yaml.safe_load(stream)
-
-        # use preloaded concepts and cda fields
-        if mode == DebugMode.PRELOADED:
-            concept_list = []
-            for name, concept_dict in debug_config["Presets"][code].items():
-                dosage = None
-                debug = None
-                if concept_dict["ontologies"] == "FDB":
-                    category = Category.MEDICATION
-                    if "dosage" in concept_dict:
-                        dosage = Dosage(
-                            text="debug mode",
-                            dose=Dose(**concept_dict["dosage"].get("dose")),
-                            frequency=Frequency(
-                                **concept_dict["dosage"].get("frequency")
-                            ),
-                            duration=Duration(**concept_dict["dosage"].get("duration")),
-                            route=Route(**concept_dict["dosage"].get("route")),
-                        )
-                elif concept_dict["ontologies"] == "ELG":
-                    category = Category.ALLERGY
-                    debug = {}
-                    if "reaction" in concept_dict:
-                        debug["reaction"] = concept_dict["reaction"]
-                    if "severity" in concept_dict:
-                        debug["severity"] = concept_dict["severity"]
-                elif concept_dict["ontologies"] == "SNOMED CT":
-                    category = Category.PROBLEM
-                else:
-                    category = Category.PROBLEM
-                concept_list.append(
-                    Concept(
-                        id=concept_dict["cui"],
-                        name=name,
-                        category=category,
-                        dosage=dosage,
-                        debug_dict=debug,
-                    )
-                )
-            return concept_list
-        # detect concepts and return preloaded cda fields
-        elif mode == DebugMode.CDA:
-            return debug_config["CDA"][code]
-        # switch out models once we have multiple models/version control
-        elif mode == DebugMode.MODEL:
-            for model in self.annotators:
-                model.get_model_card()

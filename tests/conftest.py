@@ -16,11 +16,6 @@ def model_directory_path() -> Path:
 
 
 @pytest.fixture(scope="function")
-def debug_path() -> Path:
-    return Path("./tests/examples/example_debug_config.yml")
-
-
-@pytest.fixture(scope="function")
 def test_note() -> Note:
     return Note(text="Patient has liver failure and is taking paracetamol.")
 
