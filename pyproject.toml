@@ -38,6 +38,7 @@ dashboard = [
     "streamlit-aggrid>=0.3.4.post3",
     "spacy-streamlit>=1.0.5",
     "seaborn>=0.12.2",
+    "python-dotenv>=1.0.0"
 ]
 
 [project.scripts]
