@@ -1,0 +1,18 @@
+version: "3"
+services:
+  miade-dashboard:
+    build:
+      context: .
+      dockerfile: ./streamlit_app/Dockerfile
+    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - miade-dev:/vol
+      - ./streamlit_app:/home/miade/streamlit_app/
+#    env_file:
+#      - ./.env
+
+volumes:
+  miade-dev:
+    external: true

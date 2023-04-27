@@ -1,0 +1,41 @@
+text,cui,name,start,end,relevance,presence,laterality (generic),Status
+no hist of sympathetic nervous structure injury,282747005,sympathetic nervous structure injury,11,47,historic,negated,none,Other
+agenesis of nasal bone when 30 yr o,1003577003,agenesis of nasal bone,0,22,historic,confirmed,none,Confirmed
+previous acute skin sarcoidosis,238674006,acute skin sarcoidosis,9,31,historic,confirmed,none,Confirmed
+infectious disease of abdomen last 7 month,128070006,infectious disease of abdomen,0,29,historic,confirmed,none,Confirmed
+no ph of cannabis poisoning,1149328002,cannabis poisoning,9,27,historic,negated,none,Other
+prev acute myocarditis - tuberculous,194949003,acute myocarditis - tuberculous,5,36,historic,confirmed,none,Confirmed
+previous hx of exotropia of bilateral eyes,1.56326910001191E+016,exotropia of bilateral eyes,15,42,historic,confirmed,bilateral,Confirmed
+past medical history of hypertrophy of gallbladder,76875008,hypertrophy of gallbladder,24,50,historic,confirmed,none,Confirmed
+laceration of right buttock last 3 month,1.09045110001191E+016,laceration of right buttock,0,27,historic,confirmed,right,Confirmed
+several acute pyelitis,32801008,acute pyelitis,8,22,historic,confirmed,none,Confirmed
+accidental chlorprothixene overdose suspected,427131001,accidental chlorprothixene overdose,0,35,present,suspected,none,Affirmed
+suspicion of sprain of shoulder,3199001,sprain of shoulder,13,31,present,suspected,none,Affirmed
+pos nutritional myopathy,44253006,nutritional myopathy,4,24,present,suspected,none,Affirmed
+probably bee sting-induced anaphylaxis,241931004,bee sting-induced anaphylaxis,9,38,present,suspected,none,Affirmed
+apolipoprotein a-i deficiency suspected,238095002,apolipoprotein a-i deficiency,0,29,present,suspected,none,Affirmed
+maybe adenocarcinoma of bladder,255110003,adenocarcinoma of bladder,6,31,present,suspected,none,Affirmed
+possible fecal peritonitis,235985005,fecal peritonitis,9,26,present,suspected,none,Affirmed
+suspect lymph fistula,234105001,lymph fistula,8,21,present,suspected,none,Affirmed
+susp microcephaly-oculo-digito-esophageal-duodenal syndrome,702431004,microcephaly-oculo-digito-esophageal-duodenal syndrome,5,59,present,suspected,none,Affirmed
+could be primary immune deficiency disorder,58606001,primary immune deficiency disorder,9,43,present,suspected,none,Affirmed
+explained about postsurgical menopause,371036001,postsurgical menopause,16,38,irrelevant,confirmed,none,Confirmed
+sisters primary syphilis of nipple,237447001,primary syphilis of nipple,8,34,irrelevant,confirmed,none,Confirmed
+sibling feels infection caused by gigantocotyle,55065004,infection caused by gigantocotyle,14,47,irrelevant,confirmed,none,Confirmed
+family hist bacterial keratitis,314557000,bacterial keratitis,12,31,irrelevant,confirmed,none,Confirmed
+husbands leukemic infiltration of skin,404156009,leukemic infiltration of skin,9,38,irrelevant,confirmed,none,Confirmed
+sisters has macrosaccadic oscillations,307689000,macrosaccadic oscillations,12,38,irrelevant,confirmed,none,Confirmed
+non-diabetic hypoglycemic coma risk score,230796005,non-diabetic hypoglycemic coma,0,30,irrelevant,confirmed,none,Confirmed
+discussed intentional flunitrazepam overdose,296056007,intentional flunitrazepam overdose,10,44,irrelevant,confirmed,none,Confirmed
+worried elephantiasis of upper eyelid,700337008,elephantiasis of upper eyelid,8,37,irrelevant,confirmed,none,Confirmed
+fhx heterophil-negative mononucleosis syndrome,65230006,heterophil-negative mononucleosis syndrome,4,46,irrelevant,confirmed,none,Confirmed
+absence of signs and symptoms of disorder of extraembryonic membrane,609522002,disorder of extraembryonic membrane,33,68,present,negated,none,Other
+traumatic intracranial subdural hematoma none,262952002,traumatic intracranial subdural hematoma,0,40,present,negated,none,Other
+absence of injury of finger,52011008,injury of finger,11,27,present,negated,none,Other
+denied conjunctival abrasion,609362004,conjunctival abrasion,7,28,present,negated,none,Other
+intentional netilmicin poisoning not detected,291490007,intentional netilmicin poisoning,0,32,present,negated,none,Other
+chronic peptic ulcer none,128287004,chronic peptic ulcer,0,20,present,negated,none,Other
+absent miscarriage complicated by shock,34270000,miscarriage complicated by shock,7,39,present,negated,none,Other
+no haff syndrome,359569009,haff syndrome,3,16,present,negated,none,Other
+absence of signs and symptoms of disease caused by neisseria,409790005,disease caused by neisseria,33,60,present,negated,none,Other
+cryptococcal chorioretinitis negative,416877003,cryptococcal chorioretinitis,0,28,present,negated,none,Other
