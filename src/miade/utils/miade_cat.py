@@ -1,4 +1,5 @@
 import json
+import logging
 import pandas as pd
 from copy import deepcopy
 
@@ -14,6 +15,7 @@ from medcat.utils.checkpoint import Checkpoint
 from medcat.utils.helpers import tkns_from_doc
 from medcat.utils.filters import get_project_filters
 
+logger = logging.getLogger("cat")
 
 class MiADE_CAT(CAT):
     """Experimental - overriding medcat write out function - more control over spacy pipeline: add negex results"""
@@ -143,7 +145,7 @@ class MiADE_CAT(CAT):
         cui_counts = {}
 
         if test_size == 0:
-            self.log.info("Running without a test set, or train==test")
+            logger.info("Running without a test set, or train==test")
             test_set = data
             train_set = data
         else:
@@ -277,7 +279,7 @@ class MiADE_CAT(CAT):
 
             if synthetic_data_path is not None:
                 synth_data = pd.read_csv(synthetic_data_path)
-                self.log.info(
+                logger.info(
                     f"Training with additional {len(synth_data)} synthetic data points from {synthetic_data_path}"
                 )
                 for i in range(len(synth_data)):
