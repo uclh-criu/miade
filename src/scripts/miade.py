@@ -169,7 +169,7 @@ def train_supervised(
     log.info(f"Starting {nepochs} epoch(s) supervised training with {annotations_path}")
     fp, fn, tp, p, r, f1, cui_counts, examples = cat.train_supervised(
         data_path=str(annotations_path),
-        synthetic_data_path=str(synthetic_data_path),
+        synthetic_data_path=synthetic_data_path,
         nepochs=nepochs,
         use_filters=use_filters,
         print_stats=print_stats,
