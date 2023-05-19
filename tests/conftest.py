@@ -8,11 +8,17 @@ from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
+from miade.utils.miade_cat import MiADE_CAT
 
 
 @pytest.fixture(scope="function")
 def model_directory_path() -> Path:
     return Path("./tests/data/models/")
+
+# TODO: ADD MORE TEST MODELS
+@pytest.fixture(scope="function")
+def test_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/medcat_model_pack"))
 
 
 @pytest.fixture(scope="function")
@@ -140,7 +146,6 @@ def test_duplicate_concepts_record() -> List[Concept]:
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="0", name="PEANUTS", category=Category.ALLERGY),
     ]
 
 
@@ -156,7 +161,6 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="7", name="test2", category=Category.MEDICATION),
-        Concept(id="8", name="PEANUTS", category=Category.ALLERGY),
     ]
 
 

@@ -19,7 +19,7 @@ class Concept(object):
         self,
         id: str,
         name: str,
-        category: [Category],
+        category: Optional[Category] = None,
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
@@ -94,23 +94,13 @@ class Concept(object):
             else None
         )
 
-        # TODO: REVIEW: keep ontologies-based category assignment?
-        if entity["ontologies"] == ["FDB"]:
-            category = Category.MEDICATION
-        elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
-            category = Category.PROBLEM
-        elif entity["ontologies"] == ["ELG"]:
-            category = Category.ALLERGY
-        else:
-            raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
-
         return Concept(
             id=entity["cui"],
             name=entity["pretty_name"],
-            category=category,
+            category=None,
             start=entity["start"],
             end=entity["end"],
-            negex=entity["negex"] if entity["negex"] else False,
+            negex=entity["negex"] if "negex" in entity else False,
             meta_anns=meta_anns,
         )
 
@@ -122,13 +112,12 @@ class Concept(object):
         )
 
     def __hash__(self):
-        return hash((self.id, self.name, self.category))
+        return hash((self.id, self.name))
 
     def __eq__(self, other):
         return (
             self.id == other.id
             and self.name == other.name
-            and self.category == other.category
         )
 
     def __lt__(self, other):
