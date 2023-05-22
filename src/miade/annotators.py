@@ -153,7 +153,7 @@ class ProblemsAnnotator(Annotator):
         # ignore laterality for now
         convert = False
         tag = ""
-        negex = "negex" in self.cat.pipe.spacy_nlp.pipe_names
+        negex = hasattr(concept, "negex")
         # only get meta results if negex is NOT positive
         if negex:
             if concept.negex:

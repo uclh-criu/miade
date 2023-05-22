@@ -18,7 +18,7 @@ def model_directory_path() -> Path:
 # TODO: ADD MORE TEST MODELS
 @pytest.fixture(scope="function")
 def test_medcat_model() -> MiADE_CAT:
-    return MiADE_CAT.load_model_pack(str("./tests/data/models/medcat_model_pack"))
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/medcat_model_pack.zip"))
 
 
 @pytest.fixture(scope="function")

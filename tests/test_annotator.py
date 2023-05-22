@@ -79,43 +79,43 @@ def test_deduplicate(
     )
 
 # TODO: failing tests check these
-# def test_meta_annotations(test_medcat_model, test_meta_annotations_concepts):
-#     annotator = ProblemsAnnotator(test_medcat_model)
-#
-#     assert annotator.postprocess(test_meta_annotations_concepts) == [
-#         Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
-#         Concept(
-#             id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM
-#         ),  # negex true, meta ignored
-#         Concept(
-#             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
-#         ),
-#         Concept(
-#             id="431956005", name="Arthritis (suspected)", category=Category.PROBLEM
-#         ),  # negex false, meta processed
-#         Concept(
-#             id="115451000119100",
-#             name="Endophthalmitis (historic)",
-#             category=Category.PROBLEM,
-#         ),  # negex false, meta processed
-#     ]
-#     # test just using negex for negation
-#     test_meta_annotations_concepts[0].negex = True
-#     test_meta_annotations_concepts[0].meta = None
-#     test_meta_annotations_concepts[1].negex = False
-#     test_meta_annotations_concepts[2].negex = True
-#     test_meta_annotations_concepts[3].negex = True
-#     test_meta_annotations_concepts[6].negex = True
-#
-#     assert annotator.postprocess(test_meta_annotations_concepts) == [
-#         Concept(
-#             id="1415005", name="Lymphangitis", category=Category.PROBLEM
-#         ),  # negex false, meta processed but ignore negation
-#         Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta empty
-#         Concept(
-#             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
-#         ),  # negex false, meta processed
-#     ]
+def test_meta_annotations(test_medcat_model, test_meta_annotations_concepts):
+    annotator = ProblemsAnnotator(test_medcat_model)
+
+    assert annotator.postprocess(test_meta_annotations_concepts) == [
+        Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
+        Concept(
+            id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM
+        ),  # negex true, meta ignored
+        Concept(
+            id="431956005", name="Arthritis (suspected)", category=Category.PROBLEM
+        ),  # negex false, meta processed
+        Concept(
+            id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
+        ),
+        Concept(
+            id="115451000119100",
+            name="Endophthalmitis (historic)",
+            category=Category.PROBLEM,
+        ),  # negex false, meta processed
+    ]
+    # test just using negex for negation
+    test_meta_annotations_concepts[0].negex = True
+    test_meta_annotations_concepts[0].meta = None
+    test_meta_annotations_concepts[1].negex = False
+    test_meta_annotations_concepts[2].negex = True
+    test_meta_annotations_concepts[3].negex = True
+    test_meta_annotations_concepts[6].negex = True
+
+    assert annotator.postprocess(test_meta_annotations_concepts) == [
+        Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta empty
+        Concept(
+            id="1415005", name="Lymphangitis", category=Category.PROBLEM
+        ),  # negex false, meta processed but ignore negation
+        Concept(
+            id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
+        ),  # negex false, meta processed
+    ]
 
 
 def test_problems_filtering_list(test_medcat_model, test_filtering_list_concepts):
