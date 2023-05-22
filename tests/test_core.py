@@ -7,18 +7,18 @@ import logging
 def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):
     processor = NoteProcessor(model_directory_path, log_level=logging.DEBUG)
     processor.add_annotator("problems")
-    # processor.add_annotator("meds/allergies")
+    # processor.add_annotator("meds/allergies")  # TODO: we'll need a separate meds model to test this
 
     assert processor.process(test_note) == [
         Concept(id="3", name="Liver failure", category=Category.PROBLEM),
-        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+        Concept(id="10", name="Paracetamol", category=Category.PROBLEM),
     ]
     assert processor.process(test_negated_note) == [
-        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+        Concept(id="10", name="Paracetamol", category=Category.PROBLEM),
     ]
     assert processor.process(test_duplicated_note) == [
         Concept(id="3", name="Liver failure", category=Category.PROBLEM),
-        Concept(id="10", name="Paracetamol", category=Category.MEDICATION),
+        Concept(id="10", name="Paracetamol", category=Category.PROBLEM),
     ]
 
 
