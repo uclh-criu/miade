@@ -80,7 +80,6 @@ def test_deduplicate(
         == []
     )
 
-# TODO: failing tests check these
 def test_meta_annotations(test_medcat_model, test_meta_annotations_concepts):
     annotator = ProblemsAnnotator(test_medcat_model)
 

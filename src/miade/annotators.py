@@ -37,6 +37,18 @@ def create_annotator(name: str, model_factory: ModelFactory):
         return Annotator(model_factory.models[name])
 
 
+def load_lookup_data(filename: str):
+    lookup_data = pkgutil.get_data(__name__, filename)
+    return (
+        pd.read_csv(
+            io.BytesIO(lookup_data),
+            index_col=0,
+        )
+        .squeeze("columns")
+        .T.to_dict()
+    )
+
+
 def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> str:
     """
     Finds chunks of text that contain single dosage instructions to input into DosageProcessor
@@ -117,34 +129,11 @@ class ProblemsAnnotator(Annotator):
     def __init__(self, cat: MiADE_CAT):
         super().__init__(cat)
         self.concept_types = [Category.PROBLEM]
-        # TODO: move load functions outside initializer
-        negated_data = pkgutil.get_data(__name__, "./data/negated.csv")
-        self.negated_lookup = (
-            pd.read_csv(
-                io.BytesIO(negated_data),
-                index_col=0,
-            )
-            .squeeze("columns")
-            .T.to_dict()
-        )
-        historic_data = pkgutil.get_data(__name__, "./data/historic.csv")
-        self.historic_lookup = (
-            pd.read_csv(
-                io.BytesIO(historic_data),
-                index_col=0,
-            )
-            .squeeze("columns")
-            .T.to_dict()
-        )
-        suspected_data = pkgutil.get_data(__name__, "./data/suspected.csv")
-        self.suspected_lookup = (
-            pd.read_csv(
-                io.BytesIO(suspected_data),
-                index_col=0,
-            )
-            .squeeze("columns")
-            .T.to_dict()
-        )
+
+        self.negated_lookup = load_lookup_data("./data/negated.csv")
+        self.historic_lookup = load_lookup_data("./data/historic.csv")
+        self.suspected_lookup = load_lookup_data("./data/suspected.csv")
+
         blacklist_data = pkgutil.get_data(__name__, "./data/problem_blacklist.csv")
         self.filtering_blacklist = pd.read_csv(io.BytesIO(blacklist_data), header=None)
 

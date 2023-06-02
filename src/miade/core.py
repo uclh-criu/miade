@@ -24,8 +24,10 @@ class NoteProcessor:
         model_directory: Path,
         use_negex: bool = True,
         log_level: int = logging.INFO,
+        device: str = "cpu"
     ):
         logging.getLogger("miade").setLevel(log_level)
+        self.device: str = device
 
         self.annotators: List = []
         self.model_directory: Path = model_directory
@@ -45,7 +47,7 @@ class NoteProcessor:
 
     def _load_model_factory(self):
 
-        meta_cat_config_dict = {"general": {"device": "cpu"}}  # TODO: make cpu/gpu configurable?
+        meta_cat_config_dict = {"general": {"device": self.device}}
         config_dict = self._load_config()
         loaded_models = {}
 
