@@ -1,3 +1,5 @@
+import logging
+
 from miade.core import Concept, Category
 from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator
 from miade.dosage import Dose, Frequency

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from .dosage import Dosage
 from .metaannotations import MetaAnnotations
@@ -24,7 +24,7 @@ class Concept(object):
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
         negex: Optional[bool] = False,
-        meta_anns: Optional[MetaAnnotations] = None,
+        meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
     ):
 
@@ -51,48 +51,12 @@ class Concept(object):
                 )
         self._dosage = dosage
 
-    @property
-    def meta(self):
-        return self._meta_annotations
-
-    @meta.setter
-    def meta(self, meta_anns: [MetaAnnotations]):
-        if meta_anns is not None:
-            if not isinstance(meta_anns, MetaAnnotations):
-                raise TypeError(
-                    f"Type should be MetaAnnotations, not {type(meta_anns)}"
-                )
-            if self.category is Category.PROBLEM:
-                if not (
-                    meta_anns.presence or meta_anns.relevance or meta_anns.laterality
-                ):
-                    raise ValueError(
-                        "Problems meta-annotations does not have one of presence, relevance or laterality."
-                    )
-            if (
-                self.category is Category.MEDICATION
-                or self.category is Category.ALLERGY
-            ):
-                if not (
-                    meta_anns.substance_category
-                    or meta_anns.reaction_pos
-                    or meta_anns.severity
-                    or meta_anns.allergy_type
-                ):
-                    raise ValueError(
-                        "Medications or Allergy meta-annotations does not have one of substance category, "
-                        "reaction pos, allergy type or severity."
-                    )
-
-        self._meta_annotations = meta_anns
-
     @classmethod
     def from_entity(cls, entity: [Dict]):
-        meta_anns = (
-            MetaAnnotations.from_dict(entity["meta_anns"])
-            if entity["meta_anns"]
-            else None
-        )
+
+        meta_anns = None
+        if entity["meta_anns"]:
+            meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]
 
         return Concept(
             id=entity["cui"],
@@ -106,18 +70,18 @@ class Concept(object):
 
     def __str__(self):
         return (
-            f"{{name: {self.name}, id: {self.id}, type: {self.category.name}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, negex: {self.negex},"
-            f" meta: {None if not self.meta else self.meta.__dict__}}} "
+            f"{{name: {self.name}, id: {self.id}, type: {self.category}, start: {self.start}, end: {self.end},"
+            f" dosage: {self.dosage}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
     def __hash__(self):
-        return hash((self.id, self.name))
+        return hash((self.id, self.name, self.category))
 
     def __eq__(self, other):
         return (
             self.id == other.id
             and self.name == other.name
+            and self.category == other.category
         )
 
     def __lt__(self, other):

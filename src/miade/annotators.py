@@ -148,71 +148,57 @@ class ProblemsAnnotator(Annotator):
         blacklist_data = pkgutil.get_data(__name__, "./data/problem_blacklist.csv")
         self.filtering_blacklist = pd.read_csv(io.BytesIO(blacklist_data), header=None)
 
-    def _process_meta_annotations(self, concept: [Concept]) -> Optional[Concept]:
-        # add, convert, or ignore concepts
-        # ignore laterality for now
+    def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
+        # Add, convert, or ignore concepts
+        negex = hasattr(concept, "negex")
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+
         convert = False
         tag = ""
-        negex = hasattr(concept, "negex")
-        # only get meta results if negex is NOT positive
+        # only get meta model results if negex is false
         if negex:
             if concept.negex:
                 convert = self.negated_lookup.get(int(concept.id), False)
                 tag = " (negated)"
-            else:
-                if concept.meta is not None:
-                    if concept.meta.presence is Presence.SUSPECTED:
-                        convert = self.suspected_lookup.get(int(concept.id), False)
-                        tag = " (suspected)"
-                    if concept.meta.relevance is Relevance.HISTORIC:
-                        convert = self.historic_lookup.get(int(concept.id), False)
-                        tag = " (historic)"
+            elif Presence.SUSPECTED in meta_ann_values:
+                convert = self.suspected_lookup.get(int(concept.id), False)
+                tag = " (suspected)"
+            elif Relevance.HISTORIC in meta_ann_values:
+                convert = self.historic_lookup.get(int(concept.id), False)
+                tag = " (historic)"
         else:
-            if concept.meta is not None:
-                if concept.meta.presence is Presence.NEGATED:
-                    convert = self.negated_lookup.get(int(concept.id), False)
-                    tag = " (negated)"
-                if concept.meta.presence is Presence.SUSPECTED:
-                    convert = self.suspected_lookup.get(int(concept.id), False)
-                    tag = " (suspected)"
-                if concept.meta.relevance is Relevance.HISTORIC:
-                    convert = self.historic_lookup.get(int(concept.id), False)
-                    tag = " (historic)"
+            if Presence.NEGATED in meta_ann_values:
+                convert = self.negated_lookup.get(int(concept.id), False)
+                tag = " (negated)"
+            elif Presence.SUSPECTED in meta_ann_values:
+                convert = self.suspected_lookup.get(int(concept.id), False)
+                tag = " (suspected)"
+            elif Relevance.HISTORIC in meta_ann_values:
+                convert = self.historic_lookup.get(int(concept.id), False)
+                tag = " (historic)"
 
         if convert:
-            log.debug(
-                f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag})"
-            )
+            log.debug(f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag})")
             concept.id = str(convert)
-            concept.name = concept.name + tag
+            concept.name += tag
         else:
             if concept.negex:
                 log.debug(
-                    f"Filtered concept ({concept.id} | {concept.name}): negation (negex) with no conversion match"
-                )
+                    f"Filtered concept ({concept.id} | {concept.name}): negation (negex) with no conversion match")
                 return None
-            if concept.meta is not None:
-                if not negex and concept.meta.presence == Presence.NEGATED:
-                    log.debug(
-                        f"Filtered concept ({concept.id} | {concept.name}): negation (meta model) with no conversion "
-                        f"match"
-                    )
-                    return None
-                if concept.meta.presence == Presence.SUSPECTED:
-                    log.debug(
-                        f"Filtered concept ({concept.id} | {concept.name}): suspected with no conversion match"
-                    )
-                    return None
-                if concept.meta.relevance == Relevance.IRRELEVANT:
-                    log.debug(
-                        f"Filtered concept ({concept.id} | {concept.name}): irrelevant concept"
-                    )
-                    return None
-                if concept.meta.relevance == Relevance.HISTORIC:
-                    log.debug(
-                        f"Filtered concept ({concept.id} | {concept.name}): historic with no conversion match"
-                    )
-                    return None
+            if not negex and Presence.NEGATED in meta_ann_values:
+                log.debug(
+                    f"Filtered concept ({concept.id} | {concept.name}): negation (meta model) with no conversion match")
+                return None
+            if Presence.SUSPECTED in meta_ann_values:
+                log.debug(f"Filtered concept ({concept.id} | {concept.name}): suspected with no conversion match")
+                return None
+            if Relevance.IRRELEVANT in meta_ann_values:
+                log.debug(f"Filtered concept ({concept.id} | {concept.name}): irrelevant concept")
+                return None
+            if Relevance.HISTORIC in meta_ann_values:
+                log.debug(f"Filtered concept ({concept.id} | {concept.name}): historic with no conversion match")
+                return None
 
         return concept
 

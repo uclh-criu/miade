@@ -86,20 +86,22 @@ class NoteProcessor:
 
         self.annotators.append(annotator)
 
-    def process(
-        self, note: Note, record_concepts: Optional[List[Concept]] = None
-    ) -> List[Concept]:
-        concepts: List[Concept] = []
-        if len(self.annotators) == 0:
+    def process(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+        if not self.annotators:
             log.warning("No annotators loaded, use .create_annotator() to add annotators")
+            return []
+
+        concepts: List[Concept] = []
 
         for annotator in self.annotators:
             if Category.MEDICATION in annotator.concept_types:
-                concepts += annotator(note, record_concepts, self.dosage_extractor)
+                concepts.extend(annotator(note, record_concepts, self.dosage_extractor))
             else:
-                concepts += annotator(note, record_concepts)
+                concepts.extend(annotator(note, record_concepts))
 
-            log.debug(f"{type(annotator).__name__} detected concepts: "
-                      f"{[(concept.id, concept.name, concept.category) for concept in concepts]}")
+            log.debug(
+                f"{type(annotator).__name__} detected concepts: "
+                f"{[(concept.id, concept.name, concept.category) for concept in concepts]}"
+            )
 
         return concepts
