@@ -5,8 +5,8 @@ from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotato
 from miade.dosage import Dose, Frequency
 from miade.dosageextractor import DosageExtractor
 
-def test_dosage_text_splitter(test_medcat_model, test_med_concepts, test_med_note):
-    annotator = MedsAllergiesAnnotator(test_medcat_model)
+def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
+    annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
     dosage_extractor = DosageExtractor()
 
     concepts = annotator.add_dosages_to_concepts(dosage_extractor, test_med_concepts, test_med_note)
@@ -33,12 +33,12 @@ def test_dosage_text_splitter(test_medcat_model, test_med_concepts, test_med_not
 
 
 def test_deduplicate(
-    test_medcat_model,
+    test_problems_medcat_model,
     test_duplicate_concepts_note,
     test_duplicate_concepts_record,
     test_self_duplicate_concepts_note,
 ):
-    annotator = Annotator(test_medcat_model)
+    annotator = Annotator(test_problems_medcat_model)
 
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=test_duplicate_concepts_record
@@ -80,8 +80,8 @@ def test_deduplicate(
         == []
     )
 
-def test_meta_annotations(test_medcat_model, test_meta_annotations_concepts):
-    annotator = ProblemsAnnotator(test_medcat_model)
+def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_concepts):
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
 
     assert annotator.postprocess(test_meta_annotations_concepts) == [
         Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
@@ -119,8 +119,8 @@ def test_meta_annotations(test_medcat_model, test_meta_annotations_concepts):
     ]
 
 
-def test_problems_filtering_list(test_medcat_model, test_filtering_list_concepts):
-    annotator = ProblemsAnnotator(test_medcat_model)
+def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list_concepts):
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
     assert annotator.postprocess(test_filtering_list_concepts) == [
         Concept(id="123", name="real concept", category=Category.PROBLEM),
     ]

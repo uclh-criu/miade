@@ -15,29 +15,34 @@ from miade.utils.miade_cat import MiADE_CAT
 def model_directory_path() -> Path:
     return Path("./tests/data/models/")
 
-# TODO: ADD MORE TEST MODELS
+
 @pytest.fixture(scope="function")
-def test_medcat_model() -> MiADE_CAT:
-    return MiADE_CAT.load_model_pack(str("./tests/data/models/medcat_model_pack.zip"))
+def test_problems_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_problems_blank_modelpack_Jun_2023_df349473b9d260a9.zip"))
+
+
+@pytest.fixture(scope="function")
+def test_meds_algy_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_meds_allergy_blank_modelpack_Jun_2023_75e13bf042cc55b8.zip"))
 
 
 @pytest.fixture(scope="function")
 def test_note() -> Note:
-    return Note(text="Patient has liver failure and is taking paracetamol.")
+    return Note(text="Patient has liver failure and is taking paracetamol 500mg oral tablets.")
 
 
 @pytest.fixture(scope="function")
 def test_negated_note() -> Note:
     return Note(
-        text="Patient does not have liver failure. Patient is taking paracetamol."
+        text="Patient does not have liver failure. Patient is taking paracetamol 500mg oral tablets."
     )
 
 
 @pytest.fixture(scope="function")
 def test_duplicated_note() -> Note:
     return Note(
-        text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
-        "decrease paracetamol dosage."
+        text="Patient has liver failure. The liver failure is quite bad. Patient is taking "
+             "paracetamol 500mg oral tablets. decrease paracetamol 500mg oral tablets dosage."
     )
 
 

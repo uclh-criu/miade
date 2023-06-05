@@ -38,18 +38,6 @@ class Concept(object):
         self.meta = meta_anns
         self.debug = debug_dict
 
-    @property
-    def dosage(self):
-        return self._dosage
-
-    @dosage.setter
-    def dosage(self, dosage: [Dosage]):
-        if dosage is not None:
-            if self.category is not Category.MEDICATION:
-                raise ValueError(
-                    f"Dosage can only be assigned to Medication, not {self.category}."
-                )
-        self._dosage = dosage
 
     @classmethod
     def from_entity(cls, entity: [Dict]):
