@@ -4,16 +4,29 @@ import logging
 
 from negspacy.negation import Negex
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Optional
 
 from .concept import Concept, Category
 from .note import Note
-from .annotators import create_annotator
+from .annotators import Annotator
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
 
 log = logging.getLogger(__name__)
+
+
+def create_annotator(name: str, model_factory: ModelFactory):
+    name = name.lower()
+    if name not in model_factory.models:
+        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
+                         f"missing from models directory")
+
+    if name in model_factory.annotators.keys():
+        return model_factory.annotators[name](model_factory.models[name])
+    else:
+        log.warning(f"Annotator {name} does not exist, loading generic Annotator")
+        return Annotator(model_factory.models[name])
 
 
 class NoteProcessor:
@@ -22,16 +35,14 @@ class NoteProcessor:
     def __init__(
         self,
         model_directory: Path,
-        use_negex: bool = True,
         log_level: int = logging.INFO,
         device: str = "cpu"
     ):
         logging.getLogger("miade").setLevel(log_level)
         self.device: str = device
 
-        self.annotators: List = []
+        self.annotators: List[Annotator] = []
         self.model_directory: Path = model_directory
-        self.use_negex: bool = use_negex
         self.model_factory: ModelFactory = self._load_model_factory()
         self.dosage_extractor: DosageExtractor = DosageExtractor()
 
@@ -62,7 +73,7 @@ class NoteProcessor:
                 raise Exception(f"Error loading MedCAT models: {e}")
 
         mapped_models = {}
-        # map to name if given {name: cat_model}
+        # map to name if given {name: <class CAT>}
         for name, model_id in config_dict["models"].items():
             cat_model = loaded_models.get(model_id)
             if cat_model is None:
@@ -70,27 +81,55 @@ class NoteProcessor:
                 continue
             mapped_models[name] = cat_model
 
-        model_factory_config = {"models": mapped_models}
+        mapped_annotators = {}
+        # {name: <class Annotator>}
+        for name, annotator_string in config_dict["annotators"].items():
+            try:
+                annotator_class = globals()[annotator_string]
+                mapped_annotators[name] = annotator_class
+            except Exception as e:
+                log.warning(f"{annotator_string} not found: {e}")
+
+        model_factory_config = {"models": mapped_models,
+                                "annotators": mapped_annotators}
 
         return ModelFactory(**model_factory_config)
 
 
-    def add_annotator(self, name: str) -> None:
+    def add_annotator(self, name: str, use_negex=True) -> None:
         try:
             annotator = create_annotator(name, self.model_factory)
             log.info(f"Added {type(annotator).__name__} to processor")
         except Exception as e:
             raise Exception(f"Error creating annotator: {e}")
 
-        if self.use_negex:
+        if use_negex:
             annotator.add_negex_pipeline()
             log.info(f"Added Negex context detection for {type(annotator).__name__}")
 
         self.annotators.append(annotator)
 
+    def remove_annotator(self, name: str) -> None:
+        annotator_found = False
+        annotator_name = self.model_factory.annotators[name]
+
+        for annotator in self.annotators:
+            if type(annotator).__name__ == annotator_name.__name__:
+                self.annotators.remove(annotator)
+                annotator_found = True
+                log.info(f"Removed {type(annotator).__name__} from processor")
+                break
+
+        if not annotator_found:
+            log.warning(f"Annotator {type(name).__name__} not found in processor")
+
+    def print_model_cards(self):
+        for annotator in self.annotators:
+            print(f"{type(annotator).__name__}: {annotator.cat}")
+
     def process(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         if not self.annotators:
-            log.warning("No annotators loaded, use .create_annotator() to add annotators")
+            log.warning("No annotators loaded, use .add_annotator() to load annotators")
             return []
 
         concepts: List[Concept] = []

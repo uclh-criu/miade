@@ -4,37 +4,19 @@ import pkgutil
 import re
 import pandas as pd
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from copy import deepcopy
 
 from .concept import Concept, Category
 from .note import Note
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
-from .utils.modelfactory import ModelFactory
 from .utils.metaannotationstypes import *
 
 log = logging.getLogger(__name__)
 
 # Precompile regular expressions
 sent_regex = re.compile(r"[^\s][^\n]+")
-
-
-# this feels a bit circular...maybe a better way
-def create_annotator(name: str, model_factory: ModelFactory):
-    name = name.lower()
-    if name not in model_factory.models:
-        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
-                         f"missing from models directory")
-    annotators = {
-        "problems": ProblemsAnnotator,
-        "meds/allergies": MedsAllergiesAnnotator
-    }
-    if name in annotators.keys():
-        return annotators[name](model_factory.models[name])
-    else:
-        log.warning(f"Annotator {name} does not exist, loading generic Annotator")
-        return Annotator(model_factory.models[name])
 
 
 def load_lookup_data(filename: str):
