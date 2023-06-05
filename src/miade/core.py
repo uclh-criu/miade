@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from .concept import Concept, Category
 from .note import Note
-from .annotators import Annotator
+from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
