@@ -239,6 +239,7 @@ class MedsAllergiesAnnotator(Annotator):
             dosage_string = get_dosage_string(concept, next_med_concept, note.text)
             if len(dosage_string.split()) > 2:
                 concept.dosage = dosage_extractor(dosage_string)
+                concept.category = Category.MEDICATION if concept.dosage is not None else None
                 # print(concept.dosage)
 
         return concepts

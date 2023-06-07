@@ -4,7 +4,7 @@ import logging
 
 from negspacy.negation import Negex
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from .concept import Concept, Category
 from .note import Note
@@ -17,6 +17,13 @@ log = logging.getLogger(__name__)
 
 
 def create_annotator(name: str, model_factory: ModelFactory):
+    """
+    Returns Annotator created from ModelFactory configs
+    :param name: (str) alias of model
+    :param model_factory: (ModelFactory) model factory loaded from config.yaml containing mapping of alias/name
+    to MedCAT model id and MiADE annotator
+    :return: Annotator
+    """
     name = name.lower()
     if name not in model_factory.models:
         raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
@@ -30,8 +37,13 @@ def create_annotator(name: str, model_factory: ModelFactory):
 
 
 class NoteProcessor:
-    """docstring for NoteProcessor."""
-
+    """
+    Main processor of MiADE which extract, postprocesses, and deduplicates concepts given
+    annotators (MedCAT models), Note, and existing concepts
+    :param model_directory (Path) path to directory that contains medcat models and a config.yaml file
+    :param log_level (int) log level - Default - INFO
+    :param device (str) whether inference should be run on cpu or gpu - default "cpu"
+    """
     def __init__(
         self,
         model_directory: Path,
@@ -46,7 +58,11 @@ class NoteProcessor:
         self.model_factory: ModelFactory = self._load_model_factory()
         self.dosage_extractor: DosageExtractor = DosageExtractor()
 
-    def _load_config(self):
+    def _load_config(self) -> Dict:
+        """
+        Loads configuration file (config.yaml) in model directory
+        :return: (Dict) config file
+        """
         config_path = os.path.join(self.model_directory, "config.yaml")
         if os.path.isfile(config_path):
             log.info(f"Found config file {config_path}")
@@ -56,7 +72,11 @@ class NoteProcessor:
 
         return config
 
-    def _load_model_factory(self):
+    def _load_model_factory(self) -> ModelFactory:
+        """
+        Loads model factory which maps model alias to medcat model id and miade annotator
+        :return: ModelFactory object
+        """
 
         meta_cat_config_dict = {"general": {"device": self.device}}
         config_dict = self._load_config()
@@ -96,7 +116,13 @@ class NoteProcessor:
         return ModelFactory(**model_factory_config)
 
 
-    def add_annotator(self, name: str, use_negex=True) -> None:
+    def add_annotator(self, name: str, use_negex=False) -> None:
+        """
+        Adds annotators to processor
+        :param name: (str) alias of annotator to add
+        :param use_negex: (bool), if true, will add NegSpacy to the annotator pipeline
+        :return: None
+        """
         try:
             annotator = create_annotator(name, self.model_factory)
             log.info(f"Added {type(annotator).__name__} to processor")
@@ -110,6 +136,11 @@ class NoteProcessor:
         self.annotators.append(annotator)
 
     def remove_annotator(self, name: str) -> None:
+        """
+        Removes annotators from processor
+        :param name: (str) alias of annotator to remove
+        :return: None
+        """
         annotator_found = False
         annotator_name = self.model_factory.annotators[name]
 
@@ -136,13 +167,46 @@ class NoteProcessor:
 
         for annotator in self.annotators:
             if Category.MEDICATION in annotator.concept_types:
-                concepts.extend(annotator(note, record_concepts, self.dosage_extractor))
+                detected_concepts = annotator(note, record_concepts, self.dosage_extractor)
+                concepts.extend(detected_concepts)
             else:
-                concepts.extend(annotator(note, record_concepts))
+                detected_concepts = annotator(note, record_concepts)
+                concepts.extend(detected_concepts)
 
-            log.debug(
+            if detected_concepts:
+                log.debug(
                 f"{type(annotator).__name__} detected concepts: "
-                f"{[(concept.id, concept.name, concept.category) for concept in concepts]}"
+                f"{[(concept.id, concept.name, concept.category) for concept in detected_concepts]}"
             )
 
         return concepts
+
+    def extract_concepts(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Dict]:
+        """
+        Returns concepts in dictionary format
+        :param note: (Note) note containing text to extract concepts from
+        :param record_concepts: (List[Concepts] list of concepts in existing record
+        :return: List[Dict] extracted concepts in json compatible dict format
+        """
+        concepts = self.process(note, record_concepts)
+        concept_list = []
+        for concept in concepts:
+            concept_dict = concept.__dict__
+            if concept.dosage is not None:
+                concept_dict["dosage"] = {"dose": concept.dosage.dose.dict() if concept.dosage.dose else None,
+                                          "duration": concept.dosage.duration.dict() if concept.dosage.duration else None,
+                                          "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
+                                          "route": concept.dosage.route.dict() if concept.dosage.route else None}
+            if concept.meta is not None:
+                meta_anns = []
+                for meta in concept.meta:
+                    meta_dict = meta.__dict__
+                    meta_dict["value"] = meta.value.name
+                    meta_anns.append(meta_dict)
+                concept_dict["meta"] = meta_anns
+            if concept.category is not None:
+                concept_dict["category"] = concept.category.name
+            concept_list.append(concept_dict)
+
+        return concept_list
+

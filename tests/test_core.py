@@ -5,20 +5,42 @@ from miade.utils.metaannotationstypes import *
 
 def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):
     processor = NoteProcessor(model_directory_path)
-    processor.add_annotator("problems")
+
+    processor.add_annotator("problems", use_negex=True)
     processor.add_annotator("meds/allergies")
 
     assert processor.process(test_note) == [
         Concept(id="59927004", name="hepatic failure", category=Category.PROBLEM),
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=None),
+        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
     ]
     assert processor.process(test_negated_note) == [
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=None),
+        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
     ]
     assert processor.process(test_duplicated_note) == [
         Concept(id="59927004", name="hepatic failure", category=Category.PROBLEM),
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=None),
+        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
     ]
+    assert processor.extract_concepts(test_note) == [
+        {
+            'name': 'hepatic failure', 'id': '59927004', 'category': 'PROBLEM', 'start': 12, 'end': 25,
+            'dosage': None, 'negex': False, 'meta': None, 'debug': None
+        },
+        {
+            'name': 'acetaminophen 500mg oral tablet', 'id': '322236009', 'category': 'MEDICATION', 'start': 40, 'end': 70,
+            'dosage': {
+                'dose': {
+                    'source': '500 mg by mouth tab', 'value': 500.0, 'unit': '{tbl}', 'low': None, 'high': None
+                },
+                'duration': None,
+                'frequency': None,
+                'route': {
+                    'source': 'by mouth', 'full_name': 'Oral', 'value': 'C38288', 'code_system': 'NCI Thesaurus'
+                }
+            },
+         'negex': False, 'meta': None, 'debug': None
+        }
+    ]
+
 
 def test_adding_removing_annotators(model_directory_path):
     processor = NoteProcessor(model_directory_path)

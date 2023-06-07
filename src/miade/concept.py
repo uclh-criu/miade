@@ -58,7 +58,7 @@ class Concept(object):
 
     def __str__(self):
         return (
-            f"{{name: {self.name}, id: {self.id}, type: {self.category}, start: {self.start}, end: {self.end},"
+            f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
             f" dosage: {self.dosage}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
