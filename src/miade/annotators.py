@@ -80,6 +80,7 @@ class Annotator:
                 log.warning(f"Concept skipped: {e}")
 
         return concepts
+
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         filtered_concepts: List[Concept] = []
@@ -98,6 +99,34 @@ class Annotator:
 
         # deduplicate within list
         return sorted(set(filtered_concepts))
+
+    @staticmethod
+    def add_dosages_to_concepts(
+            dosage_extractor: DosageExtractor,
+            concepts: List[Concept],
+            note: Note
+    ) -> List[Concept]:
+        """
+        Gets dosages for medication concepts
+        :param dosage_extractor:
+        :param concepts: (List) list of concepts extracted
+        :param note: (Note) input note
+        :return: (List) list of concepts with dosages for medication concepts
+        """
+
+        for ind, concept in enumerate(concepts):
+            next_med_concept = (
+                concepts[ind + 1]
+                if len(concepts) > ind + 1
+                else None
+            )
+            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
+            if len(dosage_string.split()) > 2:
+                concept.dosage = dosage_extractor(dosage_string)
+                concept.category = Category.MEDICATION if concept.dosage is not None else None
+                # print(concept.dosage)
+
+        return concepts
 
     def __call__(
         self,
@@ -215,34 +244,6 @@ class MedsAllergiesAnnotator(Annotator):
     def __init__(self, cat: MiADE_CAT):
         super().__init__(cat)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
-
-    @staticmethod
-    def add_dosages_to_concepts(
-            dosage_extractor: DosageExtractor,
-            concepts: List[Concept],
-            note: Note
-    ) -> List[Concept]:
-        """
-        Gets dosages for medication concepts
-        :param dosage_extractor:
-        :param concepts: (List) list of concepts extracted
-        :param note: (Note) input note
-        :return: (List) list of concepts with dosages for medication concepts
-        """
-
-        for ind, concept in enumerate(concepts):
-            next_med_concept = (
-                concepts[ind + 1]
-                if len(concepts) > ind + 1
-                else None
-            )
-            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
-            if len(dosage_string.split()) > 2:
-                concept.dosage = dosage_extractor(dosage_string)
-                concept.category = Category.MEDICATION if concept.dosage is not None else None
-                # print(concept.dosage)
-
-        return concepts
 
     def _process_meta_annotations(self, concepts: List[Concept]) -> List[Concept]:
         return concepts

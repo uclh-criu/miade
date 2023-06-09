@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import logging
 
@@ -43,19 +44,21 @@ class NoteProcessor:
     :param model_directory (Path) path to directory that contains medcat models and a config.yaml file
     :param log_level (int) log level - Default - INFO
     :param device (str) whether inference should be run on cpu or gpu - default "cpu"
+    :param custom_annotators (List[Annotators]) List of custom annotators
     """
     def __init__(
         self,
         model_directory: Path,
         log_level: int = logging.INFO,
-        device: str = "cpu"
+        device: str = "cpu",
+        custom_annotators: Optional[List[Annotator]] = None
     ):
         logging.getLogger("miade").setLevel(log_level)
         self.device: str = device
 
         self.annotators: List[Annotator] = []
         self.model_directory: Path = model_directory
-        self.model_factory: ModelFactory = self._load_model_factory()
+        self.model_factory: ModelFactory = self._load_model_factory(custom_annotators)
         self.dosage_extractor: DosageExtractor = DosageExtractor()
 
     def _load_config(self) -> Dict:
@@ -72,9 +75,10 @@ class NoteProcessor:
 
         return config
 
-    def _load_model_factory(self) -> ModelFactory:
+    def _load_model_factory(self, custom_annotators: Optional[List[Annotator]] = None) -> ModelFactory:
         """
         Loads model factory which maps model alias to medcat model id and miade annotator
+        :param custom_annotators (List[Annotators]) List of custom annotators to initialise
         :return: ModelFactory object
         """
 
@@ -104,11 +108,17 @@ class NoteProcessor:
         mapped_annotators = {}
         # {name: <class Annotator>}
         for name, annotator_string in config_dict["annotators"].items():
-            try:
-                annotator_class = globals()[annotator_string]
-                mapped_annotators[name] = annotator_class
-            except Exception as e:
-                log.warning(f"{annotator_string} not found: {e}")
+            if custom_annotators is not None:
+                for annotator_class in custom_annotators:
+                    if annotator_class.__name__ == annotator_string:
+                        mapped_annotators[name] = annotator_class
+                        break
+            if name not in mapped_annotators:
+                try:
+                    annotator_class = getattr(sys.modules[__name__], annotator_string)
+                    mapped_annotators[name] = annotator_class
+                except AttributeError as e:
+                    log.warning(f"{annotator_string} not found: {e}")
 
         model_factory_config = {"models": mapped_models,
                                 "annotators": mapped_annotators}
@@ -181,16 +191,23 @@ class NoteProcessor:
 
         return concepts
 
-    def extract_concepts(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Dict]:
+    def get_concept_dicts(self,
+                             note: Note,
+                             filter_uncategorized: bool = True,
+                             record_concepts: Optional[List[Concept]] = None
+                             ) -> List[Dict]:
         """
         Returns concepts in dictionary format
         :param note: (Note) note containing text to extract concepts from
+        :param filter_uncategorized (bool) if True, does not return concepts where category=None, default TRUE
         :param record_concepts: (List[Concepts] list of concepts in existing record
         :return: List[Dict] extracted concepts in json compatible dict format
         """
         concepts = self.process(note, record_concepts)
         concept_list = []
         for concept in concepts:
+            if filter_uncategorized and concept.category is None:
+                continue
             concept_dict = concept.__dict__
             if concept.dosage is not None:
                 concept_dict["dosage"] = {"dose": concept.dosage.dose.dict() if concept.dosage.dose else None,
