@@ -55,3 +55,4 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 miade = ["data/*.csv"]
+

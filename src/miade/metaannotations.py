@@ -1,65 +1,37 @@
-from typing import Optional, Dict
+from typing import Optional
+from pydantic import BaseModel, validator
 
 from .utils.metaannotationstypes import *
 
 
-class MetaAnnotations(object):
-    def __init__(
-        self,
-        presence: Optional[Presence] = None,
-        relevance: Optional[Relevance] = None,
-        laterality: Optional[Laterality] = None,
-        confidences: Optional[Dict] = None,
-    ):
-        self.presence = presence
-        self.relevance = relevance
-        self.laterality = laterality
-        self.confidences = confidences
+META_ANNS_DICT = {
+    "presence": Presence,
+    "relevance": Relevance,
+    "laterality (generic)": Laterality,
+    "category": SubstanceCategory,
+    "reactionpos": ReactionPos,
+    "allergytype": AllergyType,
+    "severity": Severity
+}
 
-    @classmethod
-    def from_dict(cls, meta_anns: [Dict]):
-        presence = None
-        relevance = None
-        laterality = None
-        confidences = {}
 
-        for meta_ann in meta_anns.values():
-            if meta_ann["name"] == "presence":
-                confidences[Presence] = meta_ann["confidence"]
-                if meta_ann["value"] == "confirmed":
-                    presence = Presence.CONFIRMED
-                elif meta_ann["value"] == "negated":
-                    presence = Presence.NEGATED
-                elif meta_ann["value"] == "suspected":
-                    presence = Presence.SUSPECTED
-            elif meta_ann["name"] == "relevance":
-                confidences[Relevance] = meta_ann["confidence"]
-                if meta_ann["value"] == "present":
-                    relevance = Relevance.PRESENT
-                elif meta_ann["value"] == "historic":
-                    relevance = Relevance.HISTORIC
-                elif meta_ann["value"] == "irrelevant":
-                    relevance = Relevance.IRRELEVANT
-            elif meta_ann["name"] == "laterality (generic)":
-                confidences[Laterality] = meta_ann["confidence"]
-                if meta_ann["value"] == "none":
-                    laterality = Laterality.NO_LATERALITY
-                elif meta_ann["value"] == "left":
-                    laterality = Laterality.LEFT
-                elif meta_ann["value"] == "right":
-                    laterality = Laterality.RIGHT
-                elif meta_ann["value"] == "bilateral":
-                    laterality = Laterality.BILATERAL
+class MetaAnnotations(BaseModel):
+    name: str
+    value: Enum
+    confidence: Optional[float]
 
-        return cls(
-            presence=presence,
-            relevance=relevance,
-            laterality=laterality,
-            confidences=confidences,
-        )
+    @validator('value', pre=True)
+    def validate_value(cls, value, values):
+        enum_dict = META_ANNS_DICT
+        if isinstance(value, str):
+            enum_type = enum_dict.get(values["name"])
+            if enum_type is not None:
+                try:
+                    return enum_type(value)
+                except ValueError:
+                    raise ValueError(f"Invalid value: {value}")
+            else:
+                raise ValueError(f"Invalid mapping for {values['name']}")
 
-    def __str__(self):
-        return self.__dict__
+        return value
 
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__

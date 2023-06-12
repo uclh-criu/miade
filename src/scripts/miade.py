@@ -176,6 +176,7 @@ def train_supervised(
         train_from_false_positives=train_from_false_positives,
         is_resumed=is_resumed,
     )
+
     # populate the description field in versioning
     if description is None:
         log.info("Automatically populating description field of model card...")

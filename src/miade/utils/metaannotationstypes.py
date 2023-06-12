@@ -3,45 +3,45 @@ from enum import Enum
 
 #  Problem meta-annotation types
 class Presence(Enum):
-    CONFIRMED = 1
-    SUSPECTED = 2
-    NEGATED = 3
+    CONFIRMED = "confirmed"
+    SUSPECTED = "suspected"
+    NEGATED = "negated"
 
 
 class Relevance(Enum):
-    PRESENT = 1
-    HISTORIC = 2
-    IRRELEVANT = 3
+    PRESENT = "present"
+    HISTORIC = "historic"
+    IRRELEVANT = "irrelevant"
 
 
 class Laterality(Enum):
-    NO_LATERALITY = 1
-    LEFT = 2
-    RIGHT = 3
-    BILATERAL = 4
+    NO_LATERALITY = "none"
+    LEFT = "left"
+    RIGHT = "right"
+    BILATERAL = "bilateral"
 
 
 # Medication and Allergy meta-annotation types
-class ReactionPosition(Enum):
-    NOT_REACTION = 1
-    AFTER_SUBSTANCE = 2
-    BEFORE_SUBSTANCE = 3
+class ReactionPos(Enum):
+    NOT_REACTION = "none"
+    AFTER_SUBSTANCE = "after"
+    BEFORE_SUBSTANCE = "before"
 
 
 class SubstanceCategory(Enum):
-    IRRELEVANT = 1
-    TAKING = 2
-    ADVERSE_REACTION = 3
+    IRRELEVANT = "irrelevant"
+    TAKING = "taking"
+    ADVERSE_REACTION = "adverse reaction"
 
 
 class AllergyType(Enum):
-    UNSPECIFIED = 1
-    ALLERGY = 2
-    INTOLERANCE = 3
+    UNSPECIFIED = "unspecified"
+    ALLERGY = "allergy"
+    INTOLERANCE = "intolerance"
 
 
 class Severity(Enum):
-    UNSPECIFIED = 1
-    MILD = 2
-    MODERATE = 3
-    SEVERE = 4
+    UNSPECIFIED = "unspecified"
+    MILD = "mild"
+    MODERATE = "moderate"
+    SEVERE = "severe"

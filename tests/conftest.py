@@ -8,6 +8,7 @@ from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
+from miade.utils.miade_cat import MiADE_CAT
 
 
 @pytest.fixture(scope="function")
@@ -16,22 +17,32 @@ def model_directory_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def test_problems_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_problems_blank_modelpack_Jun_2023_df349473b9d260a9.zip"))
+
+
+@pytest.fixture(scope="function")
+def test_meds_algy_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_meds_allergy_blank_modelpack_Jun_2023_75e13bf042cc55b8.zip"))
+
+
+@pytest.fixture(scope="function")
 def test_note() -> Note:
-    return Note(text="Patient has liver failure and is taking paracetamol.")
+    return Note(text="Patient has liver failure and is taking paracetamol 500mg oral tablets.")
 
 
 @pytest.fixture(scope="function")
 def test_negated_note() -> Note:
     return Note(
-        text="Patient does not have liver failure. Patient is taking paracetamol."
+        text="Patient does not have liver failure. Patient is taking paracetamol 500mg oral tablets."
     )
 
 
 @pytest.fixture(scope="function")
 def test_duplicated_note() -> Note:
     return Note(
-        text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
-        "decrease paracetamol dosage."
+        text="Patient has liver failure. The liver failure is quite bad. Patient is taking "
+             "paracetamol 500mg oral tablets. decrease paracetamol 500mg oral tablets dosage."
     )
 
 
@@ -139,6 +150,7 @@ def test_duplicate_concepts_record() -> List[Concept]:
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
     ]
 
 
@@ -151,6 +163,9 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="4", name="test2", category=Category.PROBLEM),
         Concept(id="5", name="test2", category=Category.PROBLEM, start=0, end=12),
         Concept(id="5", name="test2", category=Category.PROBLEM, start=45, end=50),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="6", name="test2", category=Category.MEDICATION),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
 
 
@@ -161,6 +176,8 @@ def test_self_duplicate_concepts_note() -> List[Concept]:
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="1", name="test1", category=Category.PROBLEM),
+        Concept(id="2", name="test2", category=Category.MEDICATION),
+        Concept(id="2", name="test2", category=Category.MEDICATION),
     ]
 
 
@@ -225,99 +242,99 @@ def test_meta_annotations_concepts() -> List[Concept]:
             name="Nystagmus",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.LEFT,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.LEFT)
+            ],
         ),
         Concept(
             id="1415005",
             name="Lymphangitis",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.NEGATED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.NEGATED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="123",
             name="negated concept",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.NEGATED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.NEGATED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="3723001",
             name="Arthritis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="4556007",
             name="Gastritis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="0000",
             name="suspected concept",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="1847009",
             name="Endophthalmitis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.HISTORIC,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="1912002",
             name="Fall",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.IRRELEVANT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="0000",
             name="historic concept",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.HISTORIC,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
     ]
 
