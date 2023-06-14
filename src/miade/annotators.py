@@ -245,23 +245,28 @@ class MedsAllergiesAnnotator(Annotator):
         super().__init__(cat)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
 
-    def _process_meta_annotations(self, concepts: List[Concept]) -> List[Concept]:
-        return concepts
+    def _process_meta_annotations(self, concept: Concept) -> Concept:
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+
+        # assign categories
+        if SubstanceCategory.ADVERSE_REACTION in meta_ann_values:
+            concept.category = Category.ALLERGY
+        if SubstanceCategory.TAKING in meta_ann_values:
+            concept.category = Category.MEDICATION
+        if ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values:
+            concept.category = Category.REACTION
+
+        return concept
 
     def postprocess(self, concepts: List[Concept]) -> List[Concept]:
-        # TODO: meds / allergies postprocessing
-        # this bit of code was to avoid annotation anchor errors when concept is tagged as both reaction and concept
-        # we probably don't want to keep this in miade / separate the concerns but keeping it here as a reminder
-        # if concept.start is not None and concept.end is not None:
-        #     if (concept.start, concept.end) in [
-        #         (concept.start, concept.end)
-        #         for concept in all_concepts
-        #         if concept.category == Category.PROBLEM
-        #     ]:
-        #         log.debug(f"Temporary filtering of reaction concept: duplication of problem concept")
-        #         continue
-        # concept = self._process_meta_annotations(concept)
-        #
+
+        for concept in concepts:
+            concept = self._process_meta_annotations(concept)
+            # TODO: 1. link reaction to allergens
+            # TODO: 2. convert reaction to Epic options (lookup)
+            # TODO: 3. convert allergen concept to parent concepts (lookup)
+            # TODO: 4. convert medication VTM/VMP?
+
         return concepts
 
 
