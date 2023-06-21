@@ -124,3 +124,10 @@ def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list
     assert annotator.postprocess(test_filtering_list_concepts) == [
         Concept(id="123", name="real concept", category=Category.PROBLEM),
     ]
+
+def test_allergy_annotator(test_meds_algy_medcat_model, test_meds_allergy_concepts, test_meds_allergy_note):
+    annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
+    concepts = annotator.postprocess(test_meds_allergy_concepts, test_meds_allergy_note)
+
+    for concept in concepts:
+        print(concept)

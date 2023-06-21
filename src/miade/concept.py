@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Optional, Dict, List
 
@@ -23,6 +24,7 @@ class Concept(object):
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
+        linked_concept: Optional[Concept] = None,
         negex: Optional[bool] = False,
         meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
@@ -34,6 +36,7 @@ class Concept(object):
         self.start = start
         self.end = end
         self.dosage = dosage
+        self.linked_concept = linked_concept
         self.negex = negex
         self.meta = meta_anns
         self.debug = debug_dict
@@ -59,7 +62,7 @@ class Concept(object):
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, negex: {self.negex}, meta: {self.meta}}} "
+            f" dosage: {self.dosage}, linked_concept: {self.linked_concept}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
     def __hash__(self):

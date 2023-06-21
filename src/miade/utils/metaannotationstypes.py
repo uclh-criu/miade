@@ -32,6 +32,7 @@ class SubstanceCategory(Enum):
     IRRELEVANT = "irrelevant"
     TAKING = "taking"
     ADVERSE_REACTION = "adverse reaction"
+    NOT_SUBSTANCE = "none"
 
 
 class AllergyType(Enum):
