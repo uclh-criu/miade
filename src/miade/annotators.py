@@ -60,6 +60,15 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 
 
 def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note: Note) -> int:
+    """
+    calculates how many words are in between words given the start and end indices
+    :param start1: character index of the start of word 1
+    :param end1: character index of the end of word 2
+    :param start2: character index of the start of word 2
+    :param end2: character index of the end of word 2
+    :param note: Note object that contains the whole text
+    :return: (int) number of words apart the two given text spans are
+    """
 
     chunk_start = min(start1, start2)
     chunk_end = max(end1 + 1, end2 + 1)
@@ -211,6 +220,8 @@ class ProblemsAnnotator(Annotator):
                 log.debug(f"Filtered concept ({concept.id} | {concept.name}): historic with no conversion match")
                 return None
 
+        concept.category = Category.PROBLEM
+
         return concept
 
     def _is_blacklist(self, concept):
@@ -234,7 +245,6 @@ class ProblemsAnnotator(Annotator):
             # ignore concepts filtered by meta-annotations
             if concept is None:
                 continue
-            concept.category = Category.PROBLEM
             filtered_concepts.append(concept)
 
         return filtered_concepts
@@ -255,6 +265,10 @@ class MedsAllergiesAnnotator(Annotator):
     def __init__(self, cat: MiADE_CAT):
         super().__init__(cat)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
+        # load the lookup data
+        self.reactions_subset_lookup = None
+        self.allergens_parents_lookup = None
+        self.meds_to_vmp_lookup = None
 
     def _process_meta_annotations(self, concept: Concept) -> Concept:
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
@@ -273,7 +287,7 @@ class MedsAllergiesAnnotator(Annotator):
     def _map_reactions_to_subset(self, concept: Concept) -> Concept:
         return concept
 
-    def _map_allergens_to_subset(self, concept: Concept) -> Concept:
+    def _map_allergens_to_parents(self, concept: Concept) -> Concept:
         return concept
 
     def _link_reactions_to_allergens(self, concept_list: List[Concept], note: Note, link_distance: int = 5) -> List[Concept]:
@@ -306,7 +320,7 @@ class MedsAllergiesAnnotator(Annotator):
 
             if nearest_allergy_concept is not None:
                 log.debug(f"Linking reaction {reaction_concept.name} to {nearest_allergy_concept.name}")
-                nearest_allergy_concept.linked_concept = reaction_concept
+                nearest_allergy_concept.linked_concepts = [reaction_concept]
 
         # Remove the linked REACTION concepts from the main list
         updated_concept_list = [concept for concept in concept_list if concept.category != Category.REACTION]
@@ -314,25 +328,31 @@ class MedsAllergiesAnnotator(Annotator):
         return updated_concept_list
 
     def postprocess(self, concepts: List[Concept], note: Note) -> List[Concept]:
+        # deepcopy so we still have reference to original list of concepts
+        all_concepts = deepcopy(concepts)
+        processed_concepts = []
 
-        for concept in concepts:
+        for concept in all_concepts:
             # 1. process meta annotations to assign med/allergy/reaction category
             concept = self._process_meta_annotations(concept)
             # 2. convert concepts from lookup tables
             if concept.category == Category.ALLERGY:
-                # TODO: convert allergen concept to parent concepts (lookup)
-                concept = self._map_allergens_to_subset(concept)
+                # TODO: 3. convert allergen concept to parent concepts (lookup)
+                # TODO: need a container for severity
+                concept = self._map_allergens_to_parents(concept)
             elif concept.category == Category.REACTION:
-                # TODO: convert reaction to Epic options (lookup)
+                # TODO: 4. convert reaction to Epic options (lookup)
                 concept = self._map_reactions_to_subset(concept)
 
-        # link reaction to allergens
-        concepts = self._link_reactions_to_allergens(concepts, note)
+            processed_concepts.append(concept)
 
-        return concepts
+        # 5. link reaction to allergens
+        processed_concepts = self._link_reactions_to_allergens(processed_concepts, note)
+
+        return processed_concepts
 
     def convert_medications_to_products(self, concepts: List[Concept]) -> List[Concept]:
-        # TODO: convert medication VMP
+        # TODO: convert to medication VMP
         return concepts
 
     def __call__(

@@ -32,6 +32,11 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
     )
 
 
+def test_calculate_word_distance():
+    pass
+
+
+
 def test_deduplicate(
     test_problems_medcat_model,
     test_duplicate_concepts_note,
@@ -127,7 +132,11 @@ def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list
 
 def test_allergy_annotator(test_meds_algy_medcat_model, test_meds_allergy_concepts, test_meds_allergy_note):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
-    concepts = annotator.postprocess(test_meds_allergy_concepts, test_meds_allergy_note)
 
-    for concept in concepts:
-        print(concept)
+    assert annotator.postprocess(test_meds_allergy_concepts, test_meds_allergy_note) == [
+        Concept(id="123", name="Eggs", category=Category.ALLERGY, linked_concepts=[Concept(
+            id="789", name="Rash", category=Category.REACTION)]),
+        Concept(id="456", name="Penicillin", category=Category.ALLERGY, linked_concepts=[Concept(
+            id="1234", name="Nausea", category=Category.REACTION)]),
+        Concept(id="12344", name="Paracetamol", category=Category.MEDICATION),
+    ]

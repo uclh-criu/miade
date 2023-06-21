@@ -11,6 +11,7 @@ class Category(Enum):
     MEDICATION = 2
     ALLERGY = 3
     REACTION = 4
+    SEVERITY = 5
 
 
 class Concept(object):
@@ -24,7 +25,7 @@ class Concept(object):
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
-        linked_concept: Optional[Concept] = None,
+        linked_concepts: Optional[List[Concept]] = None,
         negex: Optional[bool] = False,
         meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
@@ -36,7 +37,7 @@ class Concept(object):
         self.start = start
         self.end = end
         self.dosage = dosage
-        self.linked_concept = linked_concept
+        self.linked_concepts = linked_concepts
         self.negex = negex
         self.meta = meta_anns
         self.debug = debug_dict
@@ -62,7 +63,7 @@ class Concept(object):
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, linked_concept: {self.linked_concept}, negex: {self.negex}, meta: {self.meta}}} "
+            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
     def __hash__(self):
