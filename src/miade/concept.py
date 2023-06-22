@@ -42,6 +42,9 @@ class Concept(object):
         self.meta = meta_anns
         self.debug = debug_dict
 
+        if linked_concepts is None:
+            self.linked_concepts = []
+
 
     @classmethod
     def from_entity(cls, entity: [Dict]):

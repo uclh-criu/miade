@@ -337,12 +337,28 @@ class MedsAllergiesAnnotator(Annotator):
 
             if nearest_allergy_concept is not None:
                 log.debug(f"Linking reaction {reaction_concept.name} to {nearest_allergy_concept.name}")
-                nearest_allergy_concept.linked_concepts = [reaction_concept]
+                nearest_allergy_concept.linked_concepts.append(reaction_concept)
 
         # Remove the linked REACTION concepts from the main list
         updated_concept_list = [concept for concept in concept_list if concept.category != Category.REACTION]
 
         return updated_concept_list
+
+    def _convert_allergy_severity_to_code(self, concept: Concept) -> Concept:
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+        # convert to SNOMED?
+        if Severity.MILD in meta_ann_values:
+            concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
+        if Severity.MODERATE in meta_ann_values:
+            concept.linked_concepts.append(Concept(id="M", name="Moderate", category=Category.SEVERITY))
+        if Severity.SEVERE in meta_ann_values:
+            concept.linked_concepts.append(Concept(id="H", name="High", category=Category.SEVERITY))
+
+        return concept
+
+    def _convert_allergy_type_to_code(self, concept: Concept) -> Concept:
+        return concept
+
 
     def postprocess(self, concepts: List[Concept], note: Note) -> List[Concept]:
         # deepcopy so we still have reference to original list of concepts
@@ -355,15 +371,17 @@ class MedsAllergiesAnnotator(Annotator):
             # 2. convert concepts from lookup tables
             if concept.category == Category.ALLERGY:
                 # TODO: 3. convert allergen concept to parent concepts (lookup)
-                # TODO: need a container for severity
                 concept = self._map_allergens_to_parents(concept)
+                concept = self._convert_allergy_severity_to_code(concept)
+                # TODO: 4. convert allergy type to concepts?
+                concept = self._convert_allergy_type_to_code(concept)
             elif concept.category == Category.REACTION:
-                # TODO: 4. convert reaction to Epic options (lookup)
+                # TODO: 5. convert reaction to Epic options (lookup)
                 concept = self._map_reactions_to_subset(concept)
 
             processed_concepts.append(concept)
 
-        # 5. link reaction to allergens
+        # 6. link reaction to allergens
         processed_concepts = self._link_reactions_to_allergens(processed_concepts, note)
 
         return processed_concepts

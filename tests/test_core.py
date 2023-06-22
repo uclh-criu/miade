@@ -24,7 +24,7 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
     assert processor.get_concept_dicts(test_note) == [
         {
             'name': 'hepatic failure', 'id': '59927004', 'category': 'PROBLEM', 'start': 12, 'end': 25,
-            'dosage': None, 'linked_concepts': None, 'negex': False, 'meta': None, 'debug': None
+            'dosage': None, 'linked_concepts': [], 'negex': False, 'meta': None, 'debug': None
         },
         {
             'name': 'acetaminophen 500mg oral tablet', 'id': '322236009', 'category': 'MEDICATION', 'start': 40, 'end': 70,
@@ -38,7 +38,7 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
                     'source': 'by mouth', 'full_name': 'Oral', 'value': 'C38288', 'code_system': 'NCI Thesaurus'
                 }
             },
-            'linked_concepts': None,
+            'linked_concepts': [],
             'negex': False, 'meta': None, 'debug': None
         }
     ]
