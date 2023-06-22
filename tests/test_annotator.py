@@ -1,7 +1,5 @@
-import logging
-
 from miade.core import Concept, Category
-from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator
+from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator, calculate_word_distance
 from miade.dosage import Dose, Frequency
 from miade.dosageextractor import DosageExtractor
 
@@ -33,7 +31,35 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
 
 
 def test_calculate_word_distance():
-    pass
+    from miade.note import Note
+    note = Note("the quick broooooown fox jumped over the lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("the quick broooooownfoxjumpeed over the lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 20, 30
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    start1, end1 = 20, 30
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("thee ickbroooooownfoxesdes jumped over the lazy dog")
+    start1, end1 = 5, 25
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("the quick brooooooown fox jum pedoverthe lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 30, 40
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 3
+
+    note = Note("the quick brooooooown fox jum pedover thelazydog")
+    start1, end1 = 30, 40
+    start2, end2 = 41, 55
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 1
 
 
 

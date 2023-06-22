@@ -61,14 +61,26 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 
 def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note: Note) -> int:
     """
-    calculates how many words are in between words given the start and end indices
-    :param start1: character index of the start of word 1
-    :param end1: character index of the end of word 2
-    :param start2: character index of the start of word 2
-    :param end2: character index of the end of word 2
-    :param note: Note object that contains the whole text
-    :return: (int) number of words apart the two given text spans are
+    Calculates how many words are in between the given text spans based on character indices.
+    :param start1: Character index of the start of word 1.
+    :param end1: Character index of the end of word 1.
+    :param start2: Character index of the start of word 2.
+    :param end2: Character index of the end of word 2.
+    :param note: Note object that contains the whole text.
+    :return: Number of words between the two text spans.
     """
+
+    if start1 > end1 or start2 > end2:
+        return -1  # Invalid input: start index should be less than or equal to the end index
+
+    if start1 >= len(note.text) or start2 >= len(note.text):
+        return -1  # Invalid input: start index exceeds the length of the note's text
+
+    # Adjust the indices to stay within the bounds of the text
+    start1 = min(start1, len(note.text) - 1)
+    end1 = min(end1, len(note.text) - 1)
+    start2 = min(start2, len(note.text) - 1)
+    end2 = min(end2, len(note.text) - 1)
 
     chunk_start = min(start1, start2)
     chunk_end = max(end1 + 1, end2 + 1)
@@ -313,6 +325,11 @@ class MedsAllergiesAnnotator(Annotator):
                     distance = calculate_word_distance(reaction_concept.start, reaction_concept.end,
                                                        allergy_concept.start, allergy_concept.end,
                                                        note)
+                    if distance == -1:
+                        log.warning(f"Indices for {reaction_concept.name} or {allergy_concept.name} invalid: "
+                                    f"({reaction_concept.start}, {reaction_concept.end})"
+                                    f"({allergy_concept.start}, {allergy_concept.end})")
+                        continue
 
                     if distance <= link_distance and distance < min_distance:
                         min_distance = distance
