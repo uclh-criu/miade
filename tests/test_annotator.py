@@ -160,19 +160,22 @@ def test_allergy_annotator(test_meds_algy_medcat_model, test_meds_allergy_concep
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
     concepts = annotator.postprocess(test_meds_allergy_concepts, test_meds_allergy_note)
 
+    print([concept.__str__() for concept in concepts])
     assert concepts == [
-        Concept(id="123", name="Eggs", category=Category.ALLERGY),
-        Concept(id="456", name="Penicillin", category=Category.ALLERGY),
-        Concept(id="12344", name="Paracetamol", category=Category.MEDICATION),
+        Concept(id="102263004", name="Cauliflower cheese (converted)", category=Category.ALLERGY),
+        Concept(id="767270007", name="Penicillin (converted)", category=Category.ALLERGY),
+        Concept(id="302007", name="Paracetamol", category=Category.MEDICATION),
     ]
 
     assert concepts[0].linked_concepts == [
         Concept(id="L", name="Low", category=Category.SEVERITY),
-        Concept(id="789", name="Rash", category=Category.REACTION),
+        Concept(id="235719002", name="Food Intolerance", category=Category.ALLERGY_TYPE),
+        Concept(id="419076005", name="Rash (converted)", category=Category.REACTION),
     ]
 
     assert concepts[1].linked_concepts == [
         Concept(id="M", name="Moderate", category=Category.SEVERITY),
-        Concept(id="1234", name="Nausea", category=Category.REACTION),
+        Concept(id="416098002", name="Drug Allergy", category=Category.ALLERGY_TYPE),
+        Concept(id="419076005", name="Nausea (converted)", category=Category.REACTION),
     ]
     assert concepts[2].linked_concepts == []

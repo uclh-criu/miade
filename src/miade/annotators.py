@@ -4,7 +4,7 @@ import pkgutil
 import re
 import pandas as pd
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from copy import deepcopy
 from math import inf
 
@@ -19,6 +19,15 @@ log = logging.getLogger(__name__)
 # Precompile regular expressions
 sent_regex = re.compile(r"[^\s][^\n]+")
 
+class AllergenType(Enum):
+    FOOD = "food"
+    DRUG = "drug"
+    DRUG_CLASS = "drug class"
+    DRUG_INGREDIENT = "drug ingredient"
+    CHEMICAL = "chemical"
+    ENVIRONMENTAL = "environmental"
+    ANIMAL = "animal"
+
 
 def load_lookup_data(filename: str):
     lookup_data = pkgutil.get_data(__name__, filename)
@@ -30,6 +39,29 @@ def load_lookup_data(filename: str):
         .squeeze("columns")
         .T.to_dict()
     )
+
+
+def load_filter_list(filename: str):
+    list_data = pkgutil.get_data(__name__, filename)
+    return (
+         pd.read_csv(
+             io.BytesIO(list_data),
+             header=None
+         )
+     )
+
+
+def load_allergy_type_combinations(filename: str):
+    data = pkgutil.get_data(__name__, filename)
+    result_dict = {}
+    df = pd.read_csv(io.BytesIO(data))
+    for _, row in df.iterrows():
+        allergen = str(row['allergenType']).lower()
+        reaction = str(row['adverseReactionType']).lower()
+        reaction_id = row['adverseReactionId']
+        reaction_name = row['adverseReactionName']
+        result_dict[(allergen, reaction)] = (reaction_id, reaction_name)
+    return result_dict
 
 
 def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> str:
@@ -176,9 +208,7 @@ class ProblemsAnnotator(Annotator):
         self.negated_lookup = load_lookup_data("./data/negated.csv")
         self.historic_lookup = load_lookup_data("./data/historic.csv")
         self.suspected_lookup = load_lookup_data("./data/suspected.csv")
-
-        blacklist_data = pkgutil.get_data(__name__, "./data/problem_blacklist.csv")
-        self.filtering_blacklist = pd.read_csv(io.BytesIO(blacklist_data), header=None)
+        self.filtering_blacklist = load_filter_list("./data/problem_blacklist.csv")
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
@@ -278,31 +308,76 @@ class MedsAllergiesAnnotator(Annotator):
         super().__init__(cat)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
         # load the lookup data
-        self.reactions_subset_lookup = None
-        self.allergens_parents_lookup = None
-        self.meds_to_vmp_lookup = None
+        self.valid_meds = load_filter_list("./data/valid_meds.csv")
+        self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv")
+        self.allergens_subset_lookup = load_lookup_data("./data/allergens_subset.csv")
+        self.allergy_type_lookup = load_allergy_type_combinations("./data/allergy_type.csv")
+        self.vtm_to_vmp_lookup = load_lookup_data("./data/vtm_to_vmp.csv")
+        self.vtm_to_text_lookup = load_lookup_data("./data/vtm_to_text.csv")
+
+    def _validate_meds(self, concept) -> bool:
+        # check if substance is valid med
+        if int(concept.id) in self.valid_meds.values:
+            return True
+        return False
+
+    def _validate_and_convert_substance(self, concept) -> bool:
+        # check if substance is valid substance for allergy - if it is, convert it to Epic subset and return that concept
+        lookup_result = self.allergens_subset_lookup.get(int(concept.id), None)
+        if lookup_result is not None:
+            tag = " (converted)"
+            log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
+                      f"({lookup_result['subsetId']} | {concept.name + tag})")
+            concept.id = str(lookup_result["subsetId"])
+            concept.name += tag
+
+            # then check the allergen type from lookup result - e.g. drug, food
+            try:
+                concept.category = AllergenType(str(lookup_result['allergenType']).lower())
+                log.debug(f"Allergen type is {concept.category.name}")
+            except ValueError as e:
+                log.warning(f"Allergen type not found: {e}")
+
+            return True
+        else:
+            log.warning(f"No lookup subset found for substance ({concept.id} | {concept.name})")
+            return False
+
+    def _validate_and_convert_reaction(self, concept) -> bool:
+        # check if substance is valid reaction - if it is, convert it to Epic subset and return that concept
+        lookup_result = self.reactions_subset_lookup.get(int(concept.id), None)
+        if lookup_result is not None:
+            tag = " (converted)"
+            log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
+                      f"({lookup_result} | {concept.name + tag})")
+
+            concept.id = str(lookup_result)
+            concept.name += tag
+            return True
+        else:
+            log.warning(f"Reaction not found in subset conversion for concept {concept.__str__()}")
+            return False
 
     def _process_meta_annotations(self, concept: Concept) -> Concept:
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
         # assign categories
         if SubstanceCategory.ADVERSE_REACTION in meta_ann_values:
-            concept.category = Category.ALLERGY
+            if self._validate_and_convert_substance(concept):
+                self._convert_allergy_type_to_code(concept)
+                concept.category = Category.ALLERGY
         if SubstanceCategory.TAKING in meta_ann_values:
-            concept.category = Category.MEDICATION
+            if self._validate_meds(concept):
+                concept.category = Category.MEDICATION
         if SubstanceCategory.NOT_SUBSTANCE in meta_ann_values and (
                 ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values):
-            concept.category = Category.REACTION
+            if self._validate_and_convert_reaction(concept):
+                concept.category = Category.REACTION
 
         return concept
 
-    def _map_reactions_to_subset(self, concept: Concept) -> Concept:
-        return concept
-
-    def _map_allergens_to_parents(self, concept: Concept) -> Concept:
-        return concept
-
-    def _link_reactions_to_allergens(self, concept_list: List[Concept], note: Note, link_distance: int = 5) -> List[Concept]:
+    @staticmethod
+    def _link_reactions_to_allergens(concept_list: List[Concept], note: Note, link_distance: int = 5) -> List[Concept]:
         allergy_concepts = [concept for concept in concept_list if concept.category == Category.ALLERGY]
         reaction_concepts = [concept for concept in concept_list if concept.category == Category.REACTION]
 
@@ -344,9 +419,9 @@ class MedsAllergiesAnnotator(Annotator):
 
         return updated_concept_list
 
-    def _convert_allergy_severity_to_code(self, concept: Concept) -> Concept:
+    @staticmethod
+    def _convert_allergy_severity_to_code(concept: Concept) -> Concept:
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
-        # convert to SNOMED?
         if Severity.MILD in meta_ann_values:
             concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
         if Severity.MODERATE in meta_ann_values:
@@ -356,8 +431,30 @@ class MedsAllergiesAnnotator(Annotator):
 
         return concept
 
-    def _convert_allergy_type_to_code(self, concept: Concept) -> Concept:
-        return concept
+    def _convert_allergy_type_to_code(self, concept: Concept) -> bool:
+        # get the ALLERGYTYPE meta-annotation
+        allergy_type = [meta_ann for meta_ann in concept.meta if meta_ann.name == "allergytype"]
+        if not allergy_type:
+            log.warning(f"Unable to map allergy type code: allergytype meta-annotation "
+                        f"not found for concept {concept.__str__()}")
+            return False
+        else:
+            allergy_type = allergy_type[0].value
+
+        # perform lookup with ALLERGYTYPE and AllergenType combination
+        lookup_combination: Tuple[str, str] = (concept.category.value, allergy_type.value)
+        allergy_type_lookup_result = self.allergy_type_lookup.get(lookup_combination)
+
+        # add resulting allergy type concept as to linked_concept
+        if allergy_type_lookup_result is not None:
+            log.debug(f"Adding allergy type ({allergy_type_lookup_result[0]} | {allergy_type_lookup_result[1]})")
+            concept.linked_concepts.append(Concept(id=str(allergy_type_lookup_result[0]),
+                                                   name=allergy_type_lookup_result[1],
+                                                   category=Category.ALLERGY_TYPE))
+        else:
+            log.warning(f"Allergen and adverse reaction type combination not found: {lookup_combination}")
+
+        return True
 
 
     def postprocess(self, concepts: List[Concept], note: Note) -> List[Concept]:
@@ -369,15 +466,9 @@ class MedsAllergiesAnnotator(Annotator):
             # 1. process meta annotations to assign med/allergy/reaction category
             concept = self._process_meta_annotations(concept)
             # 2. convert concepts from lookup tables
-            if concept.category == Category.ALLERGY:
-                # TODO: 3. convert allergen concept to parent concepts (lookup)
-                concept = self._map_allergens_to_parents(concept)
+            if isinstance(concept.category, AllergenType):
                 concept = self._convert_allergy_severity_to_code(concept)
-                # TODO: 4. convert allergy type to concepts?
                 concept = self._convert_allergy_type_to_code(concept)
-            elif concept.category == Category.REACTION:
-                # TODO: 5. convert reaction to Epic options (lookup)
-                concept = self._map_reactions_to_subset(concept)
 
             processed_concepts.append(concept)
 
@@ -386,7 +477,7 @@ class MedsAllergiesAnnotator(Annotator):
 
         return processed_concepts
 
-    def convert_medications_to_products(self, concepts: List[Concept]) -> List[Concept]:
+    def convert_VTM_to_VMP(self, concepts: List[Concept]) -> List[Concept]:
         # TODO: convert to medication VMP
         return concepts
 
@@ -400,7 +491,7 @@ class MedsAllergiesAnnotator(Annotator):
         concepts = self.postprocess(concepts, note)
         if dosage_extractor is not None:
             concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-        concepts = self.convert_medications_to_products(concepts)
+        concepts = self.convert_VTM_to_VMP(concepts)
         concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts

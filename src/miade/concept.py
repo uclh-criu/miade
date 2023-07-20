@@ -12,6 +12,7 @@ class Category(Enum):
     ALLERGY = 3
     REACTION = 4
     SEVERITY = 5
+    ALLERGY_TYPE = 6
 
 
 class Concept(object):
@@ -21,7 +22,7 @@ class Concept(object):
         self,
         id: str,
         name: str,
-        category: Optional[Category] = None,
+        category: Optional[Enum] = None,
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
