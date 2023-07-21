@@ -4,6 +4,7 @@ import pandas as pd
 from typing import List, Dict
 from pathlib import Path
 
+from miade.dosage import Dosage, Dose
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
@@ -356,9 +357,9 @@ def test_meds_allergy_note() -> Note:
     )
 
 @pytest.fixture(scope="function")
-def test_meds_allergy_concepts() -> List[Concept]:
+def test_substance_concepts_with_meta_anns() -> List[Concept]:
     return [
-        Concept(id="226021002", name="Cauliflower cheese", start=14, end=17, meta_anns=[
+        Concept(id="226021002", name="Eggs", start=14, end=17, meta_anns=[
             MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
             MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
             MetaAnnotations(name="allergytype", value=AllergyType.INTOLERANCE),
@@ -382,10 +383,40 @@ def test_meds_allergy_concepts() -> List[Concept]:
             MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
             MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
         ]),
-        Concept(id="302007", name="Paracetamol", start=83, end=93, meta_anns=[
-            MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
-            MetaAnnotations(name="category", value=SubstanceCategory.TAKING),
-            MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
-            MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
+        Concept(id="7336002", name="Paracetamol", start=83, end=93,
+                dosage=Dosage(
+                    dose=Dose(value=50, unit="mg"),
+                              duration=None,
+                              frequency=None,
+                              route=None
+                ),
+                meta_anns=[
+                    MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
+                    MetaAnnotations(name="category", value=SubstanceCategory.TAKING),
+                    MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+                    MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
         ]),
+    ]
+
+@pytest.fixture(scope="function")
+def test_vtm_concepts() -> List[Concept]:
+    return [
+        Concept(
+            id="302007", name="Spiramycin", category=Category.MEDICATION,
+                dosage=Dosage(
+                    dose=Dose(value=10, unit="mg"),
+                    duration=None,
+                    frequency=None,
+                    route=None
+                ),
+            ),
+        Concept(
+            id="7336002", name="Paracetamol", category=Category.MEDICATION,
+                dosage=Dosage(
+                    dose=Dose(value=50, unit="mg"),
+                    duration=None,
+                    frequency=None,
+                    route=None
+                ),
+            ),
     ]

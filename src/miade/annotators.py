@@ -29,28 +29,37 @@ class AllergenType(Enum):
     ANIMAL = "animal"
 
 
-def load_lookup_data(filename: str):
+def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = False):
     lookup_data = pkgutil.get_data(__name__, filename)
-    return (
-        pd.read_csv(
-            io.BytesIO(lookup_data),
-            index_col=0,
+    if as_dict:
+        return (
+            pd.read_csv(
+                io.BytesIO(lookup_data),
+                index_col=0,
+            ).squeeze("columns")
+            .T.to_dict()
         )
-        .squeeze("columns")
-        .T.to_dict()
-    )
+    if no_header:
+        return (
+            pd.read_csv(
+                io.BytesIO(lookup_data),
+                header=None
+            )
+        )
+    else:
+        return pd.read_csv(io.BytesIO(lookup_data)).drop_duplicates()
 
 
-def load_filter_list(filename: str):
-    list_data = pkgutil.get_data(__name__, filename)
-    return (
-         pd.read_csv(
-             io.BytesIO(list_data),
-             header=None
-         )
-     )
+# def load_filter_list(filename: str):
+#     list_data = pkgutil.get_data(__name__, filename)
+#     return (
+#          pd.read_csv(
+#              io.BytesIO(list_data),
+#              header=None
+#          )
+#      )
 
-
+# TODO: refactor this into load_lookup_data()
 def load_allergy_type_combinations(filename: str):
     data = pkgutil.get_data(__name__, filename)
     result_dict = {}
@@ -205,10 +214,10 @@ class ProblemsAnnotator(Annotator):
         super().__init__(cat)
         self.concept_types = [Category.PROBLEM]
 
-        self.negated_lookup = load_lookup_data("./data/negated.csv")
-        self.historic_lookup = load_lookup_data("./data/historic.csv")
-        self.suspected_lookup = load_lookup_data("./data/suspected.csv")
-        self.filtering_blacklist = load_filter_list("./data/problem_blacklist.csv")
+        self.negated_lookup = load_lookup_data("./data/negated.csv", as_dict=True)
+        self.historic_lookup = load_lookup_data("./data/historic.csv", as_dict=True)
+        self.suspected_lookup = load_lookup_data("./data/suspected.csv", as_dict=True)
+        self.filtering_blacklist = load_lookup_data("./data/problem_blacklist.csv", no_header=True)
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
@@ -308,12 +317,12 @@ class MedsAllergiesAnnotator(Annotator):
         super().__init__(cat)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
         # load the lookup data
-        self.valid_meds = load_filter_list("./data/valid_meds.csv")
-        self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv")
-        self.allergens_subset_lookup = load_lookup_data("./data/allergens_subset.csv")
+        self.valid_meds = load_lookup_data("./data/valid_meds.csv", no_header=True)
+        self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv", as_dict=True)
+        self.allergens_subset_lookup = load_lookup_data("./data/allergens_subset.csv", as_dict=True)
         self.allergy_type_lookup = load_allergy_type_combinations("./data/allergy_type.csv")
         self.vtm_to_vmp_lookup = load_lookup_data("./data/vtm_to_vmp.csv")
-        self.vtm_to_text_lookup = load_lookup_data("./data/vtm_to_text.csv")
+        self.vtm_to_text_lookup = load_lookup_data("./data/vtm_to_text.csv", as_dict=True)
 
     def _validate_meds(self, concept) -> bool:
         # check if substance is valid med
@@ -323,7 +332,7 @@ class MedsAllergiesAnnotator(Annotator):
 
     def _validate_and_convert_substance(self, concept) -> bool:
         # check if substance is valid substance for allergy - if it is, convert it to Epic subset and return that concept
-        lookup_result = self.allergens_subset_lookup.get(int(concept.id), None)
+        lookup_result = self.allergens_subset_lookup.get(int(concept.id))
         if lookup_result is not None:
             tag = " (converted)"
             log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
@@ -358,13 +367,14 @@ class MedsAllergiesAnnotator(Annotator):
             log.warning(f"Reaction not found in subset conversion for concept {concept.__str__()}")
             return False
 
-    def _process_meta_annotations(self, concept: Concept) -> Concept:
+    def _validate_and_convert_concepts(self, concept: Concept) -> Concept:
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
         # assign categories
         if SubstanceCategory.ADVERSE_REACTION in meta_ann_values:
             if self._validate_and_convert_substance(concept):
                 self._convert_allergy_type_to_code(concept)
+                self._convert_allergy_severity_to_code(concept)
                 concept.category = Category.ALLERGY
         if SubstanceCategory.TAKING in meta_ann_values:
             if self._validate_meds(concept):
@@ -420,16 +430,21 @@ class MedsAllergiesAnnotator(Annotator):
         return updated_concept_list
 
     @staticmethod
-    def _convert_allergy_severity_to_code(concept: Concept) -> Concept:
+    def _convert_allergy_severity_to_code(concept: Concept) -> bool:
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
         if Severity.MILD in meta_ann_values:
             concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
-        if Severity.MODERATE in meta_ann_values:
+        elif Severity.MODERATE in meta_ann_values:
             concept.linked_concepts.append(Concept(id="M", name="Moderate", category=Category.SEVERITY))
-        if Severity.SEVERE in meta_ann_values:
+        elif Severity.SEVERE in meta_ann_values:
             concept.linked_concepts.append(Concept(id="H", name="High", category=Category.SEVERITY))
+        elif Severity.UNSPECIFIED in meta_ann_values:
+            return True
+        else:
+            log.warning(f"No severity annotation associated with ({concept.id} | {concept.name})")
+            return False
 
-        return concept
+        return True
 
     def _convert_allergy_type_to_code(self, concept: Concept) -> bool:
         # get the ALLERGYTYPE meta-annotation
@@ -463,23 +478,66 @@ class MedsAllergiesAnnotator(Annotator):
         processed_concepts = []
 
         for concept in all_concepts:
-            # 1. process meta annotations to assign med/allergy/reaction category
-            concept = self._process_meta_annotations(concept)
-            # 2. convert concepts from lookup tables
-            if isinstance(concept.category, AllergenType):
-                concept = self._convert_allergy_severity_to_code(concept)
-                concept = self._convert_allergy_type_to_code(concept)
-
+            concept = self._validate_and_convert_concepts(concept)
             processed_concepts.append(concept)
 
-        # 6. link reaction to allergens
         processed_concepts = self._link_reactions_to_allergens(processed_concepts, note)
 
         return processed_concepts
 
-    def convert_VTM_to_VMP(self, concepts: List[Concept]) -> List[Concept]:
-        # TODO: convert to medication VMP
+    def convert_VTM_to_VMP_or_text(self, concepts: List[Concept]) -> List[Concept]:
+        # Get medication concepts
+        med_concepts = [concept for concept in concepts if concept.category == Category.MEDICATION]
+        self.vtm_to_vmp_lookup["dose"] = self.vtm_to_vmp_lookup["dose"].astype(float)
+
+        med_concepts_with_dose = []
+        # I don't know man...Need to improve dosage methods
+        for concept in med_concepts:
+            if concept.dosage is not None:
+                if concept.dosage.dose:
+                    if concept.dosage.dose.value is not None and concept.dosage.dose.unit is not None:
+                        med_concepts_with_dose.append(concept)
+
+        # Create a temporary DataFrame to match vtmId, dose, and unit
+        temp_df = pd.DataFrame({'vtmId': [int(concept.id) for concept in med_concepts_with_dose],
+                                'dose': [float(concept.dosage.dose.value) for concept in med_concepts_with_dose],
+                                'unit': [concept.dosage.dose.unit for concept in med_concepts_with_dose]})
+
+        # Merge with the lookup df to get vmpId
+        merged_df = temp_df.merge(self.vtm_to_vmp_lookup, on=['vtmId', 'dose', 'unit'], how='left')
+
+        # Update id in the concepts list
+        for index, concept in enumerate(med_concepts_with_dose):
+            # Convert VTM to VMP id
+            vmp_id = merged_df.at[index, 'vmpId']
+            if not pd.isna(vmp_id):
+                log.debug(
+                    f"Converted ({concept.id} | {concept.name}) with dose "
+                    f"{int(concept.dosage.dose.value)} {concept.dosage.dose.unit} to {int(vmp_id)}")
+                concept.id = str(int(vmp_id))
+                concept.name += " " + str(int(concept.dosage.dose.value)) + str(concept.dosage.dose.unit) + " tablets"
+                concept.dosage.dose.value = 1
+                concept.dosage.dose.unit = "{tbl}"
+            else:
+                # If no match with dose convert to text
+                lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
+                if lookup_result is not None:
+                    log.debug(
+                        f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
+                    concept.id = None
+                    concept.name = lookup_result
+        # TODO: need to convert VTMs that don't have dosage too?
+        # Convert VTMs that have no VMP conversion to text
+        # for concept in med_concepts:
+        #     lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
+        #     if lookup_result is not None:
+        #         log.debug(
+        #             f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
+        #         concept.id = None
+        #         concept.name += lookup_result
+
         return concepts
+
 
     def __call__(
         self,
@@ -491,7 +549,7 @@ class MedsAllergiesAnnotator(Annotator):
         concepts = self.postprocess(concepts, note)
         if dosage_extractor is not None:
             concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-        concepts = self.convert_VTM_to_VMP(concepts)
+        concepts = self.convert_VTM_to_VMP_or_text(concepts)
         concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts
