@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List, Dict
 from pathlib import Path
 
-from miade.dosage import Dosage, Dose
+from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
@@ -407,7 +407,7 @@ def test_vtm_concepts() -> List[Concept]:
                     dose=Dose(value=10, unit="mg"),
                     duration=None,
                     frequency=None,
-                    route=None
+                    route=None,
                 ),
             ),
         Concept(
@@ -416,7 +416,38 @@ def test_vtm_concepts() -> List[Concept]:
                     dose=Dose(value=50, unit="mg"),
                     duration=None,
                     frequency=None,
-                    route=None
+                    route=None,
                 ),
             ),
+        Concept(
+            id="7947003", name="Aspirin", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=None,
+                duration=None,
+                frequency=None,
+                route=Route(full_name="Oral", value="C38288"),
+            ),
+        ),
+        Concept(
+            id="6247001", name="Folic acid", category=Category.MEDICATION,
+            dosage=None
+        ),
+        Concept(
+            id="350057002", name="Selenium", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=Dose(value=50, unit="microgram"),
+                duration=None,
+                frequency=None,
+                route=None,
+            ),
+        ),
+        Concept(
+            id="350057002", name="Selenium", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=Dose(value=10, unit="microgram"),
+                duration=None,
+                frequency=None,
+                route=None,
+            ),
+        ),
     ]

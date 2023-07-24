@@ -50,26 +50,20 @@ def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = Fal
         return pd.read_csv(io.BytesIO(lookup_data)).drop_duplicates()
 
 
-# def load_filter_list(filename: str):
-#     list_data = pkgutil.get_data(__name__, filename)
-#     return (
-#          pd.read_csv(
-#              io.BytesIO(list_data),
-#              header=None
-#          )
-#      )
-
-# TODO: refactor this into load_lookup_data()
 def load_allergy_type_combinations(filename: str):
     data = pkgutil.get_data(__name__, filename)
-    result_dict = {}
     df = pd.read_csv(io.BytesIO(data))
-    for _, row in df.iterrows():
-        allergen = str(row['allergenType']).lower()
-        reaction = str(row['adverseReactionType']).lower()
-        reaction_id = row['adverseReactionId']
-        reaction_name = row['adverseReactionName']
-        result_dict[(allergen, reaction)] = (reaction_id, reaction_name)
+
+    # Convert 'allergenType' and 'adverseReactionType' columns to lowercase
+    df['allergenType'] = df['allergenType'].str.lower()
+    df['adverseReactionType'] = df['adverseReactionType'].str.lower()
+
+    # Create a tuple column containing (reaction_id, reaction_name) for each row
+    df['reaction_id_name'] = list(zip(df['adverseReactionId'], df['adverseReactionName']))
+
+    # Set (allergenType, adverseReactionType) as the index and convert to dictionary
+    result_dict = df.set_index(['allergenType', 'adverseReactionType'])['reaction_id_name'].to_dict()
+
     return result_dict
 
 
@@ -449,7 +443,7 @@ class MedsAllergiesAnnotator(Annotator):
     def _convert_allergy_type_to_code(self, concept: Concept) -> bool:
         # get the ALLERGYTYPE meta-annotation
         allergy_type = [meta_ann for meta_ann in concept.meta if meta_ann.name == "allergytype"]
-        if not allergy_type:
+        if len(allergy_type) != 1:
             log.warning(f"Unable to map allergy type code: allergytype meta-annotation "
                         f"not found for concept {concept.__str__()}")
             return False
@@ -498,6 +492,8 @@ class MedsAllergiesAnnotator(Annotator):
                     if concept.dosage.dose.value is not None and concept.dosage.dose.unit is not None:
                         med_concepts_with_dose.append(concept)
 
+        med_concepts_no_dose = [concept for concept in concepts if concept not in med_concepts_with_dose]
+
         # Create a temporary DataFrame to match vtmId, dose, and unit
         temp_df = pd.DataFrame({'vtmId': [int(concept.id) for concept in med_concepts_with_dose],
                                 'dose': [float(concept.dosage.dose.value) for concept in med_concepts_with_dose],
@@ -526,15 +522,15 @@ class MedsAllergiesAnnotator(Annotator):
                         f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
                     concept.id = None
                     concept.name = lookup_result
-        # TODO: need to convert VTMs that don't have dosage too?
-        # Convert VTMs that have no VMP conversion to text
-        # for concept in med_concepts:
-        #     lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
-        #     if lookup_result is not None:
-        #         log.debug(
-        #             f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
-        #         concept.id = None
-        #         concept.name += lookup_result
+
+        # Convert rest of VTMs that have no dose for VMP conversion to text
+        for concept in med_concepts_no_dose:
+            lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
+            if lookup_result is not None:
+                log.debug(
+                    f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
+                concept.id = None
+                concept.name = lookup_result
 
         return concepts
 

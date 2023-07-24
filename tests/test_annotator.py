@@ -1,6 +1,6 @@
 from miade.core import Concept, Category
 from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator, calculate_word_distance
-from miade.dosage import Dose, Frequency
+from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
 
 def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
@@ -186,4 +186,33 @@ def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
     assert concepts == [
         Concept(id=None, name="SPIRAMYCIN ORAL", category=Category.MEDICATION),
         Concept(id="376689003", name="Paracetamol 50mg tablets", category=Category.MEDICATION),
+        Concept(id=None, name="ASPIRIN ORAL", category=Category.MEDICATION),
+        Concept(id=None, name="FOLIC ACID ORAL", category=Category.MEDICATION),
+        Concept(id="7721411000001109", name="Selenium 50microgram tablets", category=Category.MEDICATION),
+        Concept(id=None, name="SELENIUM ORAL", category=Category.MEDICATION),
     ]
+    assert concepts[0].dosage == Dosage(
+        dose=Dose(value=10, unit="mg"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
+    assert concepts[1].dosage == Dosage(
+        dose=Dose(value=1, unit="{tbl}"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
+    assert concepts[2].dosage == Dosage(
+        dose=None,
+        frequency=None,
+        duration=None,
+        route=Route(value="C38288", full_name="Oral"),
+    )
+    assert concepts[3].dosage is None
+    assert concepts[4].dosage == Dosage(
+        dose=Dose(value=1, unit="{tbl}"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
