@@ -56,7 +56,7 @@ class Concept(object):
 
         return Concept(
             id=entity["cui"],
-            name=entity["pretty_name"],
+            name=entity["source_value"],  # can also use detected_name which is spell checked but delimited by ~ e.g. liver~failure
             category=None,
             start=entity["start"],
             end=entity["end"],

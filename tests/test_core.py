@@ -11,23 +11,23 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
     processor.add_annotator("meds/allergies")
 
     assert processor.process(test_note) == [
-        Concept(id="59927004", name="hepatic failure", category=Category.PROBLEM),
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
+        Concept(id="59927004", name="liver failure", category=Category.PROBLEM),
+        Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.process(test_negated_note) == [
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
+        Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.process(test_duplicated_note) == [
-        Concept(id="59927004", name="hepatic failure", category=Category.PROBLEM),
-        Concept(id="322236009", name="acetaminophen 500mg oral tablet", category=Category.MEDICATION),
+        Concept(id="59927004", name="liver failure", category=Category.PROBLEM),
+        Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.get_concept_dicts(test_note) == [
         {
-            'name': 'hepatic failure', 'id': '59927004', 'category': 'PROBLEM', 'start': 12, 'end': 25,
+            'name': 'liver failure', 'id': '59927004', 'category': 'PROBLEM', 'start': 12, 'end': 25,
             'dosage': None, 'linked_concepts': [], 'negex': False, 'meta': None, 'debug': None
         },
         {
-            'name': 'acetaminophen 500mg oral tablet', 'id': '322236009', 'category': 'MEDICATION', 'start': 40, 'end': 70,
+            'name': 'paracetamol 500mg oral tablets', 'id': '322236009', 'category': 'MEDICATION', 'start': 40, 'end': 70,
             'dosage': {
                 'dose': {
                     'source': '500 mg by mouth tab', 'value': 500.0, 'unit': '{tbl}', 'low': None, 'high': None

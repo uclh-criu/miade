@@ -74,8 +74,8 @@ def test_deduplicate(
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=test_duplicate_concepts_record
     ) == [
-        Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="7", name="test2", category=Category.MEDICATION),
+        Concept(id="5", name="test2", category=Category.PROBLEM),
     ]
     assert annotator.deduplicate(
         concepts=test_self_duplicate_concepts_note, record_concepts=None) == [
@@ -89,9 +89,9 @@ def test_deduplicate(
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=[]
@@ -100,9 +100,9 @@ def test_deduplicate(
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
     assert (
         annotator.deduplicate(

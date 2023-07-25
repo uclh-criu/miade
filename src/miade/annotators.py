@@ -4,7 +4,8 @@ import pkgutil
 import re
 import pandas as pd
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
+from collections import OrderedDict
 from copy import deepcopy
 from math import inf
 
@@ -50,7 +51,7 @@ def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = Fal
         return pd.read_csv(io.BytesIO(lookup_data)).drop_duplicates()
 
 
-def load_allergy_type_combinations(filename: str):
+def load_allergy_type_combinations(filename: str) -> Dict:
     data = pkgutil.get_data(__name__, filename)
     df = pd.read_csv(io.BytesIO(data))
 
@@ -129,6 +130,7 @@ class Annotator:
     """
     Docstring for Annotator
     """
+    # TODO: Create abstract class methods for easier unit testing
     def __init__(self, cat: MiADE_CAT):
         self.cat = cat
         self.concept_types = []
@@ -150,22 +152,24 @@ class Annotator:
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
-        filtered_concepts: List[Concept] = []
-
         if record_concepts is not None:
-            record_ids = [record_concept.id for record_concept in record_concepts]
-            for concept in concepts:
-                if concept.id in record_ids:
-                    log.debug(
-                        f"Filtered concept ({concept.id} | {concept.name}): concept id exists in record"
-                    )
-                    continue
-                filtered_concepts.append(concept)
+            record_ids = {record_concept.id for record_concept in record_concepts}
         else:
-            filtered_concepts = concepts
+            record_ids = set()
 
-        # deduplicate within list
-        return sorted(set(filtered_concepts))
+        # Use an OrderedDict to keep track of ids as it preservers original MedCAT order (the order it appears in text)
+        filtered_concepts: List[Concept] = []
+        existing_ids = OrderedDict()
+
+        # Filter concepts that are in record or exist in concept list
+        for concept in concepts:
+            if concept.id in record_ids or concept.id in existing_ids:
+                log.debug(f"Filtered concept ({concept.id} | {concept.name}): concept id exists in record")
+            else:
+                filtered_concepts.append(concept)
+                existing_ids[concept.id] = None
+
+        return filtered_concepts
 
     @staticmethod
     def add_dosages_to_concepts(
@@ -512,6 +516,7 @@ class MedsAllergiesAnnotator(Annotator):
                     f"{int(concept.dosage.dose.value)} {concept.dosage.dose.unit} to {int(vmp_id)}")
                 concept.id = str(int(vmp_id))
                 concept.name += " " + str(int(concept.dosage.dose.value)) + str(concept.dosage.dose.unit) + " tablets"
+                # If found VMP match change the dosage to 1 tablet
                 concept.dosage.dose.value = 1
                 concept.dosage.dose.unit = "{tbl}"
             else:

@@ -162,11 +162,11 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
-        Concept(id="5", name="test2", category=Category.PROBLEM, start=0, end=12),
+        Concept(id="7", name="test2", category=Category.MEDICATION, start=0, end=12),
+        Concept(id="5", name="test2", category=Category.PROBLEM, start=15, end=20),
         Concept(id="5", name="test2", category=Category.PROBLEM, start=45, end=50),
         Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
 
 
