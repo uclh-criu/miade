@@ -1,5 +1,6 @@
+from __future__ import annotations
 from enum import Enum
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from .dosage import Dosage
 from .metaannotations import MetaAnnotations
@@ -10,6 +11,8 @@ class Category(Enum):
     MEDICATION = 2
     ALLERGY = 3
     REACTION = 4
+    SEVERITY = 5
+    ALLERGY_TYPE = 6
 
 
 class Concept(object):
@@ -19,12 +22,13 @@ class Concept(object):
         self,
         id: str,
         name: str,
-        category: [Category],
+        category: Optional[Enum] = None,
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
+        linked_concepts: Optional[List[Concept]] = None,
         negex: Optional[bool] = False,
-        meta_anns: Optional[MetaAnnotations] = None,
+        meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
     ):
 
@@ -34,91 +38,34 @@ class Concept(object):
         self.start = start
         self.end = end
         self.dosage = dosage
+        self.linked_concepts = linked_concepts
         self.negex = negex
         self.meta = meta_anns
         self.debug = debug_dict
 
-    @property
-    def dosage(self):
-        return self._dosage
-
-    @dosage.setter
-    def dosage(self, dosage: [Dosage]):
-        if dosage is not None:
-            if self.category is not Category.MEDICATION:
-                raise ValueError(
-                    f"Dosage can only be assigned to Medication, not {self.category}."
-                )
-        self._dosage = dosage
-
-    @property
-    def meta(self):
-        return self._meta_annotations
-
-    @meta.setter
-    def meta(self, meta_anns: [MetaAnnotations]):
-        if meta_anns is not None:
-            if not isinstance(meta_anns, MetaAnnotations):
-                raise TypeError(
-                    f"Type should be MetaAnnotations, not {type(meta_anns)}"
-                )
-            if self.category is Category.PROBLEM:
-                if not (
-                    meta_anns.presence or meta_anns.relevance or meta_anns.laterality
-                ):
-                    raise ValueError(
-                        "Problems meta-annotations does not have one of presence, relevance or laterality."
-                    )
-            if (
-                self.category is Category.MEDICATION
-                or self.category is Category.ALLERGY
-            ):
-                if not (
-                    meta_anns.substance_category
-                    or meta_anns.reaction_pos
-                    or meta_anns.severity
-                    or meta_anns.allergy_type
-                ):
-                    raise ValueError(
-                        "Medications or Allergy meta-annotations does not have one of substance category, "
-                        "reaction pos, allergy type or severity."
-                    )
-
-        self._meta_annotations = meta_anns
+        if linked_concepts is None:
+            self.linked_concepts = []
 
     @classmethod
     def from_entity(cls, entity: [Dict]):
-        meta_anns = (
-            MetaAnnotations.from_dict(entity["meta_anns"])
-            if entity["meta_anns"]
-            else None
-        )
-
-        # TODO: REVIEW: keep ontologies-based category assignment?
-        if entity["ontologies"] == ["FDB"]:
-            category = Category.MEDICATION
-        elif entity["ontologies"] == ["SNO"] or entity["ontologies"] == ["SNOMED-CT"]:
-            category = Category.PROBLEM
-        elif entity["ontologies"] == ["ELG"]:
-            category = Category.ALLERGY
-        else:
-            raise ValueError(f"Entity ontology {entity['ontologies']} not recognised.")
+        meta_anns = None
+        if entity["meta_anns"]:
+            meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]
 
         return Concept(
             id=entity["cui"],
-            name=entity["pretty_name"],
-            category=category,
+            name=entity["source_value"],  # can also use detected_name which is spell checked but delimited by ~ e.g. liver~failure
+            category=None,
             start=entity["start"],
             end=entity["end"],
-            negex=entity["negex"] if entity["negex"] else False,
+            negex=entity["negex"] if "negex" in entity else False,
             meta_anns=meta_anns,
         )
 
     def __str__(self):
         return (
-            f"{{name: {self.name}, id: {self.id}, type: {self.category.name}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, negex: {self.negex},"
-            f" meta: {None if not self.meta else self.meta.__dict__}}} "
+            f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
+            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
     def __hash__(self):

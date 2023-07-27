@@ -4,10 +4,12 @@ import pandas as pd
 from typing import List, Dict
 from pathlib import Path
 
+from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import *
+from miade.utils.miade_cat import MiADE_CAT
 
 
 @pytest.fixture(scope="function")
@@ -16,22 +18,32 @@ def model_directory_path() -> Path:
 
 
 @pytest.fixture(scope="function")
+def test_problems_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_problems_blank_modelpack_Jun_2023_df349473b9d260a9.zip"))
+
+
+@pytest.fixture(scope="function")
+def test_meds_algy_medcat_model() -> MiADE_CAT:
+    return MiADE_CAT.load_model_pack(str("./tests/data/models/miade_meds_allergy_blank_modelpack_Jun_2023_75e13bf042cc55b8.zip"))
+
+
+@pytest.fixture(scope="function")
 def test_note() -> Note:
-    return Note(text="Patient has liver failure and is taking paracetamol.")
+    return Note(text="Patient has liver failure and is taking paracetamol 500mg oral tablets.")
 
 
 @pytest.fixture(scope="function")
 def test_negated_note() -> Note:
     return Note(
-        text="Patient does not have liver failure. Patient is taking paracetamol."
+        text="Patient does not have liver failure. Patient is taking paracetamol 500mg oral tablets."
     )
 
 
 @pytest.fixture(scope="function")
 def test_duplicated_note() -> Note:
     return Note(
-        text="Patient has liver failure. The liver failure is quite bad. Patient is taking paracetamol. "
-        "decrease paracetamol dosage."
+        text="Patient has liver failure. The liver failure is quite bad. Patient is taking "
+             "paracetamol 500mg oral tablets. decrease paracetamol 500mg oral tablets dosage."
     )
 
 
@@ -140,7 +152,6 @@ def test_duplicate_concepts_record() -> List[Concept]:
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="0", name="PEANUTS", category=Category.ALLERGY),
     ]
 
 
@@ -151,12 +162,11 @@ def test_duplicate_concepts_note() -> List[Concept]:
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
-        Concept(id="5", name="test2", category=Category.PROBLEM, start=0, end=12),
+        Concept(id="7", name="test2", category=Category.MEDICATION, start=0, end=12),
+        Concept(id="5", name="test2", category=Category.PROBLEM, start=15, end=20),
         Concept(id="5", name="test2", category=Category.PROBLEM, start=45, end=50),
         Concept(id="6", name="test2", category=Category.MEDICATION),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
-        Concept(id="8", name="PEANUTS", category=Category.ALLERGY),
     ]
 
 
@@ -233,99 +243,99 @@ def test_meta_annotations_concepts() -> List[Concept]:
             name="Nystagmus",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.LEFT,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.LEFT)
+            ],
         ),
         Concept(
             id="1415005",
             name="Lymphangitis",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.NEGATED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.NEGATED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="123",
             name="negated concept",
             category=Category.PROBLEM,
             negex=True,
-            meta_anns=MetaAnnotations(
-                presence=Presence.NEGATED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.NEGATED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="3723001",
             name="Arthritis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="4556007",
             name="Gastritis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="0000",
             name="suspected concept",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.SUSPECTED,
-                relevance=Relevance.PRESENT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="1847009",
             name="Endophthalmitis",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.HISTORIC,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="1912002",
             name="Fall",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.IRRELEVANT,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
         Concept(
             id="0000",
             name="historic concept",
             category=Category.PROBLEM,
             negex=False,
-            meta_anns=MetaAnnotations(
-                presence=Presence.CONFIRMED,
-                relevance=Relevance.HISTORIC,
-                laterality=Laterality.NO_LATERALITY,
-            ),
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
+                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY)
+            ],
         ),
     ]
 
@@ -338,4 +348,106 @@ def test_filtering_list_concepts() -> List[Concept]:
         Concept(id="19342008", name="Subacute disease", category=Category.PROBLEM),
         Concept(id="76797004", name="Failure", category=Category.PROBLEM),
         Concept(id="123", name="real concept", category=Category.PROBLEM)
+    ]
+
+@pytest.fixture(scope="function")
+def test_meds_allergy_note() -> Note:
+    return Note(
+        text="Intolerant of eggs mild rash. Allergies: moderate nausea due to penicillin. Taking paracetamol for pain."
+    )
+
+@pytest.fixture(scope="function")
+def test_substance_concepts_with_meta_anns() -> List[Concept]:
+    return [
+        Concept(id="226021002", name="Eggs", start=14, end=17, meta_anns=[
+            MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
+            MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
+            MetaAnnotations(name="allergytype", value=AllergyType.INTOLERANCE),
+            MetaAnnotations(name="severity", value=Severity.MILD),
+        ]),
+        Concept(id="159002", name="Penicillin", start=64, end=73, meta_anns=[
+            MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
+            MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
+            MetaAnnotations(name="allergytype", value=AllergyType.ALLERGY),
+            MetaAnnotations(name="severity", value=Severity.MODERATE),
+        ]),
+        Concept(id="140004", name="Rash", start=24, end=27, meta_anns=[
+            MetaAnnotations(name="reactionpos", value=ReactionPos.AFTER_SUBSTANCE),
+            MetaAnnotations(name="category", value=SubstanceCategory.NOT_SUBSTANCE),
+            MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+            MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
+        ]),
+        Concept(id="832007", name="Nausea", start=50, end=55, meta_anns=[
+            MetaAnnotations(name="reactionpos", value=ReactionPos.BEFORE_SUBSTANCE),
+            MetaAnnotations(name="category", value=SubstanceCategory.NOT_SUBSTANCE),
+            MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+            MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
+        ]),
+        Concept(id="7336002", name="Paracetamol", start=83, end=93,
+                dosage=Dosage(
+                    dose=Dose(value=50, unit="mg"),
+                              duration=None,
+                              frequency=None,
+                              route=None
+                ),
+                meta_anns=[
+                    MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
+                    MetaAnnotations(name="category", value=SubstanceCategory.TAKING),
+                    MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+                    MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
+        ]),
+    ]
+
+@pytest.fixture(scope="function")
+def test_vtm_concepts() -> List[Concept]:
+    return [
+        Concept(
+            id="302007", name="Spiramycin", category=Category.MEDICATION,
+                dosage=Dosage(
+                    dose=Dose(value=10, unit="mg"),
+                    duration=None,
+                    frequency=None,
+                    route=None,
+                ),
+            ),
+        Concept(
+            id="7336002", name="Paracetamol", category=Category.MEDICATION,
+                dosage=Dosage(
+                    dose=Dose(value=50, unit="mg"),
+                    duration=None,
+                    frequency=None,
+                    route=None,
+                ),
+            ),
+        Concept(
+            id="7947003", name="Aspirin", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=None,
+                duration=None,
+                frequency=None,
+                route=Route(full_name="Oral", value="C38288"),
+            ),
+        ),
+        Concept(
+            id="6247001", name="Folic acid", category=Category.MEDICATION,
+            dosage=None
+        ),
+        Concept(
+            id="350057002", name="Selenium", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=Dose(value=50, unit="microgram"),
+                duration=None,
+                frequency=None,
+                route=None,
+            ),
+        ),
+        Concept(
+            id="350057002", name="Selenium", category=Category.MEDICATION,
+            dosage=Dosage(
+                dose=Dose(value=10, unit="microgram"),
+                duration=None,
+                frequency=None,
+                route=None,
+            ),
+        ),
     ]

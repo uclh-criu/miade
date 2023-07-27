@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, List
 
+from medcat.cat import CAT
 from medcat.vocab import Vocab
 from medcat.cdb import CDB
 from medcat.config import Config
@@ -41,3 +42,12 @@ class VocabBuilder:
     def update_vocab(self) -> Vocab:
         self.vocab.make_unigram_table()
         return self.vocab
+
+    def make_model_pack(self,
+                        cdb: CDB,
+                        save_name: str,
+                        output_dir: Path = Path.cwd()
+                        ) -> None:
+        cat = CAT(cdb=cdb, config=cdb.config, vocab=self.vocab)
+        cat.create_model_pack(str(output_dir), save_name)
+

@@ -61,14 +61,14 @@ class CDBBuilder(object):
 
         if self.snomed_subset_path is not None:
             snomed_subset = pd.read_csv(
-                self.snomed_subset_path, header=0, dtype={"cui": object}
+                str(self.snomed_subset_path), header=0, dtype={"cui": object}
             )
         else:
             snomed_subset = None
 
         if self.snomed_exclusions_path is not None:
             snomed_exclusions = pd.read_csv(
-                self.snomed_exclusions_path, sep="\n", header=None
+                str(self.snomed_exclusions_path), sep="\n", header=None
             )
             snomed_exclusions.columns = ["cui"]
         else:
@@ -78,7 +78,7 @@ class CDBBuilder(object):
         df = self.snomed.to_concept_df(
             subset_list=snomed_subset, exclusion_list=snomed_exclusions
         )
-        df.to_csv(output_file, index=False)
+        df.to_csv(str(output_file), index=False)
         return output_file
 
     def preprocess_fdb(self, output_dir: Path = Path.cwd()) -> Path:
@@ -105,7 +105,8 @@ class CDBBuilder(object):
         if self.elg_data_path:
             self.vocab_files.append(str(self.preprocess_elg(self.temp_dir)))
         if self.custom_data_paths:
-            self.vocab_files += str(self.custom_data_paths)
+            string_paths  = [str(path) for path in self.custom_data_paths]
+            self.vocab_files.extend(string_paths)
 
     def create_cdb(self) -> CDB:
         cdb = self.maker.prepare_csvs(self.vocab_files, full_build=True)

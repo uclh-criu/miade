@@ -1,158 +1,230 @@
-import re
+import os
+import sys
 import yaml
 import logging
 
 from negspacy.negation import Negex
 from pathlib import Path
-from typing import List, Dict, Optional
-from enum import Enum
+from typing import List, Optional, Dict
 
 from .concept import Concept, Category
-from .dosage import Dosage, Dose, Frequency, Duration, Route
 from .note import Note
-
-from .conceptfilter import ConceptFilter
+from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator
 from .dosageextractor import DosageExtractor
 from .utils.metaannotationstypes import SubstanceCategory
 from .utils.miade_cat import MiADE_CAT
+from .utils.modelfactory import ModelFactory
 
 log = logging.getLogger(__name__)
 
 
-def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> str:
+def create_annotator(name: str, model_factory: ModelFactory):
     """
-    Finds chunks of text that contain single dosage instructions to input into DosageProcessor
-    :param med: (Concept) medications concept
-    :param next_med: (Concept) next consecutive medication concept if there is one
-    :param text: (str) whole text
-    :return: (str) dosage text
+    Returns Annotator created from ModelFactory configs
+    :param name: (str) alias of model
+    :param model_factory: (ModelFactory) model factory loaded from config.yaml containing mapping of alias/name
+    to MedCAT model id and MiADE annotator
+    :return: Annotator
     """
-    # spit into sentences by newline and period
-    sents = (
-        re.findall(r"[^\s][^\n]+", text[med.start : next_med.start])
-        if next_med is not None
-        else re.findall(r"[^\s][^\n]+", text[med.start :])
-    )
+    name = name.lower()
+    if name not in model_factory.models:
+        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
+                         f"missing from models directory")
 
-    concept_name = text[med.start : med.end]
-    next_concept_name = text[next_med.start : next_med.end] if next_med else None
-
-    for sent in sents:
-        if next_med is not None:
-            if concept_name in sent and next_concept_name not in sent:
-                return sent
-            elif concept_name in sent and next_concept_name in sent:
-                return text[med.start : next_med.start]
-        else:
-            if concept_name in sent:
-                ind = sent.find(concept_name)
-                return sent[ind:]
+    if name in model_factory.annotators.keys():
+        return model_factory.annotators[name](model_factory.models[name])
+    else:
+        log.warning(f"Annotator {name} does not exist, loading generic Annotator")
+        return Annotator(model_factory.models[name])
 
 
 class NoteProcessor:
-    """docstring for NoteProcessor."""
-
+    """
+    Main processor of MiADE which extract, postprocesses, and deduplicates concepts given
+    annotators (MedCAT models), Note, and existing concepts
+    :param model_directory (Path) path to directory that contains medcat models and a config.yaml file
+    :param log_level (int) log level - Default - INFO
+    :param device (str) whether inference should be run on cpu or gpu - default "cpu"
+    :param custom_annotators (List[Annotators]) List of custom annotators
+    """
     def __init__(
         self,
         model_directory: Path,
-        problems_model_id: Optional[str] = None,
-        meds_allergies_model_id: Optional[str] = None,
-        use_negex: bool = True,
         log_level: int = logging.INFO,
+        device: str = "cpu",
+        custom_annotators: Optional[List[Annotator]] = None
     ):
         logging.getLogger("miade").setLevel(log_level)
-        meta_cat_config_dict = {"general": {"device": "cpu"}}
-        self.problems_model_id = problems_model_id
-        self.meds_allergies_model_id = meds_allergies_model_id
-        self.annotators = [
-            MiADE_CAT.load_model_pack(
-                str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict
-            )
-            for model_pack_filepath in model_directory.glob("*.zip")
-        ]
-        self.dosage_extractor = DosageExtractor()
-        self.concept_filter = ConceptFilter(use_negex=use_negex)
+        self.device: str = device
+
+        self.annotators: List[Annotator] = []
+        self.model_directory: Path = model_directory
+        self.model_factory: ModelFactory = self._load_model_factory(custom_annotators)
+        self.dosage_extractor: DosageExtractor = DosageExtractor()
+
+    def _load_config(self) -> Dict:
+        """
+        Loads configuration file (config.yaml) in model directory
+        :return: (Dict) config file
+        """
+        config_path = os.path.join(self.model_directory, "config.yaml")
+        if os.path.isfile(config_path):
+            log.info(f"Found config file {config_path}")
+
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        return config
+
+    def _load_model_factory(self, custom_annotators: Optional[List[Annotator]] = None) -> ModelFactory:
+        """
+        Loads model factory which maps model alias to medcat model id and miade annotator
+        :param custom_annotators (List[Annotators]) List of custom annotators to initialise
+        :return: ModelFactory object
+        """
+
+        meta_cat_config_dict = {"general": {"device": self.device}}
+        config_dict = self._load_config()
+        loaded_models = {}
+
+        # get model {id: cat_model}
+        log.info(f"Loading MedCAT models from {self.model_directory}")
+        for model_pack_filepath in self.model_directory.glob("*.zip"):
+            try:
+                cat = MiADE_CAT.load_model_pack(str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict)
+                cat_id = cat.config.version["id"]
+                loaded_models[cat_id] = cat
+            except Exception as e:
+                raise Exception(f"Error loading MedCAT models: {e}")
+
+        mapped_models = {}
+        # map to name if given {name: <class CAT>}
+        for name, model_id in config_dict["models"].items():
+            cat_model = loaded_models.get(model_id)
+            if cat_model is None:
+                log.warning(f"No match for model id {model_id} in {self.model_directory}, skipping")
+                continue
+            mapped_models[name] = cat_model
+
+        mapped_annotators = {}
+        # {name: <class Annotator>}
+        for name, annotator_string in config_dict["annotators"].items():
+            if custom_annotators is not None:
+                for annotator_class in custom_annotators:
+                    if annotator_class.__name__ == annotator_string:
+                        mapped_annotators[name] = annotator_class
+                        break
+            if name not in mapped_annotators:
+                try:
+                    annotator_class = getattr(sys.modules[__name__], annotator_string)
+                    mapped_annotators[name] = annotator_class
+                except AttributeError as e:
+                    log.warning(f"{annotator_string} not found: {e}")
+
+        model_factory_config = {"models": mapped_models,
+                                "annotators": mapped_annotators}
+
+        return ModelFactory(**model_factory_config)
+
+
+    def add_annotator(self, name: str, use_negex=False) -> None:
+        """
+        Adds annotators to processor
+        :param name: (str) alias of annotator to add
+        :param use_negex: (bool), if true, will add NegSpacy to the annotator pipeline
+        :return: None
+        """
+        try:
+            annotator = create_annotator(name, self.model_factory)
+            log.info(f"Added {type(annotator).__name__} to processor")
+        except Exception as e:
+            raise Exception(f"Error creating annotator: {e}")
 
         if use_negex:
-            log.info("Using Negex as priority for meta context detection")
-            self._add_negex_pipeline()
+            annotator.add_negex_pipeline()
+            log.info(f"Added Negex context detection for {type(annotator).__name__}")
 
-        if problems_model_id:
-            log.info(f"Configured problems model {self.problems_model_id}")
-        if meds_allergies_model_id:
-            log.info(f"Configured meds/allergies model {self.meds_allergies_model_id}")
+        self.annotators.append(annotator)
 
-    def process(
-        self, note: Note, record_concepts: Optional[List[Concept]] = None
-    ) -> List[Concept]:
+    def remove_annotator(self, name: str) -> None:
+        """
+        Removes annotators from processor
+        :param name: (str) alias of annotator to remove
+        :return: None
+        """
+        annotator_found = False
+        annotator_name = self.model_factory.annotators[name]
+
+        for annotator in self.annotators:
+            if type(annotator).__name__ == annotator_name.__name__:
+                self.annotators.remove(annotator)
+                annotator_found = True
+                log.info(f"Removed {type(annotator).__name__} from processor")
+                break
+
+        if not annotator_found:
+            log.warning(f"Annotator {type(name).__name__} not found in processor")
+
+    def print_model_cards(self):
+        for annotator in self.annotators:
+            print(f"{type(annotator).__name__}: {annotator.cat}")
+
+    def process(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+        if not self.annotators:
+            log.warning("No annotators loaded, use .add_annotator() to load annotators")
+            return []
 
         concepts: List[Concept] = []
+
         for annotator in self.annotators:
-            annotator_id = annotator.config.version["id"]
-            for entity in annotator.get_entities(note)["entities"].values():
-                try:
-                    concept = Concept.from_entity(entity)
-                    if annotator_id == self.problems_model_id:
-                        concept.category = Category.PROBLEM
-                    elif annotator_id == self.meds_allergies_model_id:
-                        if concept.meta is not None:
-                            if (
-                                concept.meta.substance_category
-                                == SubstanceCategory.ADVERSE_REACTION
-                            ):
-                                concept.category = Category.ALLERGY
-                            elif (
-                                concept.meta.substance_category
-                                == SubstanceCategory.TAKING
-                            ):
-                                concept.category = Category.MEDICATION
-                        else:
-                            # TODO: TEMPORARY BEFORE POST-PROCESSING SORTED OUT
-                            concept.category = Category.MEDICATION
-                        assert (
-                            concept.category == Category.MEDICATION or Category.ALLERGY
-                        )
-                    concepts.append(concept)
-                except ValueError as e:
-                    log.warning(f"Concept skipped: {e}")
+            if Category.MEDICATION in annotator.concept_types:
+                detected_concepts = annotator(note, record_concepts, self.dosage_extractor)
+                concepts.extend(detected_concepts)
+            else:
+                detected_concepts = annotator(note, record_concepts)
+                concepts.extend(detected_concepts)
 
-        log.debug(f"Detected concepts: {[(concept.id, concept.name, concept.category.name) for concept in concepts]}")
-        # dosage extraction
-        concepts = self.add_dosages_to_concepts(concepts, note)
-        # insert default VMP selection algorithm here
-        # post-processing
-        concepts = self.concept_filter(concepts, record_concepts)
-
-        return concepts
-
-    def _add_negex_pipeline(self) -> None:
-        for annotator in self.annotators:
-            annotator.pipe.spacy_nlp.add_pipe("sentencizer")
-            annotator.pipe.spacy_nlp.enable_pipe("sentencizer")
-            annotator.pipe.spacy_nlp.add_pipe("negex")
-
-    def add_dosages_to_concepts(
-        self, concepts: List[Concept], note: Note
-    ) -> List[Concept]:
-        """
-        Gets dosages for medication concepts
-        :param concepts: (List) list of concepts extracted
-        :param note: (Note) input note
-        :return: (List) list of concepts with dosages for medication concepts
-        """
-
-        for ind, concept in enumerate(concepts):
-            next_med_concept = (
-                concepts[ind + 1]
-                if len(concepts) > ind + 1
-                and concepts[ind + 1].category == Category.MEDICATION
-                else None
+            if detected_concepts:
+                log.debug(
+                f"{type(annotator).__name__} detected concepts: "
+                f"{[(concept.id, concept.name, concept.category) for concept in detected_concepts]}"
             )
-            if concept.category == Category.MEDICATION:
-                dosage_string = get_dosage_string(concept, next_med_concept, note.text)
-                if len(dosage_string.split()) > 2:
-                    concept.dosage = self.dosage_extractor(dosage_string)
-                    # print(concept.dosage)
 
         return concepts
+
+    def get_concept_dicts(self,
+                             note: Note,
+                             filter_uncategorized: bool = True,
+                             record_concepts: Optional[List[Concept]] = None
+                             ) -> List[Dict]:
+        """
+        Returns concepts in dictionary format
+        :param note: (Note) note containing text to extract concepts from
+        :param filter_uncategorized (bool) if True, does not return concepts where category=None, default TRUE
+        :param record_concepts: (List[Concepts] list of concepts in existing record
+        :return: List[Dict] extracted concepts in json compatible dict format
+        """
+        concepts = self.process(note, record_concepts)
+        concept_list = []
+        for concept in concepts:
+            if filter_uncategorized and concept.category is None:
+                continue
+            concept_dict = concept.__dict__
+            if concept.dosage is not None:
+                concept_dict["dosage"] = {"dose": concept.dosage.dose.dict() if concept.dosage.dose else None,
+                                          "duration": concept.dosage.duration.dict() if concept.dosage.duration else None,
+                                          "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
+                                          "route": concept.dosage.route.dict() if concept.dosage.route else None}
+            if concept.meta is not None:
+                meta_anns = []
+                for meta in concept.meta:
+                    meta_dict = meta.__dict__
+                    meta_dict["value"] = meta.value.name
+                    meta_anns.append(meta_dict)
+                concept_dict["meta"] = meta_anns
+            if concept.category is not None:
+                concept_dict["category"] = concept.category.name
+            concept_list.append(concept_dict)
+
+        return concept_list
 

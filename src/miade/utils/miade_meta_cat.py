@@ -2,6 +2,7 @@ import json
 import os
 import torch
 import pandas as pd
+import logging
 from datetime import datetime
 
 import math
@@ -15,6 +16,7 @@ from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBase
 from medcat.utils.meta_cat.data_utils import prepare_from_json, encode_category_values
 from medcat.utils.meta_cat.ml_utils import train_model
 
+logger = logging.getLogger("meta_cat")
 
 # Hacky as hell, just for the dashboard, NOT permanent solution - will not merge with main branch
 def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: torch.device, pad_id: int) -> Tuple:
@@ -251,7 +253,7 @@ class MiADE_MetaCAT(MetaCAT):
 
         if synthetic_csv_path is not None:
             synth_data_loaded = pd.read_csv(synthetic_csv_path)
-            self.log.info(
+            logger.info(
                 f"Training with additional {len(synth_data_loaded)} synthetic data points from {synthetic_csv_path}"
             )
             synth_data = prepare_from_miade_csv(
@@ -280,12 +282,12 @@ class MiADE_MetaCAT(MetaCAT):
 
         # Make sure the config number of classes is the same as the one found in the data
         if len(category_value2id) != self.config.model["nclasses"]:
-            self.log.warning(
+            logger.warning(
                 "The number of classes set in the config is not the same as the one found in the data: {} vs {}".format(
                     self.config.model["nclasses"], len(category_value2id)
                 )
             )
-            self.log.warning(
+            logger.warning(
                 "Auto-setting the nclasses value in config and rebuilding the model."
             )
             self.config.model["nclasses"] = len(category_value2id)
