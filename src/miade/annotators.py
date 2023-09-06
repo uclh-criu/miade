@@ -336,7 +336,6 @@ class MedsAllergiesAnnotator(Annotator):
             log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
                       f"({lookup_result['subsetId']} | {concept.name + tag})")
             concept.id = str(lookup_result["subsetId"])
-            concept.name += tag
 
             # then check the allergen type from lookup result - e.g. drug, food
             try:
@@ -359,7 +358,6 @@ class MedsAllergiesAnnotator(Annotator):
                       f"({lookup_result} | {concept.name + tag})")
 
             concept.id = str(lookup_result)
-            concept.name += tag
             return True
         else:
             log.warning(f"Reaction not found in subset conversion for concept {concept.__str__()}")
