@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Optional, Dict, List
 
@@ -10,6 +11,8 @@ class Category(Enum):
     MEDICATION = 2
     ALLERGY = 3
     REACTION = 4
+    SEVERITY = 5
+    ALLERGY_TYPE = 6
 
 
 class Concept(object):
@@ -19,10 +22,11 @@ class Concept(object):
         self,
         id: str,
         name: str,
-        category: Optional[Category] = None,
+        category: Optional[Enum] = None,
         start: Optional[int] = None,
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
+        linked_concepts: Optional[List[Concept]] = None,
         negex: Optional[bool] = False,
         meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
@@ -34,9 +38,13 @@ class Concept(object):
         self.start = start
         self.end = end
         self.dosage = dosage
+        self.linked_concepts = linked_concepts
         self.negex = negex
         self.meta = meta_anns
         self.debug = debug_dict
+
+        if linked_concepts is None:
+            self.linked_concepts = []
 
 
     @classmethod
@@ -48,7 +56,7 @@ class Concept(object):
 
         return Concept(
             id=entity["cui"],
-            name=entity["pretty_name"],
+            name=entity["source_value"],  # can also use detected_name which is spell checked but delimited by ~ e.g. liver~failure
             category=None,
             start=entity["start"],
             end=entity["end"],
@@ -59,7 +67,7 @@ class Concept(object):
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, negex: {self.negex}, meta: {self.meta}}} "
+            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta}}} "
         )
 
     def __hash__(self):

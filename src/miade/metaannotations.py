@@ -8,9 +8,9 @@ META_ANNS_DICT = {
     "presence": Presence,
     "relevance": Relevance,
     "laterality (generic)": Laterality,
-    "category": SubstanceCategory,
-    "reactionpos": ReactionPos,
-    "allergytype": AllergyType,
+    "substance_category": SubstanceCategory,
+    "reaction_pos": ReactionPos,
+    "allergy_type": AllergyType,
     "severity": Severity
 }
 

@@ -1,8 +1,6 @@
-import logging
-
 from miade.core import Concept, Category
-from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator
-from miade.dosage import Dose, Frequency
+from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator, calculate_word_distance
+from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
 
 def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
@@ -32,6 +30,39 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
     )
 
 
+def test_calculate_word_distance():
+    from miade.note import Note
+    note = Note("the quick broooooown fox jumped over the lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("the quick broooooownfoxjumpeed over the lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 20, 30
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    start1, end1 = 20, 30
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("thee ickbroooooownfoxesdes jumped over the lazy dog")
+    start1, end1 = 5, 25
+    start2, end2 = 10, 20
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 0
+
+    note = Note("the quick brooooooown fox jum pedoverthe lazy dog")
+    start1, end1 = 10, 20
+    start2, end2 = 30, 40
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 3
+
+    note = Note("the quick brooooooown fox jum pedover thelazydog")
+    start1, end1 = 30, 40
+    start2, end2 = 41, 55
+    assert calculate_word_distance(start1, end1, start2, end2, note) == 1
+
+
+
 def test_deduplicate(
     test_problems_medcat_model,
     test_duplicate_concepts_note,
@@ -43,8 +74,8 @@ def test_deduplicate(
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=test_duplicate_concepts_record
     ) == [
-        Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="7", name="test2", category=Category.MEDICATION),
+        Concept(id="5", name="test2", category=Category.PROBLEM),
     ]
     assert annotator.deduplicate(
         concepts=test_self_duplicate_concepts_note, record_concepts=None) == [
@@ -58,9 +89,9 @@ def test_deduplicate(
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=[]
@@ -69,9 +100,9 @@ def test_deduplicate(
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
         Concept(id="4", name="test2", category=Category.PROBLEM),
+        Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
-        Concept(id="7", name="test2", category=Category.MEDICATION),
     ]
     assert (
         annotator.deduplicate(
@@ -124,3 +155,64 @@ def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list
     assert annotator.postprocess(test_filtering_list_concepts) == [
         Concept(id="123", name="real concept", category=Category.PROBLEM),
     ]
+
+def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_with_meta_anns, test_meds_allergy_note):
+    annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
+    concepts = annotator.postprocess(test_substance_concepts_with_meta_anns, test_meds_allergy_note)
+
+    # print([concept.__str__() for concept in concepts])
+    assert concepts == [
+        Concept(id="102263004", name="Eggs (converted)", category=Category.ALLERGY),
+        Concept(id="767270007", name="Penicillin (converted)", category=Category.ALLERGY),
+        Concept(id="7336002", name="Paracetamol", category=Category.MEDICATION),
+    ]
+    assert concepts[0].linked_concepts == [
+        Concept(id="235719002", name="Food Intolerance", category=Category.ALLERGY_TYPE),
+        Concept(id="L", name="Low", category=Category.SEVERITY),
+        Concept(id="419076005", name="Rash (converted)", category=Category.REACTION),
+    ]
+    assert concepts[1].linked_concepts == [
+        Concept(id="416098002", name="Drug Allergy", category=Category.ALLERGY_TYPE),
+        Concept(id="M", name="Moderate", category=Category.SEVERITY),
+        Concept(id="419076005", name="Nausea (converted)", category=Category.REACTION),
+    ]
+    assert concepts[2].linked_concepts == []
+
+def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
+    annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
+    concepts = annotator.convert_VTM_to_VMP_or_text(test_vtm_concepts)
+
+    # print([concept.__str__() for concept in concepts])
+    assert concepts == [
+        Concept(id=None, name="SPIRAMYCIN ORAL", category=Category.MEDICATION),
+        Concept(id="376689003", name="Paracetamol 50mg tablets", category=Category.MEDICATION),
+        Concept(id=None, name="ASPIRIN ORAL", category=Category.MEDICATION),
+        Concept(id=None, name="FOLIC ACID ORAL", category=Category.MEDICATION),
+        Concept(id="7721411000001109", name="Selenium 50microgram tablets", category=Category.MEDICATION),
+        Concept(id=None, name="SELENIUM ORAL", category=Category.MEDICATION),
+    ]
+    assert concepts[0].dosage == Dosage(
+        dose=Dose(value=10, unit="mg"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
+    assert concepts[1].dosage == Dosage(
+        dose=Dose(value=1, unit="{tbl}"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
+    assert concepts[2].dosage == Dosage(
+        dose=None,
+        frequency=None,
+        duration=None,
+        route=Route(value="C38288", full_name="Oral"),
+    )
+    assert concepts[3].dosage is None
+    assert concepts[4].dosage == Dosage(
+        dose=Dose(value=1, unit="{tbl}"),
+        frequency=None,
+        duration=None,
+        route=None,
+    )
