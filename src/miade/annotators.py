@@ -11,6 +11,7 @@ from math import inf
 
 from .concept import Concept, Category
 from .note import Note
+from .paragraph import ParagraphType
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.metaannotationstypes import *
@@ -149,6 +150,68 @@ class Annotator:
                 log.warning(f"Concept skipped: {e}")
 
         return concepts
+
+    def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
+        processed_concepts: List[Concept] = []
+
+        for paragraph in note.paragraphs:
+            concept_count = 0
+            for concept in concepts:
+                if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    # concept is in paragraph
+                    if concept_count > 10:
+                        break
+                    else:
+                        processed_concepts.append(concept)
+                        concept_count += 1
+
+                    if paragraph.type == ParagraphType.prob:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                meta.value = Relevance.PRESENT
+                        # if any meds/allergy
+                            if meta.name == "substance_category":
+                                meta.value = SubstanceCategory.IRRELEVANT
+                    elif paragraph.type == ParagraphType.pmh:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                meta.value = Relevance.HISTORIC
+                        # if any meds/allergy
+                            if meta.name == "substance_category":
+                                meta.value = SubstanceCategory.IRRELEVANT
+                    elif paragraph.type == ParagraphType.imp:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                meta.value = Relevance.PRESENT
+                        # if any meds/allergy
+                            if meta.name == "substance_category":
+                                meta.value = SubstanceCategory.IRRELEVANT
+                    elif paragraph.type == ParagraphType.med:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance":
+                                meta.value = Relevance.IRRELEVANT
+                        # if any meds/allergy
+                            if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
+                                meta.value = SubstanceCategory.TAKING
+                    elif paragraph.type == ParagraphType.allergy:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance":
+                                meta.value = Relevance.IRRELEVANT
+                    elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
+                        # if problems
+                        for meta in concept.meta:
+                            if meta.name == "relevance":
+                                meta.value = Relevance.IRRELEVANT
+                        # if any meds/allergy
+                            if meta.name == "substance_category":
+                                meta.value = SubstanceCategory.IRRELEVANT
+
+        return processed_concepts
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
