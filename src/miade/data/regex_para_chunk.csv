@@ -1,0 +1,10 @@
+paragraph,regex
+prob,^(prob|probs|problem|problems|diag|diagnosis|diagnoses|issue|issues)( list|)
+pmh,^(hx|pmhx|pmh|medical background|past medical history|past med hist)
+med,^(home |current |active |outpatient |gp |current outpatient |)(med|meds|medications|drug|drugs|rx)
+allergy,^(drug |med |medication |)(allerg|allergies|allergies|allergies and intolerances|intolerances|adverse effects|adverse reactions|adverse reaction risk)
+history,^(pc|hpc|presenting complaint|history of presenting complaint|history|hist|synopsis|summary|clinical summary)
+exam,^(exam|examination|o/e|o / e|oe)
+ddx,^(diff|differential|differential diagnosis|ddx)
+imp,^(imp|impression|diagnosis|formulation|diag|dx)
+plan,^(plan|recommendations|recommendation|action|actions|goal|goals|advice|decision)

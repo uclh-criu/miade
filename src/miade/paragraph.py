@@ -1,18 +1,17 @@
-from typing import Optional
 from enum import Enum
 
 
 class ParagraphType(Enum):
-    prob = 1
-    pmh = 2
-    imp = 3
-    med = 4
-    allergy = 5
-    history = 6
-    exam = 7
-    ddx = 8
-    plan = 9
-    prose = 0
+    prob = "prob"
+    pmh = "pmh"
+    imp = "imp"
+    med = "med"
+    allergy = "allergy"
+    history = "history"
+    exam = "exam"
+    ddx = "ddx"
+    plan = "plan"
+    prose = "prose"
 
 
 class Paragraph(object):
@@ -22,3 +21,6 @@ class Paragraph(object):
         self.type = type
         self.start = start
         self.end = end
+
+    def __str__(self):
+        return str(self.__dict__)
