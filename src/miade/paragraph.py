@@ -24,3 +24,10 @@ class Paragraph(object):
 
     def __str__(self):
         return str(self.__dict__)
+
+    def __eq__(self, other):
+        return (
+            self.type == other.type
+            and self.start == other.start
+            and self.end == other.end
+        )

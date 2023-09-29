@@ -194,6 +194,9 @@ class Annotator:
                                 if meta.name == "substance_category":
                                     meta.value = SubstanceCategory.IRRELEVANT
 
+
+            # print(len(prob_concepts))
+
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
             return prob_concepts

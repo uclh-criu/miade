@@ -46,8 +46,11 @@ class Note(object):
         # Replace all types of spaces with a single normal space, preserving "\n"
         self.text = re.sub(r'(?:(?!\n)\s)+', ' ', self.text)
 
-        # Remove all punctuation except full stops, question marks, and line breaks
-        self.text = re.sub(r'[^\w\s.?\n]', '', self.text)
+        # Remove en dashes that are not between two numbers
+        self.text = re.sub(r'(?<![0-9])-(?![0-9])', '', self.text)
+
+        # Remove all punctuation except full stops, question marks, dash and line breaks
+        self.text = re.sub(r'[^\w\s.,?\n-]', '', self.text)
 
         # Remove spaces if the entire line (between two line breaks) is just spaces
         self.text = re.sub(r'(?<=\n)\s+(?=\n)', '', self.text)
@@ -67,9 +70,12 @@ class Note(object):
             if match:
                 heading = match.group(1)
                 body = match.group(2)
+                if body == "":
+                    body = heading
+                    heading = ""
             else:
-                heading=None
-                body=text
+                heading = ""
+                body = text
 
             end = start + len(text)
             paragraph = Paragraph(heading=heading, body=body, type=paragraph_type, start=start, end=end)
