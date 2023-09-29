@@ -162,19 +162,19 @@ def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_
 
     # print([concept.__str__() for concept in concepts])
     assert concepts == [
-        Concept(id="102263004", name="Eggs (converted)", category=Category.ALLERGY),
-        Concept(id="767270007", name="Penicillin (converted)", category=Category.ALLERGY),
+        Concept(id="102263004", name="Eggs", category=Category.ALLERGY),
+        Concept(id="767270007", name="Penicillin", category=Category.ALLERGY),
         Concept(id="7336002", name="Paracetamol", category=Category.MEDICATION),
     ]
     assert concepts[0].linked_concepts == [
         Concept(id="235719002", name="Food Intolerance", category=Category.ALLERGY_TYPE),
         Concept(id="L", name="Low", category=Category.SEVERITY),
-        Concept(id="419076005", name="Rash (converted)", category=Category.REACTION),
+        Concept(id="419076005", name="Rash", category=Category.REACTION),
     ]
     assert concepts[1].linked_concepts == [
         Concept(id="416098002", name="Drug Allergy", category=Category.ALLERGY_TYPE),
         Concept(id="M", name="Moderate", category=Category.SEVERITY),
-        Concept(id="419076005", name="Nausea (converted)", category=Category.REACTION),
+        Concept(id="419076005", name="Nausea", category=Category.REACTION),
     ]
     assert concepts[2].linked_concepts == []
 
