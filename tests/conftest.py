@@ -46,6 +46,193 @@ def test_duplicated_note() -> Note:
              "paracetamol 500mg oral tablets. decrease paracetamol 500mg oral tablets dosage."
     )
 
+@pytest.fixture(scope="function")
+def test_clean_and_paragraphing_note() -> Note:
+    return Note("""
+    This is an example of text with various types of spaces: 
+\tTabs,    \u00A0Non-breaking spaces, \u2003Em spaces, \u2002En spaces.
+Some lines may contain only punctuation and spaces, like this:
+    !?  ...  - -- ???
+    \n
+But others may have meaningful content. Detecting ?=suspected in this sentence.
+
+Test Paragraph Chunking:
+some prose here
+Penicillin
+
+PMH:
+Penicillin
+Penicillin
+
+Current meds:
+Penicillin 500mg tablets 2 tabs qds prn
+Penicillin
+
+Allergies:
+Penicillin - rash
+Penicillin
+
+Problems:
+Penicillin
+Penicillin
+
+Plan
+Penicillin
+Penicillin
+
+imp::
+Penicillin
+    """)
+
+@pytest.fixture(scope="function")
+def test_paragraph_chunking_concepts() -> List[Concept]:
+    return [
+        # prose
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=304,
+            end=314,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        # pmh
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=320,
+            end=330,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
+            ],
+        ),
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=331,
+            end=341,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
+            ],
+        ),
+        # meds
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=356,
+            end=366,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
+            ],
+        ),
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=396,
+            end=406,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        # allergies
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=418,
+            end=428,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=435,
+            end=445,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+        # probs
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=456,
+            end=466,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
+            ],
+        ),
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=467,
+            end=477,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+        # plan
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=484,
+            end=494,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=495,
+            end=505,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+        # imp
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=511,
+            end=521,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+    ]
 
 @pytest.fixture(scope="function")
 def temp_dir() -> Path:
