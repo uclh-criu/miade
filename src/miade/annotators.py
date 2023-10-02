@@ -135,6 +135,7 @@ class Annotator:
     def __init__(self, cat: MiADE_CAT):
         self.cat = cat
         self.concept_types = []
+        self.pipeline = []
 
     def add_negex_pipeline(self) -> None:
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
@@ -157,41 +158,69 @@ class Annotator:
         for paragraph in note.paragraphs:
             for concept in concepts:
                 if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
                     if concept.meta is not None:
                         if paragraph.type == ParagraphType.prob or paragraph.type == ParagraphType.imp:
                             prob_concepts.append(concept)
                             # problem is present and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.PRESENT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = Relevance.PRESENT
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.pmh:
                             prob_concepts.append(concept)
                             # problem is historic and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.HISTORIC} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = Relevance.HISTORIC
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.med:
                             # problem is irrelevant and allergy is taking
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.TAKING} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.TAKING
                         elif paragraph.type == ParagraphType.allergy:
                             # problem is irrelevant and allergy is as is
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                         elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
                             # problem is irrelevant and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.name} | {concept.id}) "
+                                              f"because paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
 
 
@@ -199,6 +228,8 @@ class Annotator:
 
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
+            log.debug(f"Ignoring concepts elsewhere in the document because total prob "
+                      f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}")
             return prob_concepts
         else:
             return concepts
@@ -273,13 +304,12 @@ class ProblemsAnnotator(Annotator):
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
-        negex = hasattr(concept, "negex")
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
         convert = False
         tag = ""
         # only get meta model results if negex is false
-        if negex:
+        if concept.negex is not None:
             if concept.negex:
                 convert = self.negated_lookup.get(int(concept.id), False)
                 tag = " (negated)"
@@ -309,7 +339,7 @@ class ProblemsAnnotator(Annotator):
                 log.debug(
                     f"Filtered concept ({concept.id} | {concept.name}): negation (negex) with no conversion match")
                 return None
-            if not negex and Presence.NEGATED in meta_ann_values:
+            if concept.negex is None and Presence.NEGATED in meta_ann_values:
                 log.debug(
                     f"Filtered concept ({concept.id} | {concept.name}): negation (meta model) with no conversion match")
                 return None
