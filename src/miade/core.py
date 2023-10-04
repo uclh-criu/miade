@@ -13,6 +13,7 @@ from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
+from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def create_annotator(name: str, model_factory: ModelFactory):
                          f"missing from models directory")
 
     if name in model_factory.annotators.keys():
-        return model_factory.annotators[name](model_factory.models[name])
+        return model_factory.annotators[name](cat=model_factory.models.get(name), config=model_factory.configs.get(name))
     else:
         log.warning(f"Annotator {name} does not exist, loading generic Annotator")
         return Annotator(model_factory.models[name])
@@ -49,6 +50,7 @@ class NoteProcessor:
     def __init__(
         self,
         model_directory: Path,
+        model_config_path: Path = None,
         log_level: int = logging.INFO,
         dosage_extractor_log_level: int = logging.INFO,
         device: str = "cpu",
@@ -62,17 +64,25 @@ class NoteProcessor:
 
         self.annotators: List[Annotator] = []
         self.model_directory: Path = model_directory
+        self.model_config_path: Path = model_config_path
         self.model_factory: ModelFactory = self._load_model_factory(custom_annotators)
         self.dosage_extractor: DosageExtractor = DosageExtractor()
 
     def _load_config(self) -> Dict:
         """
-        Loads configuration file (config.yaml) in model directory
+        Loads configuration file (config.yaml) in configured model path, default to model directory if not
+        passed explicitly
         :return: (Dict) config file
         """
-        config_path = os.path.join(self.model_directory, "config.yaml")
+        if self.model_config_path is None:
+            config_path = os.path.join(self.model_directory, "config.yaml")
+        else:
+            config_path = self.model_config_path
+
         if os.path.isfile(config_path):
             log.info(f"Found config file {config_path}")
+        else:
+            log.error(f"No model config file found at {config_path}")
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
@@ -82,6 +92,7 @@ class NoteProcessor:
     def _load_model_factory(self, custom_annotators: Optional[List[Annotator]] = None) -> ModelFactory:
         """
         Loads model factory which maps model alias to medcat model id and miade annotator
+        There could be a less redundant way to structure the model configs - for now, if it ain't broke...
         :param custom_annotators (List[Annotators]) List of custom annotators to initialise
         :return: ModelFactory object
         """
@@ -124,30 +135,29 @@ class NoteProcessor:
                 except AttributeError as e:
                     log.warning(f"{annotator_string} not found: {e}")
 
+        mapped_configs = {}
+        # map to name if given {name: <class Config>}
+        for name, config in config_dict["general"].items():
+            mapped_configs[name] = AnnotatorConfig(**config)
+
         model_factory_config = {"models": mapped_models,
-                                "annotators": mapped_annotators}
+                                "annotators": mapped_annotators,
+                                "configs": mapped_configs}
 
         return ModelFactory(**model_factory_config)
 
 
-    def add_annotator(self, name: str, use_negex=False) -> None:
+    def add_annotator(self, name: str) -> None:
         """
         Adds annotators to processor
         :param name: (str) alias of annotator to add
-        :param use_negex: (bool), if true, will add NegSpacy to the annotator pipeline
         :return: None
         """
         try:
             annotator = create_annotator(name, self.model_factory)
-            log.info(f"Added {type(annotator).__name__} to processor")
+            log.info(f"Added {type(annotator).__name__} to processor with config {self.model_factory.configs.get(name)}")
         except Exception as e:
             raise Exception(f"Error creating annotator: {e}")
-
-        log.info(f"Negation detection mode: {use_negex}")
-
-        if use_negex:
-            annotator.add_negex_pipeline()
-            log.info(f"Added Negex pipeline to {type(annotator).__name__}")
 
         self.annotators.append(annotator)
 

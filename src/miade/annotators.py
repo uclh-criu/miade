@@ -9,12 +9,14 @@ from collections import OrderedDict
 from copy import deepcopy
 from math import inf
 
+from medcat.cat import CAT
+
 from .concept import Concept, Category
 from .note import Note
 from .paragraph import ParagraphType
 from .dosageextractor import DosageExtractor
-from .utils.miade_cat import MiADE_CAT
 from .utils.metaannotationstypes import *
+from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -132,12 +134,17 @@ class Annotator:
     Docstring for Annotator
     """
     # TODO: Create abstract class methods for easier unit testing
-    def __init__(self, cat: MiADE_CAT):
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         self.cat = cat
+        self.config = config if config is not None else AnnotatorConfig()
+
         self.concept_types = []
         self.pipeline = []
 
-    def add_negex_pipeline(self) -> None:
+        if self.config.negation_detection == "negex":
+            self._add_negex_pipeline()
+
+    def _add_negex_pipeline(self) -> None:
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
@@ -152,6 +159,13 @@ class Annotator:
                 log.warning(f"Concept skipped: {e}")
 
         return concepts
+    @staticmethod
+    def preprocess(note: Note) -> Note:
+        note.clean_text()
+        note.get_paragraphs()
+
+        return note
+
     @staticmethod
     def process_paragraphs(note: Note, concepts: List[Concept]) -> List[Concept]:
         prob_concepts: List[Concept] = []
@@ -292,13 +306,22 @@ class Annotator:
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
     ):
-        return self.deduplicate(self.get_concepts(note), record_concepts)
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
+        concepts = self.get_concepts(note)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
+
+        return concepts
 
 
 class ProblemsAnnotator(Annotator):
-    def __init__(self, cat: MiADE_CAT):
-        super().__init__(cat)
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
+        super().__init__(cat, config)
         self.concept_types = [Category.PROBLEM]
+        self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
 
         self.negated_lookup = load_lookup_data("./data/negated.csv", as_dict=True)
         self.historic_lookup = load_lookup_data("./data/historic.csv", as_dict=True)
@@ -396,18 +419,30 @@ class ProblemsAnnotator(Annotator):
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
     ):
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
         concepts = self.get_concepts(note)
-        concepts = self.process_paragraphs(note, concepts)
-        concepts = self.postprocess(concepts)
-        concepts = self.deduplicate(concepts, record_concepts)
+
+        if "paragrapher" not in self.config.disable:
+            concepts = self.process_paragraphs(note, concepts)
+
+        if "postprocessor" not in self.config.disable:
+            concepts = self.postprocess(concepts)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts
 
 
 class MedsAllergiesAnnotator(Annotator):
-    def __init__(self, cat: MiADE_CAT):
-        super().__init__(cat)
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
+        super().__init__(cat, config)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
+        self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "dosage_extractor",
+                         "vtm_converter", "deduplicator"]
+
         # load the lookup data
         self.valid_meds = load_lookup_data("./data/valid_meds.csv", no_header=True)
         self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv", as_dict=True)
@@ -648,12 +683,24 @@ class MedsAllergiesAnnotator(Annotator):
         record_concepts: Optional[List[Concept]] = None,
         dosage_extractor: Optional[DosageExtractor] = None
     ):
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
         concepts = self.get_concepts(note)
-        concepts = self.process_paragraphs(note, concepts)
-        concepts = self.postprocess(concepts, note)
-        if dosage_extractor is not None:
+
+        if "paragrapher" not in self.config.disable:
+            concepts = self.process_paragraphs(note, concepts)
+
+        if "postprocessor" not in self.config.disable:
+            concepts = self.postprocess(concepts, note)
+
+        if dosage_extractor is not None and "dosage_extractor" not in self.config.disable:
             concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-        concepts = self.convert_VTM_to_VMP_or_text(concepts)
-        concepts = self.deduplicate(concepts, record_concepts)
+
+        if "VTM_convertor" not in self.config.disable:
+            concepts = self.convert_VTM_to_VMP_or_text(concepts)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts
