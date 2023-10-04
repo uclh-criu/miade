@@ -27,7 +27,7 @@ def create_annotator(name: str, model_factory: ModelFactory):
     """
     name = name.lower()
     if name not in model_factory.models:
-        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
+        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in config.yaml or "
                          f"missing from models directory")
 
     if name in model_factory.annotators.keys():
@@ -50,10 +50,14 @@ class NoteProcessor:
         self,
         model_directory: Path,
         log_level: int = logging.INFO,
+        dosage_extractor_log_level: int = logging.INFO,
         device: str = "cpu",
         custom_annotators: Optional[List[Annotator]] = None
     ):
         logging.getLogger("miade").setLevel(log_level)
+        logging.getLogger("miade.dosageextractor").setLevel(dosage_extractor_log_level)
+        logging.getLogger("miade.drugdoseade").setLevel(dosage_extractor_log_level)
+
         self.device: str = device
 
         self.annotators: List[Annotator] = []
@@ -139,9 +143,11 @@ class NoteProcessor:
         except Exception as e:
             raise Exception(f"Error creating annotator: {e}")
 
+        log.info(f"Negation detection mode: {use_negex}")
+
         if use_negex:
             annotator.add_negex_pipeline()
-            log.info(f"Added Negex context detection for {type(annotator).__name__}")
+            log.info(f"Added Negex pipeline to {type(annotator).__name__}")
 
         self.annotators.append(annotator)
 
@@ -176,18 +182,13 @@ class NoteProcessor:
         concepts: List[Concept] = []
 
         for annotator in self.annotators:
+            log.debug(f"Processing concepts with {type(annotator).__name__}")
             if Category.MEDICATION in annotator.concept_types:
                 detected_concepts = annotator(note, record_concepts, self.dosage_extractor)
                 concepts.extend(detected_concepts)
             else:
                 detected_concepts = annotator(note, record_concepts)
                 concepts.extend(detected_concepts)
-
-            if detected_concepts:
-                log.debug(
-                f"{type(annotator).__name__} detected concepts: "
-                f"{[(concept.id, concept.name, concept.category) for concept in detected_concepts]}"
-            )
 
         return concepts
 

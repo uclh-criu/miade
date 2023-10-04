@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 class DosageExtractor:
     """
     Parses and extracts drug dosage
-    LIMeADE - Long Instruction Medication AI Data Extractor??
     """
 
     def __init__(self, model: str = "en_core_med7_lg"):
@@ -45,8 +44,6 @@ class DosageExtractor:
         :param calculate: (bool) whether to calculate duration from total and daily dose, if given
         :return: dosage: (Dosage) dosage object with parsed dosages in CDA format
         """
-        log.debug(f"Processing dose string: {text}")
-
         doc = self.dosage_extractor(text)
 
         log.debug(
