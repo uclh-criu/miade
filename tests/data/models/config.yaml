@@ -1,0 +1,15 @@
+models:
+  problems: df349473b9d260a9
+  meds/allergies: 75e13bf042cc55b8
+  custom: 75e13bf042cc55b8
+annotators:
+  problems: ProblemsAnnotator
+  meds/allergies: MedsAllergiesAnnotator
+  custom: CustomAnnotator
+general:
+  problems:
+    negation_detection: negex  # negex or metacat or none
+    disable: []
+  meds/allergies:
+    negation_detection: None
+    disable: []

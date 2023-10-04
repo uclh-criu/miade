@@ -381,9 +381,7 @@ class ProblemsAnnotator(Annotator):
             if Relevance.IRRELEVANT in meta_ann_values:
                 log.debug(f"Removed concept ({concept.id} | {concept.name}): irrelevant concept")
                 return None
-            if Relevance.HISTORIC in meta_ann_values:
-                log.debug(f"Removed concept ({concept.id} | {concept.name}): historic with no conversion match")
-                return None
+
 
         concept.category = Category.PROBLEM
 
