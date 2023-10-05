@@ -113,32 +113,43 @@ class NoteProcessor:
 
         mapped_models = {}
         # map to name if given {name: <class CAT>}
-        for name, model_id in config_dict["models"].items():
-            cat_model = loaded_models.get(model_id)
-            if cat_model is None:
-                log.warning(f"No match for model id {model_id} in {self.model_directory}, skipping")
-                continue
-            mapped_models[name] = cat_model
+        if "models" in config_dict:
+            for name, model_id in config_dict["models"].items():
+                cat_model = loaded_models.get(model_id)
+                if cat_model is None:
+                    log.warning(f"No match for model id {model_id} in {self.model_directory}, skipping")
+                    continue
+                mapped_models[name] = cat_model
+        else:
+            log.warning(f"No model ids configured!")
 
         mapped_annotators = {}
         # {name: <class Annotator>}
-        for name, annotator_string in config_dict["annotators"].items():
-            if custom_annotators is not None:
-                for annotator_class in custom_annotators:
-                    if annotator_class.__name__ == annotator_string:
+        if "annotators" in config_dict:
+            for name, annotator_string in config_dict["annotators"].items():
+                if custom_annotators is not None:
+                    for annotator_class in custom_annotators:
+                        if annotator_class.__name__ == annotator_string:
+                            mapped_annotators[name] = annotator_class
+                            break
+                if name not in mapped_annotators:
+                    try:
+                        annotator_class = getattr(sys.modules[__name__], annotator_string)
                         mapped_annotators[name] = annotator_class
-                        break
-            if name not in mapped_annotators:
-                try:
-                    annotator_class = getattr(sys.modules[__name__], annotator_string)
-                    mapped_annotators[name] = annotator_class
-                except AttributeError as e:
-                    log.warning(f"{annotator_string} not found: {e}")
+                    except AttributeError as e:
+                        log.warning(f"{annotator_string} not found: {e}")
+        else:
+            log.warning(f"No annotators configured!")
 
         mapped_configs = {}
-        # map to name if given {name: <class Config>}
-        for name, config in config_dict["general"].items():
-            mapped_configs[name] = AnnotatorConfig(**config)
+        if "general" in config_dict:
+            for name, config in config_dict["general"].items():
+                try:
+                    mapped_configs[name] = AnnotatorConfig(**config)
+                except Exception as e:
+                    log.error(f"Error processing config for '{name}': {str(e)}")
+        else:
+            log.warning("No general settings configured, using default settings.")
 
         model_factory_config = {"models": mapped_models,
                                 "annotators": mapped_annotators,
