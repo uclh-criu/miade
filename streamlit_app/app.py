@@ -43,14 +43,20 @@ def load_csv_data(csv_path):
 
 @st.cache_data
 def get_label_counts(name, train, synth):
-    real_counts = train[name].value_counts().to_dict()
-    synthetic_counts = synth[name].value_counts().to_dict()
+    real_counts = {}
+    synthetic_counts = {}
+    real_labels = train.get(name)
+    synthetic_labels = synth.get(name)
+    if real_labels is not None:
+        real_counts = real_labels.value_counts().to_dict()
+    if synthetic_labels is not None:
+        synthetic_counts = synthetic_labels.value_counts().to_dict()
     return real_counts, synthetic_counts
 
 @st.cache_data
 def get_chart_data(labels, label_count, synth_add_count):
     return pd.DataFrame(
-        {"real": [label_count[labels[i]] for i in range(len(labels))],
+        {"real": [label_count.get(labels[i], 0) for i in range(len(labels))],
          "synthetic": synth_add_count.values()},
         index=category_labels)
 
@@ -99,7 +105,7 @@ st.set_page_config(
 )
 st.title("🖱️ MiADE Training Dashboard")
 st.write(
-    """Train, test, and experiment with MedCAT models used in MiADE"""
+    """Hello! Train, test, and experiment with MedCAT models used in MiADE"""
 )
 
 
@@ -243,7 +249,10 @@ with tab1:
             real_label_counts, synthetic_label_counts = get_label_counts(
                 model_name, train_data_df, all_synth_df
             )
-            max_class = max(real_label_counts.values())
+            if real_label_counts:
+                max_class = max(real_label_counts.values())
+            else:
+                max_class = 0
 
             assert len(category_labels) > 0
             assert set(category_labels).issubset(list(synthetic_label_counts.keys()))
@@ -252,8 +261,8 @@ with tab1:
             for i in range(len(category_labels)):
                 synth_add_dict[category_labels[i]] = st.slider(category_labels[i] + " (synthetic)",
                                                                min_value=0,
-                                                               max_value=synthetic_label_counts[category_labels[i]],
-                                                               value=max_class - real_label_counts[category_labels[i]])
+                                                               max_value=synthetic_label_counts.get(category_labels[i], 0),
+                                                               value=max_class - real_label_counts.get(category_labels[i], 0))
     with col2:
         st.markdown("**Visualise** the ratio of real and synthetic in your overall training set:")
         if mc is not None:
@@ -285,9 +294,19 @@ with tab1:
                 if class_weights:
                     weights = []
                     for label in mc.config.general["category_value2id"].keys():
-                        train_count = train_data_df[model_name].value_counts().to_dict()
-                        synth_count = synth_train_df[model_name].value_counts().to_dict()
-                        total_count = len(train_data_df) + len(synth_train_df)
+                        train_count = {}
+                        synth_count = {}
+                        train_data_column = train_data_df.get(model_name)
+                        synth_data_column = synth_train_df.get(model_name)
+                        if train_data_column is not None:
+                            train_count = train_data_column.value_counts().to_dict()
+                        if synth_data_column is not None:
+                            synth_count = synth_data_column.value_counts().to_dict()
+                        if not train_count:
+                            train_length = 1  #min. num data in json
+                        else:
+                            train_length = len(train_data_df)
+                        total_count = train_length + len(synth_train_df)
                         class_count = train_count.get(label, 0) + synth_count.get(label, 0)
                         weight = 1 - (class_count / total_count)
                         weights.append(weight)
