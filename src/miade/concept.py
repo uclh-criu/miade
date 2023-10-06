@@ -27,7 +27,7 @@ class Concept(object):
         end: Optional[int] = None,
         dosage: Optional[Dosage] = None,
         linked_concepts: Optional[List[Concept]] = None,
-        negex: Optional[bool] = False,
+        negex: Optional[bool] = None,
         meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
     ):
@@ -58,7 +58,7 @@ class Concept(object):
             category=None,
             start=entity["start"],
             end=entity["end"],
-            negex=entity["negex"] if "negex" in entity else False,
+            negex=entity["negex"] if "negex" in entity else None,
             meta_anns=meta_anns,
         )
 

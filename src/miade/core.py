@@ -14,6 +14,7 @@ from .dosageextractor import DosageExtractor
 from .utils.metaannotationstypes import SubstanceCategory
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
+from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -28,11 +29,11 @@ def create_annotator(name: str, model_factory: ModelFactory):
     """
     name = name.lower()
     if name not in model_factory.models:
-        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in Config.yaml or "
+        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in config.yaml or "
                          f"missing from models directory")
 
     if name in model_factory.annotators.keys():
-        return model_factory.annotators[name](model_factory.models[name])
+        return model_factory.annotators[name](cat=model_factory.models.get(name), config=model_factory.configs.get(name))
     else:
         log.warning(f"Annotator {name} does not exist, loading generic Annotator")
         return Annotator(model_factory.models[name])
@@ -50,26 +51,39 @@ class NoteProcessor:
     def __init__(
         self,
         model_directory: Path,
+        model_config_path: Path = None,
         log_level: int = logging.INFO,
+        dosage_extractor_log_level: int = logging.INFO,
         device: str = "cpu",
         custom_annotators: Optional[List[Annotator]] = None
     ):
         logging.getLogger("miade").setLevel(log_level)
+        logging.getLogger("miade.dosageextractor").setLevel(dosage_extractor_log_level)
+        logging.getLogger("miade.drugdoseade").setLevel(dosage_extractor_log_level)
+
         self.device: str = device
 
         self.annotators: List[Annotator] = []
         self.model_directory: Path = model_directory
+        self.model_config_path: Path = model_config_path
         self.model_factory: ModelFactory = self._load_model_factory(custom_annotators)
         self.dosage_extractor: DosageExtractor = DosageExtractor()
 
     def _load_config(self) -> Dict:
         """
-        Loads configuration file (config.yaml) in model directory
+        Loads configuration file (config.yaml) in configured model path, default to model directory if not
+        passed explicitly
         :return: (Dict) config file
         """
-        config_path = os.path.join(self.model_directory, "config.yaml")
+        if self.model_config_path is None:
+            config_path = os.path.join(self.model_directory, "config.yaml")
+        else:
+            config_path = self.model_config_path
+
         if os.path.isfile(config_path):
             log.info(f"Found config file {config_path}")
+        else:
+            log.error(f"No model config file found at {config_path}")
 
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
@@ -79,6 +93,7 @@ class NoteProcessor:
     def _load_model_factory(self, custom_annotators: Optional[List[Annotator]] = None) -> ModelFactory:
         """
         Loads model factory which maps model alias to medcat model id and miade annotator
+        There could be a less redundant way to structure the model configs - for now, if it ain't broke...
         :param custom_annotators (List[Annotators]) List of custom annotators to initialise
         :return: ModelFactory object
         """
@@ -99,50 +114,62 @@ class NoteProcessor:
 
         mapped_models = {}
         # map to name if given {name: <class CAT>}
-        for name, model_id in config_dict["models"].items():
-            cat_model = loaded_models.get(model_id)
-            if cat_model is None:
-                log.warning(f"No match for model id {model_id} in {self.model_directory}, skipping")
-                continue
-            mapped_models[name] = cat_model
+        if "models" in config_dict:
+            for name, model_id in config_dict["models"].items():
+                cat_model = loaded_models.get(model_id)
+                if cat_model is None:
+                    log.warning(f"No match for model id {model_id} in {self.model_directory}, skipping")
+                    continue
+                mapped_models[name] = cat_model
+        else:
+            log.warning(f"No model ids configured!")
 
         mapped_annotators = {}
         # {name: <class Annotator>}
-        for name, annotator_string in config_dict["annotators"].items():
-            if custom_annotators is not None:
-                for annotator_class in custom_annotators:
-                    if annotator_class.__name__ == annotator_string:
+        if "annotators" in config_dict:
+            for name, annotator_string in config_dict["annotators"].items():
+                if custom_annotators is not None:
+                    for annotator_class in custom_annotators:
+                        if annotator_class.__name__ == annotator_string:
+                            mapped_annotators[name] = annotator_class
+                            break
+                if name not in mapped_annotators:
+                    try:
+                        annotator_class = getattr(sys.modules[__name__], annotator_string)
                         mapped_annotators[name] = annotator_class
-                        break
-            if name not in mapped_annotators:
+                    except AttributeError as e:
+                        log.warning(f"{annotator_string} not found: {e}")
+        else:
+            log.warning(f"No annotators configured!")
+
+        mapped_configs = {}
+        if "general" in config_dict:
+            for name, config in config_dict["general"].items():
                 try:
-                    annotator_class = getattr(sys.modules[__name__], annotator_string)
-                    mapped_annotators[name] = annotator_class
-                except AttributeError as e:
-                    log.warning(f"{annotator_string} not found: {e}")
+                    mapped_configs[name] = AnnotatorConfig(**config)
+                except Exception as e:
+                    log.error(f"Error processing config for '{name}': {str(e)}")
+        else:
+            log.warning("No general settings configured, using default settings.")
 
         model_factory_config = {"models": mapped_models,
-                                "annotators": mapped_annotators}
+                                "annotators": mapped_annotators,
+                                "configs": mapped_configs}
 
         return ModelFactory(**model_factory_config)
 
 
-    def add_annotator(self, name: str, use_negex=False) -> None:
+    def add_annotator(self, name: str) -> None:
         """
         Adds annotators to processor
         :param name: (str) alias of annotator to add
-        :param use_negex: (bool), if true, will add NegSpacy to the annotator pipeline
         :return: None
         """
         try:
             annotator = create_annotator(name, self.model_factory)
-            log.info(f"Added {type(annotator).__name__} to processor")
+            log.info(f"Added {type(annotator).__name__} to processor with config {self.model_factory.configs.get(name)}")
         except Exception as e:
             raise Exception(f"Error creating annotator: {e}")
-
-        if use_negex:
-            annotator.add_negex_pipeline()
-            log.info(f"Added Negex context detection for {type(annotator).__name__}")
 
         self.annotators.append(annotator)
 
@@ -177,18 +204,13 @@ class NoteProcessor:
         concepts: List[Concept] = []
 
         for annotator in self.annotators:
+            log.debug(f"Processing concepts with {type(annotator).__name__}")
             if Category.MEDICATION in annotator.concept_types:
                 detected_concepts = annotator(note, record_concepts, self.dosage_extractor)
                 concepts.extend(detected_concepts)
             else:
                 detected_concepts = annotator(note, record_concepts)
                 concepts.extend(detected_concepts)
-
-            if detected_concepts:
-                log.debug(
-                f"{type(annotator).__name__} detected concepts: "
-                f"{[(concept.id, concept.name, concept.category) for concept in detected_concepts]}"
-            )
 
         return concepts
 

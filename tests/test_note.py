@@ -6,10 +6,8 @@ from miade.utils.metaannotationstypes import *
 
 def test_note(model_directory_path, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):
 
-    processor = NoteProcessor(model_directory_path)
-
-    # processor.add_annotator("problems", use_negex=True)
-    processor.add_annotator("meds/allergies")
+    test_clean_and_paragraphing_note.clean_text()
+    test_clean_and_paragraphing_note.get_paragraphs()
 
     # for paragraph in test_clean_and_paragraphing_note.paragraphs:
     #     print(paragraph)
@@ -25,6 +23,9 @@ def test_note(model_directory_path, test_clean_and_paragraphing_note, test_parag
         Paragraph(heading="", body="", type=ParagraphType.plan, start=479, end=505),
         Paragraph(heading="", body="", type=ParagraphType.imp, start=507, end=523),
     ]
+
+    processor = NoteProcessor(model_directory_path)
+    processor.add_annotator("meds/allergies")
 
     concepts = processor.annotators[0].process_paragraphs(
         test_clean_and_paragraphing_note,

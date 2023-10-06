@@ -130,6 +130,11 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
             name="Endophthalmitis (historic)",
             category=Category.PROBLEM,
         ),  # negex false, meta processed
+        Concept(
+            id="0000",
+            name="historic concept",
+            category=Category.PROBLEM,
+        ),
     ]
     # test just using negex for negation
     test_meta_annotations_concepts[0].negex = True
@@ -147,6 +152,8 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
         Concept(
             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
         ),  # negex false, meta processed
+        Concept(id="0000", name="historic concept", category=Category.PROBLEM
+        ),  # historic with no conversion
     ]
 
 
