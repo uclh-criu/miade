@@ -11,6 +11,7 @@ from math import inf
 
 from .concept import Concept, Category
 from .note import Note
+from .paragraph import ParagraphType
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.metaannotationstypes import *
@@ -149,6 +150,59 @@ class Annotator:
                 log.warning(f"Concept skipped: {e}")
 
         return concepts
+    @staticmethod
+    def process_paragraphs(note: Note, concepts: List[Concept]) -> List[Concept]:
+        prob_concepts: List[Concept] = []
+
+        for paragraph in note.paragraphs:
+            for concept in concepts:
+                if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    if concept.meta is not None:
+                        if paragraph.type == ParagraphType.prob or paragraph.type == ParagraphType.imp:
+                            prob_concepts.append(concept)
+                            # problem is present and allergy is irrelevant
+                            for meta in concept.meta:
+                                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    meta.value = Relevance.PRESENT
+                                if meta.name == "substance_category":
+                                    meta.value = SubstanceCategory.IRRELEVANT
+                        elif paragraph.type == ParagraphType.pmh:
+                            prob_concepts.append(concept)
+                            # problem is historic and allergy is irrelevant
+                            for meta in concept.meta:
+                                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    meta.value = Relevance.HISTORIC
+                                if meta.name == "substance_category":
+                                    meta.value = SubstanceCategory.IRRELEVANT
+                        elif paragraph.type == ParagraphType.med:
+                            # problem is irrelevant and allergy is taking
+                            for meta in concept.meta:
+                                if meta.name == "relevance":
+                                    meta.value = Relevance.IRRELEVANT
+                                if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
+                                    meta.value = SubstanceCategory.TAKING
+                        elif paragraph.type == ParagraphType.allergy:
+                            # problem is irrelevant and allergy is as is
+                            for meta in concept.meta:
+                                if meta.name == "relevance":
+                                    meta.value = Relevance.IRRELEVANT
+                        elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
+                            # problem is irrelevant and allergy is irrelevant
+                            for meta in concept.meta:
+                                if meta.name == "relevance":
+                                    meta.value = Relevance.IRRELEVANT
+                                if meta.name == "substance_category":
+                                    meta.value = SubstanceCategory.IRRELEVANT
+
+
+            # print(len(prob_concepts))
+
+        # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
+        if len(prob_concepts) > 10:
+            return prob_concepts
+        else:
+            return concepts
+
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
@@ -304,6 +358,7 @@ class ProblemsAnnotator(Annotator):
         record_concepts: Optional[List[Concept]] = None,
     ):
         concepts = self.get_concepts(note)
+        concepts = self.process_paragraphs(note, concepts)
         concepts = self.postprocess(concepts)
         concepts = self.deduplicate(concepts, record_concepts)
 
@@ -547,6 +602,7 @@ class MedsAllergiesAnnotator(Annotator):
         dosage_extractor: Optional[DosageExtractor] = None
     ):
         concepts = self.get_concepts(note)
+        concepts = self.process_paragraphs(note, concepts)
         concepts = self.postprocess(concepts, note)
         if dosage_extractor is not None:
             concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
