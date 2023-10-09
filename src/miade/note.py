@@ -36,11 +36,8 @@ class Note(object):
     def __init__(self, text: str, regex_config_path: str = "./data/regex_para_chunk.csv"):
         self.text = text
         self.raw_text = text
-        self.regex_config = load_regex_config_mappings(regex_config_path)
+        self.regex_config = load_regex_config_mappings("./data/regex_para_chunk.csv")
         self.paragraphs: Optional[List[Paragraph]] = []
-
-        self.clean_text()
-        self.get_paragraphs()
 
     def clean_text(self) -> None:
         # Replace all types of spaces with a single normal space, preserving "\n"

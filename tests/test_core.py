@@ -7,7 +7,7 @@ from miade.utils.metaannotationstypes import *
 def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):
     processor = NoteProcessor(model_directory_path)
 
-    processor.add_annotator("problems", use_negex=True)
+    processor.add_annotator("problems")
     processor.add_annotator("meds/allergies")
 
     assert processor.process(test_note) == [
@@ -48,7 +48,7 @@ def test_adding_removing_annotators(model_directory_path):
     processor = NoteProcessor(model_directory_path)
 
     processor.add_annotator("problems")
-    processor.add_annotator("meds/allergies", use_negex=False)
+    processor.add_annotator("meds/allergies")
 
     assert len(processor.annotators) == 2
     processor.print_model_cards()

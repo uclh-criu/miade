@@ -9,12 +9,14 @@ from collections import OrderedDict
 from copy import deepcopy
 from math import inf
 
+from medcat.cat import CAT
+
 from .concept import Concept, Category
 from .note import Note
 from .paragraph import ParagraphType
 from .dosageextractor import DosageExtractor
-from .utils.miade_cat import MiADE_CAT
 from .utils.metaannotationstypes import *
+from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -132,11 +134,17 @@ class Annotator:
     Docstring for Annotator
     """
     # TODO: Create abstract class methods for easier unit testing
-    def __init__(self, cat: MiADE_CAT):
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         self.cat = cat
-        self.concept_types = []
+        self.config = config if config is not None else AnnotatorConfig()
 
-    def add_negex_pipeline(self) -> None:
+        self.concept_types = []
+        self.pipeline = []
+
+        if self.config.negation_detection == "negex":
+            self._add_negex_pipeline()
+
+    def _add_negex_pipeline(self) -> None:
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
@@ -146,10 +154,18 @@ class Annotator:
         for entity in self.cat.get_entities(note)["entities"].values():
             try:
                 concepts.append(Concept.from_entity(entity))
+                log.debug(f"Detected concept ({concepts[-1].id} | {concepts[-1].name})")
             except ValueError as e:
                 log.warning(f"Concept skipped: {e}")
 
         return concepts
+    @staticmethod
+    def preprocess(note: Note) -> Note:
+        note.clean_text()
+        note.get_paragraphs()
+
+        return note
+
     @staticmethod
     def process_paragraphs(note: Note, concepts: List[Concept]) -> List[Concept]:
         prob_concepts: List[Concept] = []
@@ -157,41 +173,69 @@ class Annotator:
         for paragraph in note.paragraphs:
             for concept in concepts:
                 if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
                     if concept.meta is not None:
                         if paragraph.type == ParagraphType.prob or paragraph.type == ParagraphType.imp:
                             prob_concepts.append(concept)
                             # problem is present and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.PRESENT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.PRESENT
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.pmh:
                             prob_concepts.append(concept)
                             # problem is historic and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.HISTORIC} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.HISTORIC
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.med:
                             # problem is irrelevant and allergy is taking
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.TAKING} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.TAKING
                         elif paragraph.type == ParagraphType.allergy:
                             # problem is irrelevant and allergy is as is
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                         elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
                             # problem is irrelevant and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
                                     meta.value = SubstanceCategory.IRRELEVANT
 
 
@@ -199,6 +243,8 @@ class Annotator:
 
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
+            log.debug(f"Ignoring concepts elsewhere in the document because total prob "
+                      f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}")
             return prob_concepts
         else:
             return concepts
@@ -218,7 +264,7 @@ class Annotator:
         # Filter concepts that are in record or exist in concept list
         for concept in concepts:
             if concept.id in record_ids or concept.id in existing_ids:
-                log.debug(f"Filtered concept ({concept.id} | {concept.name}): concept id exists in record")
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): concept id exists in record")
             else:
                 filtered_concepts.append(concept)
                 existing_ids[concept.id] = None
@@ -249,7 +295,9 @@ class Annotator:
             if len(dosage_string.split()) > 2:
                 concept.dosage = dosage_extractor(dosage_string)
                 concept.category = Category.MEDICATION if concept.dosage is not None else None
-                # print(concept.dosage)
+                if concept.dosage is not None:
+                    log.debug(f"Extracted dosage for medication concept "
+                              f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}")
 
         return concepts
 
@@ -258,13 +306,22 @@ class Annotator:
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
     ):
-        return self.deduplicate(self.get_concepts(note), record_concepts)
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
+        concepts = self.get_concepts(note)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
+
+        return concepts
 
 
 class ProblemsAnnotator(Annotator):
-    def __init__(self, cat: MiADE_CAT):
-        super().__init__(cat)
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
+        super().__init__(cat, config)
         self.concept_types = [Category.PROBLEM]
+        self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
 
         self.negated_lookup = load_lookup_data("./data/negated.csv", as_dict=True)
         self.historic_lookup = load_lookup_data("./data/historic.csv", as_dict=True)
@@ -273,13 +330,12 @@ class ProblemsAnnotator(Annotator):
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
-        negex = hasattr(concept, "negex")
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
         convert = False
         tag = ""
         # only get meta model results if negex is false
-        if negex:
+        if concept.negex is not None:
             if concept.negex:
                 convert = self.negated_lookup.get(int(concept.id), False)
                 tag = " (negated)"
@@ -301,27 +357,32 @@ class ProblemsAnnotator(Annotator):
                 tag = " (historic)"
 
         if convert:
-            log.debug(f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag})")
+            if tag == " (negated)" and concept.negex:
+                log.debug(
+                    f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag}): "
+                    f"negation detected by negex")
+            else:
+                log.debug(f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag}):"
+                          f"detected by meta model")
             concept.id = str(convert)
             concept.name += tag
         else:
             if concept.negex:
                 log.debug(
-                    f"Filtered concept ({concept.id} | {concept.name}): negation (negex) with no conversion match")
+                    f"Removed concept ({concept.id} | {concept.name}): negation (negex) with no conversion match")
                 return None
-            if not negex and Presence.NEGATED in meta_ann_values:
+            if concept.negex is None and Presence.NEGATED in meta_ann_values:
                 log.debug(
-                    f"Filtered concept ({concept.id} | {concept.name}): negation (meta model) with no conversion match")
+                    f"Removed concept ({concept.id} | {concept.name}): negation (meta model) with no conversion match")
                 return None
             if Presence.SUSPECTED in meta_ann_values:
-                log.debug(f"Filtered concept ({concept.id} | {concept.name}): suspected with no conversion match")
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): suspected with no conversion match")
                 return None
             if Relevance.IRRELEVANT in meta_ann_values:
-                log.debug(f"Filtered concept ({concept.id} | {concept.name}): irrelevant concept")
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): irrelevant concept")
                 return None
             if Relevance.HISTORIC in meta_ann_values:
-                log.debug(f"Filtered concept ({concept.id} | {concept.name}): historic with no conversion match")
-                return None
+                log.debug(f"No change to concept ({concept.id} | {concept.name}): historic with no conversion match")
 
         concept.category = Category.PROBLEM
 
@@ -331,7 +392,7 @@ class ProblemsAnnotator(Annotator):
         # filtering blacklist
         if int(concept.id) in self.filtering_blacklist.values:
             log.debug(
-                f"Filtered concept ({concept.id} | {concept.name}): concept in problems blacklist"
+                f"Removed concept ({concept.id} | {concept.name}): concept in problems blacklist"
             )
             return True
         return False
@@ -357,18 +418,30 @@ class ProblemsAnnotator(Annotator):
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
     ):
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
         concepts = self.get_concepts(note)
-        concepts = self.process_paragraphs(note, concepts)
-        concepts = self.postprocess(concepts)
-        concepts = self.deduplicate(concepts, record_concepts)
+
+        if "paragrapher" not in self.config.disable:
+            concepts = self.process_paragraphs(note, concepts)
+
+        if "postprocessor" not in self.config.disable:
+            concepts = self.postprocess(concepts)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts
 
 
 class MedsAllergiesAnnotator(Annotator):
-    def __init__(self, cat: MiADE_CAT):
-        super().__init__(cat)
+    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
+        super().__init__(cat, config)
         self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
+        self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "dosage_extractor",
+                         "vtm_converter", "deduplicator"]
+
         # load the lookup data
         self.valid_meds = load_lookup_data("./data/valid_meds.csv", no_header=True)
         self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv", as_dict=True)
@@ -389,16 +462,17 @@ class MedsAllergiesAnnotator(Annotator):
         if lookup_result is not None:
             tag = " (converted)"
             log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
-                      f"({lookup_result['subsetId']} | {concept.name + tag})")
+                      f"({lookup_result['subsetId']} | {concept.name + tag}): valid Epic allergen subset")
             concept.id = str(lookup_result["subsetId"])
             concept.name += tag
 
             # then check the allergen type from lookup result - e.g. drug, food
             try:
                 concept.category = AllergenType(str(lookup_result['allergenType']).lower())
-                log.debug(f"Allergen type is {concept.category.name}")
+                log.debug(f"Assigned substance concept ({concept.id} | {concept.name}) "
+                          f"to allergen type category {concept.category}")
             except ValueError as e:
-                log.warning(f"Allergen type not found: {e}")
+                log.warning(f"Allergen type not found for {concept.__str__()}: {e}")
 
             return True
         else:
@@ -411,13 +485,13 @@ class MedsAllergiesAnnotator(Annotator):
         if lookup_result is not None:
             tag = " (converted)"
             log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
-                      f"({lookup_result} | {concept.name + tag})")
+                      f"({lookup_result} | {concept.name + tag}): valid Epic reaction subset")
 
             concept.id = str(lookup_result)
             concept.name += tag
             return True
         else:
-            log.warning(f"Reaction not found in subset conversion for concept {concept.__str__()}")
+            log.warning(f"Reaction not found in Epic subset conversion for concept {concept.__str__()}")
             return False
 
     def _validate_and_convert_concepts(self, concept: Concept) -> Concept:
@@ -459,10 +533,11 @@ class MedsAllergiesAnnotator(Annotator):
                 elif ReactionPos.AFTER_SUBSTANCE in meta_ann_values and allergy_concept.start > reaction_concept.start:
                     continue
                 else:
-                    log.debug(f"Checking distance between {reaction_concept.name}, {allergy_concept.name}")
                     distance = calculate_word_distance(reaction_concept.start, reaction_concept.end,
                                                        allergy_concept.start, allergy_concept.end,
                                                        note)
+                    log.debug(f"Calculated distance between reaction {reaction_concept.name} "
+                              f"and allergen {allergy_concept.name}: {distance}")
                     if distance == -1:
                         log.warning(f"Indices for {reaction_concept.name} or {allergy_concept.name} invalid: "
                                     f"({reaction_concept.start}, {reaction_concept.end})"
@@ -474,8 +549,9 @@ class MedsAllergiesAnnotator(Annotator):
                         nearest_allergy_concept = allergy_concept
 
             if nearest_allergy_concept is not None:
-                log.debug(f"Linking reaction {reaction_concept.name} to {nearest_allergy_concept.name}")
                 nearest_allergy_concept.linked_concepts.append(reaction_concept)
+                log.debug(f"Linked reaction concept {reaction_concept.name} to "
+                          f"allergen concept {nearest_allergy_concept.name}")
 
         # Remove the linked REACTION concepts from the main list
         updated_concept_list = [concept for concept in concept_list if concept.category != Category.REACTION]
@@ -497,6 +573,9 @@ class MedsAllergiesAnnotator(Annotator):
             log.warning(f"No severity annotation associated with ({concept.id} | {concept.name})")
             return False
 
+        log.debug(f"Linked severity concept ({concept.linked_concepts[-1].id} | {concept.linked_concepts[-1].name}) "
+                  f"to allergen concept ({concept.id} | {concept.name}): valid meta model output")
+
         return True
 
     def _convert_allergy_type_to_code(self, concept: Concept) -> bool:
@@ -515,10 +594,11 @@ class MedsAllergiesAnnotator(Annotator):
 
         # add resulting allergy type concept as to linked_concept
         if allergy_type_lookup_result is not None:
-            log.debug(f"Adding allergy type ({allergy_type_lookup_result[0]} | {allergy_type_lookup_result[1]})")
             concept.linked_concepts.append(Concept(id=str(allergy_type_lookup_result[0]),
                                                    name=allergy_type_lookup_result[1],
                                                    category=Category.ALLERGY_TYPE))
+            log.debug(f"Linked allergytype concept ({allergy_type_lookup_result[0]} | {allergy_type_lookup_result[1]})"
+                      f" to allergen concept ({concept.id} | {concept.name}): valid meta model output + allergytype lookup")
         else:
             log.warning(f"Allergen and adverse reaction type combination not found: {lookup_combination}")
 
@@ -567,8 +647,9 @@ class MedsAllergiesAnnotator(Annotator):
             vmp_id = merged_df.at[index, 'vmpId']
             if not pd.isna(vmp_id):
                 log.debug(
-                    f"Converted ({concept.id} | {concept.name}) with dose "
-                    f"{int(concept.dosage.dose.value)} {concept.dosage.dose.unit} to {int(vmp_id)}")
+                    f"Converted ({concept.id} | {concept.name}) to "
+                    f"({int(vmp_id)} | {concept.name + ' ' + str(int(concept.dosage.dose.value)) + concept.dosage.dose.unit} "
+                    f"tablets): valid extracted dosage + VMP lookup")
                 concept.id = str(int(vmp_id))
                 concept.name += " " + str(int(concept.dosage.dose.value)) + str(concept.dosage.dose.unit) + " tablets"
                 # If found VMP match change the dosage to 1 tablet
@@ -579,7 +660,7 @@ class MedsAllergiesAnnotator(Annotator):
                 lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
                 if lookup_result is not None:
                     log.debug(
-                        f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
+                        f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result}: no match to VMP dosage lookup)")
                     concept.id = None
                     concept.name = lookup_result
 
@@ -588,7 +669,7 @@ class MedsAllergiesAnnotator(Annotator):
             lookup_result = self.vtm_to_text_lookup.get(int(concept.id))
             if lookup_result is not None:
                 log.debug(
-                    f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result})")
+                    f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result}): no dosage detected")
                 concept.id = None
                 concept.name = lookup_result
 
@@ -601,12 +682,24 @@ class MedsAllergiesAnnotator(Annotator):
         record_concepts: Optional[List[Concept]] = None,
         dosage_extractor: Optional[DosageExtractor] = None
     ):
+        if "preprocessor" not in self.config.disable:
+            note = self.preprocess(note)
+
         concepts = self.get_concepts(note)
-        concepts = self.process_paragraphs(note, concepts)
-        concepts = self.postprocess(concepts, note)
-        if dosage_extractor is not None:
+
+        if "paragrapher" not in self.config.disable:
+            concepts = self.process_paragraphs(note, concepts)
+
+        if "postprocessor" not in self.config.disable:
+            concepts = self.postprocess(concepts, note)
+
+        if dosage_extractor is not None and "dosage_extractor" not in self.config.disable:
             concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-        concepts = self.convert_VTM_to_VMP_or_text(concepts)
-        concepts = self.deduplicate(concepts, record_concepts)
+
+        if "VTM_convertor" not in self.config.disable:
+            concepts = self.convert_VTM_to_VMP_or_text(concepts)
+
+        if "deduplicator" not in self.config.disable:
+            concepts = self.deduplicate(concepts, record_concepts)
 
         return concepts

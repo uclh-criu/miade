@@ -1,13 +1,15 @@
+from medcat.cat import CAT
 from pydantic import BaseModel, validator
 from typing import Dict, Type
 
 from ..annotators import Annotator
-from .miade_cat import MiADE_CAT
+from .annotatorconfig import AnnotatorConfig
 
 
 class ModelFactory(BaseModel):
-    models: Dict[str, MiADE_CAT]
+    models: Dict[str, CAT]
     annotators: Dict[str, Type[Annotator]]
+    configs: Dict[str, AnnotatorConfig]
 
     @validator('annotators')
     def validate_annotators(cls, annotators):

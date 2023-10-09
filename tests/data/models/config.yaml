@@ -6,3 +6,10 @@ annotators:
   problems: ProblemsAnnotator
   meds/allergies: MedsAllergiesAnnotator
   custom: CustomAnnotator
+general:
+  problems:
+    negation_detection: negex  # negex or metacat or none
+    disable: []
+  meds/allergies:
+    negation_detection: None
+    disable: []
