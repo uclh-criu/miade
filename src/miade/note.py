@@ -33,7 +33,7 @@ def load_regex_config_mappings(filename: str) -> Dict:
 class Note(object):
     """docstring for Note."""
 
-    def __init__(self, text: str):
+    def __init__(self, text: str, regex_config_path: str = "./data/regex_para_chunk.csv"):
         self.text = text
         self.raw_text = text
         self.regex_config = load_regex_config_mappings("./data/regex_para_chunk.csv")
