@@ -6,7 +6,7 @@ annotators:
   meds/allergies: MedsAllergiesAnnotator
 general:
   problems:
-    negation_detection: None  # negex or metacat or none
+    negation_detection: None
     disable: []
   meds/allergies:
     negation_detection: None
