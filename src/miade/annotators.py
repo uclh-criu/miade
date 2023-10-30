@@ -224,6 +224,11 @@ class Annotator:
                                               f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
                                               f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
+                                if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.ADVERSE_REACTION} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
+                                    meta.value = SubstanceCategory.ADVERSE_REACTION
                         elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
                             # problem is irrelevant and allergy is irrelevant
                             for meta in concept.meta:
