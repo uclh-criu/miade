@@ -248,9 +248,9 @@ class Annotator:
 
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
-            log.debug(f"Ignoring concepts elsewhere in the document because total prob "
+            log.debug(f"Returning only first 10 problems found because total prob "
                       f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}")
-            return prob_concepts
+            return prob_concepts[:10]
         else:
             return concepts
 
