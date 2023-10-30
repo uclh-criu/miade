@@ -169,7 +169,7 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
             start=435,
             end=445,
             meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
             ],
         ),
         # probs
