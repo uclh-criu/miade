@@ -259,20 +259,25 @@ class Annotator:
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         if record_concepts is not None:
             record_ids = {record_concept.id for record_concept in record_concepts}
+            record_names = {record_concept.name for record_concept in record_concepts}
         else:
             record_ids = set()
+            record_names = set()
 
         # Use an OrderedDict to keep track of ids as it preservers original MedCAT order (the order it appears in text)
         filtered_concepts: List[Concept] = []
-        existing_ids = OrderedDict()
+        existing_concepts = OrderedDict()
 
         # Filter concepts that are in record or exist in concept list
         for concept in concepts:
-            if concept.id in record_ids or concept.id in existing_ids:
+            if concept.id is not None and (concept.id in record_ids or concept.id in existing_concepts):
                 log.debug(f"Removed concept ({concept.id} | {concept.name}): concept id exists in record")
+            # check name match for null ids - VTM deduplication
+            elif concept.id is None and (concept.name in record_names or concept.name in existing_concepts.values()):
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): concept name exists in record")
             else:
                 filtered_concepts.append(concept)
-                existing_ids[concept.id] = None
+                existing_concepts[concept.id] = concept.name
 
         return filtered_concepts
 

@@ -370,6 +370,28 @@ def test_self_duplicate_concepts_note() -> List[Concept]:
 
 
 @pytest.fixture(scope="function")
+def test_duplicate_vtm_concept_note() -> List[Concept]:
+    return [
+        Concept(id="1", name="prob1", category=Category.PROBLEM),
+        Concept(id="1", name="prob2", category=Category.PROBLEM),
+        Concept(id=None, name="vtm1", category=Category.MEDICATION),
+        Concept(id=None, name="vtm1", category=Category.MEDICATION),
+        Concept(id=None, name="vtm2", category=Category.MEDICATION),
+        Concept(id="2", name="vmp 20mg", category=Category.MEDICATION),
+        Concept(id=None, name="vtm3", category=Category.MEDICATION),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_duplicate_vtm_concept_record() -> List[Concept]:
+    return [
+        Concept(id="1", name="prob1", category=Category.PROBLEM),
+        Concept(id=None, name="vtm2", category=Category.MEDICATION),
+        Concept(id="2", name="vmp 20mg", category=Category.MEDICATION),
+    ]
+
+
+@pytest.fixture(scope="function")
 def test_medcat_concepts() -> Dict:
     return {
         "0": {
