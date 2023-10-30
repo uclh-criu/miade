@@ -126,8 +126,8 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
         ),
         Concept(
-            id="115451000119100",
-            name="Endophthalmitis (historic)",
+            id="1847009",
+            name="Endophthalmitis",
             category=Category.PROBLEM,
         ),  # negex false, meta processed
         Concept(
