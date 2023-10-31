@@ -1,4 +1,5 @@
 import os
+import json
 from time import sleep
 
 import numpy as np
@@ -20,6 +21,7 @@ from spacy_streamlit import visualize_ner
 
 from medcat.cat import CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
+from utils import *
 
 load_dotenv(find_dotenv())
 
@@ -227,7 +229,7 @@ with st.sidebar.form(key="model"):
 
 
 # load data
-train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
+# train_data_df = load_csv_data(os.getenv("VIZ_DATA_PATH"))
 
 tab1, tab2, tab3, tab4 = st.tabs(["Train", "Test", "Data", "Try"])
 
@@ -238,7 +240,25 @@ with tab1:
         st.markdown("**Adjust** the sliders to vary the amount of synthetic data "
                     " you want to include in the training data in addition to your annotations:")
         train_json_path = st.selectbox("Select annotated training data", TRAIN_JSON_OPTIONS)
+
+        train_csv = train_json_path.replace(".json", ".csv")
+        train_csv_path = os.path.join(os.getenv("TRAIN_CSV_DIR"), train_csv)
+
         train_json_path = os.path.join(os.getenv("TRAIN_JSON_DIR"), train_json_path)
+
+        if not os.path.exists(train_csv_path):
+            with open(train_json_path) as file:
+                train_data = json.load(file)
+            train_text = load_documents(train_json_path)
+            train_annotations = load_annotations(train_data)
+            valid_train_ann = get_valid_annotations(train_annotations)
+            if "problems" in train_json_path:
+                train_data_df = get_probs_meta_classes_data(train_text, valid_train_ann)
+            else:
+                train_data_df = get_meds_meta_classes_data(train_text, valid_train_ann)
+            train_data_df.to_csv(train_csv_path, index=False)
+        else:
+            train_data_df = load_csv_data(train_csv_path)
 
         synth_csv_path = st.selectbox("Select synthetic data file:", SYNTH_DATA_OPTIONS)
         synth_csv_path = os.path.join(os.getenv("SYNTH_CSV_DIR"), synth_csv_path)
