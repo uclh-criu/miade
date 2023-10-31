@@ -249,7 +249,7 @@ with tab1:
         if not os.path.exists(train_csv_path):
             with open(train_json_path) as file:
                 train_data = json.load(file)
-            train_text = load_documents(train_json_path)
+            train_text = load_documents(train_data)
             train_annotations = load_annotations(train_data)
             valid_train_ann = get_valid_annotations(train_annotations)
             if "problems" in train_json_path:
