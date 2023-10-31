@@ -68,6 +68,8 @@ def test_deduplicate(
     test_duplicate_concepts_note,
     test_duplicate_concepts_record,
     test_self_duplicate_concepts_note,
+    test_duplicate_vtm_concept_note,
+    test_duplicate_vtm_concept_record,
 ):
     annotator = Annotator(test_problems_medcat_model)
 
@@ -104,6 +106,13 @@ def test_deduplicate(
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
     ]
+    # test vtm deduplication (string match)
+    assert annotator.deduplicate(
+        concepts=test_duplicate_vtm_concept_note, record_concepts=test_duplicate_vtm_concept_record
+    ) == [
+        Concept(id=None, name="vtm1", category=Category.MEDICATION),
+        Concept(id=None, name="vtm3", category=Category.MEDICATION),
+    ]
     assert (
         annotator.deduplicate(
             concepts=[], record_concepts=test_duplicate_concepts_record
@@ -126,8 +135,8 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
         ),
         Concept(
-            id="115451000119100",
-            name="Endophthalmitis (historic)",
+            id="1847009",
+            name="Endophthalmitis",
             category=Category.PROBLEM,
         ),  # negex false, meta processed
         Concept(
