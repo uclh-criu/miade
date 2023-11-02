@@ -248,9 +248,9 @@ class Annotator:
 
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
-            log.debug(f"Returning only first 10 problems found because total prob "
+            log.debug(f"Ignoring concepts elsewhere in the document because "
                       f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}")
-            return prob_concepts[:10]
+            return prob_concepts
         else:
             return concepts
 
@@ -308,6 +308,14 @@ class Annotator:
                 if concept.dosage is not None:
                     log.debug(f"Extracted dosage for medication concept "
                               f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}")
+
+        return concepts
+
+    @staticmethod
+    def add_numbering_to_name(concepts: List[Concept]) -> List[Concept]:
+        # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
+        for i, concept in enumerate(concepts):
+            concept.name = f"{i:02} {concept.name}"
 
         return concepts
 
@@ -441,6 +449,9 @@ class ProblemsAnnotator(Annotator):
 
         if "deduplicator" not in self.config.disable:
             concepts = self.deduplicate(concepts, record_concepts)
+
+        if "add_numbering" not in self.config.disable:
+            concepts = self.add_numbering_to_name(concepts)
 
         return concepts
 
