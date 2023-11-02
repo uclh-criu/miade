@@ -224,6 +224,11 @@ class Annotator:
                                               f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
                                               f"paragraph is {paragraph.type}")
                                     meta.value = Relevance.IRRELEVANT
+                                if meta.name == "substance_category":
+                                    log.debug(f"Converted {meta.value} to "
+                                              f"{SubstanceCategory.ADVERSE_REACTION} for concept ({concept.id} | {concept.name}): "
+                                              f"paragraph is {paragraph.type}")
+                                    meta.value = SubstanceCategory.ADVERSE_REACTION
                         elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
                             # problem is irrelevant and allergy is irrelevant
                             for meta in concept.meta:
@@ -243,7 +248,7 @@ class Annotator:
 
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts) > 10:
-            log.debug(f"Ignoring concepts elsewhere in the document because total prob "
+            log.debug(f"Ignoring concepts elsewhere in the document because "
                       f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}")
             return prob_concepts
         else:
@@ -254,20 +259,25 @@ class Annotator:
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
         if record_concepts is not None:
             record_ids = {record_concept.id for record_concept in record_concepts}
+            record_names = {record_concept.name for record_concept in record_concepts}
         else:
             record_ids = set()
+            record_names = set()
 
         # Use an OrderedDict to keep track of ids as it preservers original MedCAT order (the order it appears in text)
         filtered_concepts: List[Concept] = []
-        existing_ids = OrderedDict()
+        existing_concepts = OrderedDict()
 
         # Filter concepts that are in record or exist in concept list
         for concept in concepts:
-            if concept.id in record_ids or concept.id in existing_ids:
+            if concept.id is not None and (concept.id in record_ids or concept.id in existing_concepts):
                 log.debug(f"Removed concept ({concept.id} | {concept.name}): concept id exists in record")
+            # check name match for null ids - VTM deduplication
+            elif concept.id is None and (concept.name in record_names or concept.name in existing_concepts.values()):
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): concept name exists in record")
             else:
                 filtered_concepts.append(concept)
-                existing_ids[concept.id] = None
+                existing_concepts[concept.id] = concept.name
 
         return filtered_concepts
 
@@ -298,6 +308,14 @@ class Annotator:
                 if concept.dosage is not None:
                     log.debug(f"Extracted dosage for medication concept "
                               f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}")
+
+        return concepts
+
+    @staticmethod
+    def add_numbering_to_name(concepts: List[Concept]) -> List[Concept]:
+        # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
+        for i, concept in enumerate(concepts):
+            concept.name = f"{i:02} {concept.name}"
 
         return concepts
 
@@ -432,6 +450,9 @@ class ProblemsAnnotator(Annotator):
         if "deduplicator" not in self.config.disable:
             concepts = self.deduplicate(concepts, record_concepts)
 
+        if "add_numbering" not in self.config.disable:
+            concepts = self.add_numbering_to_name(concepts)
+
         return concepts
 
 
@@ -464,7 +485,6 @@ class MedsAllergiesAnnotator(Annotator):
             log.debug(f"Converted concept ({concept.id} | {concept.name}) to "
                       f"({lookup_result['subsetId']} | {concept.name + tag}): valid Epic allergen subset")
             concept.id = str(lookup_result["subsetId"])
-            concept.name += tag
 
             # then check the allergen type from lookup result - e.g. drug, food
             try:
@@ -488,7 +508,6 @@ class MedsAllergiesAnnotator(Annotator):
                       f"({lookup_result} | {concept.name + tag}): valid Epic reaction subset")
 
             concept.id = str(lookup_result)
-            concept.name += tag
             return True
         else:
             log.warning(f"Reaction not found in Epic subset conversion for concept {concept.__str__()}")

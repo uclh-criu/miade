@@ -169,7 +169,7 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
             start=435,
             end=445,
             meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
             ],
         ),
         # probs
@@ -366,6 +366,28 @@ def test_self_duplicate_concepts_note() -> List[Concept]:
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.MEDICATION),
         Concept(id="2", name="test2", category=Category.MEDICATION),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_duplicate_vtm_concept_note() -> List[Concept]:
+    return [
+        Concept(id="1", name="prob1", category=Category.PROBLEM),
+        Concept(id="1", name="prob2", category=Category.PROBLEM),
+        Concept(id=None, name="vtm1", category=Category.MEDICATION),
+        Concept(id=None, name="vtm1", category=Category.MEDICATION),
+        Concept(id=None, name="vtm2", category=Category.MEDICATION),
+        Concept(id="2", name="vmp 20mg", category=Category.MEDICATION),
+        Concept(id=None, name="vtm3", category=Category.MEDICATION),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_duplicate_vtm_concept_record() -> List[Concept]:
+    return [
+        Concept(id="1", name="prob1", category=Category.PROBLEM),
+        Concept(id=None, name="vtm2", category=Category.MEDICATION),
+        Concept(id="2", name="vmp 20mg", category=Category.MEDICATION),
     ]
 
 

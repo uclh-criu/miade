@@ -1,0 +1,13 @@
+models:
+  problems: f25ec9423958e8d6
+  meds/allergies: a146c741501cf1f7
+annotators:
+  problems: ProblemsAnnotator
+  meds/allergies: MedsAllergiesAnnotator
+general:
+  problems:
+    negation_detection: None
+    disable: []
+  meds/allergies:
+    negation_detection: None
+    disable: []

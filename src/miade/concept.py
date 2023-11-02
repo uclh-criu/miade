@@ -46,10 +46,8 @@ class Concept(object):
         if linked_concepts is None:
             self.linked_concepts = []
 
-
     @classmethod
     def from_entity(cls, entity: [Dict]):
-
         meta_anns = None
         if entity["meta_anns"]:
             meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]
