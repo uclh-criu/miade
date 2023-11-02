@@ -23,6 +23,7 @@ from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 from miade.model_builders import CDBBuilder
 from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
+from miade.utils import metacat_utils
 
 log = logging.getLogger("miade")
 
@@ -275,23 +276,11 @@ def create_metacats(
     category_names: List[str],
     output: Optional[Path] = typer.Argument(Path.cwd()),
 ):
-    log.info(f"Loading tokenizer from {tokenizer_path}/...")
-    tokenizer = TokenizerWrapperBPE.load(str(tokenizer_path))
-    log.info(f"Loading embeddings from embeddings.npy...")
-    embeddings = np.load(str(os.path.join(tokenizer_path, "embeddings.npy")))
-
-    assert len(embeddings) == tokenizer.get_size(), (
-        f"Tokenizer and embeddings not the same size {len(embeddings)}, "
-        f"{tokenizer.get_size()}"
+    metacat_utils.create_metacats(
+        tokenizer_path=tokenizer_path,
+        category_names=category_names,
+        output=output,
     )
-
-    metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
-    for category in category_names:
-        metacat.config.general[
-            'description'] = f"MiADE blank {category} MetaCAT model"
-        metacat.config.general['category_name'] = category
-        metacat.save(str(os.path.join(output, f"meta_{category}")))
-        log.info(f"Saved meta_{category} at {output}")
 
 
 @app.command()
