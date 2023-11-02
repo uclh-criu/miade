@@ -311,6 +311,14 @@ class Annotator:
 
         return concepts
 
+    @staticmethod
+    def add_numbering_to_name(concepts: List[Concept]) -> List[Concept]:
+        # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
+        for i, concept in enumerate(concepts):
+            concept.name = f"{i:02} {concept.name}"
+
+        return concepts
+
     def __call__(
         self,
         note: Note,
@@ -441,6 +449,9 @@ class ProblemsAnnotator(Annotator):
 
         if "deduplicator" not in self.config.disable:
             concepts = self.deduplicate(concepts, record_concepts)
+
+        if "add_numbering" not in self.config.disable:
+            concepts = self.add_numbering_to_name(concepts)
 
         return concepts
 
