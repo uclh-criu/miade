@@ -34,18 +34,21 @@ ENV/
 env.bak/
 venv.bak/
 
-#data
+# Data
 *.dat
 *.csv
 *.zip
 src/miade/model_builders/output/
 !src/miade/data/*
 
+# Linting
+.ruff_cache
+
 #testing
 tests/data/
 !tests/examples/*
 
-#logs
+# Logs
 *.log
 
 streamlit_app/*.env
