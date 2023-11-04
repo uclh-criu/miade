@@ -1,13 +1,23 @@
 from miade.core import Concept, Category
-from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator, calculate_word_distance
+from miade.annotators import (
+    MedsAllergiesAnnotator,
+    ProblemsAnnotator,
+    Annotator,
+    calculate_word_distance,
+)
 from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
 
-def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
+
+def test_dosage_text_splitter(
+    test_meds_algy_medcat_model, test_med_concepts, test_med_note
+):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
     dosage_extractor = DosageExtractor()
 
-    concepts = annotator.add_dosages_to_concepts(dosage_extractor, test_med_concepts, test_med_note)
+    concepts = annotator.add_dosages_to_concepts(
+        dosage_extractor, test_med_concepts, test_med_note
+    )
 
     assert concepts[0].dosage.text == "Magnesium hydroxide 75mg daily "
     assert concepts[1].dosage.text == "paracetamol 500mg po 3 times a day as needed."
@@ -32,6 +42,7 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
 
 def test_calculate_word_distance():
     from miade.note import Note
+
     note = Note("the quick broooooown fox jumped over the lazy dog")
     start1, end1 = 10, 20
     start2, end2 = 10, 20
@@ -62,7 +73,6 @@ def test_calculate_word_distance():
     assert calculate_word_distance(start1, end1, start2, end2, note) == 1
 
 
-
 def test_deduplicate(
     test_problems_medcat_model,
     test_duplicate_concepts_note,
@@ -74,13 +84,15 @@ def test_deduplicate(
     annotator = Annotator(test_problems_medcat_model)
 
     assert annotator.deduplicate(
-        concepts=test_duplicate_concepts_note, record_concepts=test_duplicate_concepts_record
+        concepts=test_duplicate_concepts_note,
+        record_concepts=test_duplicate_concepts_record,
     ) == [
         Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
     ]
     assert annotator.deduplicate(
-        concepts=test_self_duplicate_concepts_note, record_concepts=None) == [
+        concepts=test_self_duplicate_concepts_note, record_concepts=None
+    ) == [
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.MEDICATION),
     ]
@@ -108,7 +120,8 @@ def test_deduplicate(
     ]
     # test vtm deduplication (string match)
     assert annotator.deduplicate(
-        concepts=test_duplicate_vtm_concept_note, record_concepts=test_duplicate_vtm_concept_record
+        concepts=test_duplicate_vtm_concept_note,
+        record_concepts=test_duplicate_vtm_concept_record,
     ) == [
         Concept(id=None, name="vtm1", category=Category.MEDICATION),
         Concept(id=None, name="vtm3", category=Category.MEDICATION),
@@ -120,11 +133,14 @@ def test_deduplicate(
         == []
     )
 
+
 def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_concepts):
     annotator = ProblemsAnnotator(test_problems_medcat_model)
 
     assert annotator.postprocess(test_meta_annotations_concepts) == [
-        Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
+        Concept(
+            id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM
+        ),  # negex true, meta ignored
         Concept(
             id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM
         ),  # negex true, meta ignored
@@ -154,27 +170,39 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
     test_meta_annotations_concepts[6].negex = True
 
     assert annotator.postprocess(test_meta_annotations_concepts) == [
-        Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta empty
+        Concept(
+            id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM
+        ),  # negex true, meta empty
         Concept(
             id="1415005", name="Lymphangitis", category=Category.PROBLEM
         ),  # negex false, meta processed but ignore negation
         Concept(
             id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
         ),  # negex false, meta processed
-        Concept(id="0000", name="historic concept", category=Category.PROBLEM
+        Concept(
+            id="0000", name="historic concept", category=Category.PROBLEM
         ),  # historic with no conversion
     ]
 
 
-def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list_concepts):
+def test_problems_filtering_list(
+    test_problems_medcat_model, test_filtering_list_concepts
+):
     annotator = ProblemsAnnotator(test_problems_medcat_model)
     assert annotator.postprocess(test_filtering_list_concepts) == [
         Concept(id="123", name="real concept", category=Category.PROBLEM),
     ]
 
-def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_with_meta_anns, test_meds_allergy_note):
+
+def test_allergy_annotator(
+    test_meds_algy_medcat_model,
+    test_substance_concepts_with_meta_anns,
+    test_meds_allergy_note,
+):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
-    concepts = annotator.postprocess(test_substance_concepts_with_meta_anns, test_meds_allergy_note)
+    concepts = annotator.postprocess(
+        test_substance_concepts_with_meta_anns, test_meds_allergy_note
+    )
 
     # print([concept.__str__() for concept in concepts])
     assert concepts == [
@@ -183,7 +211,9 @@ def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_
         Concept(id="7336002", name="Paracetamol", category=Category.MEDICATION),
     ]
     assert concepts[0].linked_concepts == [
-        Concept(id="235719002", name="Food Intolerance", category=Category.ALLERGY_TYPE),
+        Concept(
+            id="235719002", name="Food Intolerance", category=Category.ALLERGY_TYPE
+        ),
         Concept(id="L", name="Low", category=Category.SEVERITY),
         Concept(id="419076005", name="Rash", category=Category.REACTION),
     ]
@@ -194,6 +224,7 @@ def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_
     ]
     assert concepts[2].linked_concepts == []
 
+
 def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
     concepts = annotator.convert_VTM_to_VMP_or_text(test_vtm_concepts)
@@ -201,10 +232,18 @@ def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
     # print([concept.__str__() for concept in concepts])
     assert concepts == [
         Concept(id=None, name="SPIRAMYCIN ORAL", category=Category.MEDICATION),
-        Concept(id="376689003", name="Paracetamol 50mg tablets", category=Category.MEDICATION),
+        Concept(
+            id="376689003",
+            name="Paracetamol 50mg tablets",
+            category=Category.MEDICATION,
+        ),
         Concept(id=None, name="ASPIRIN ORAL", category=Category.MEDICATION),
         Concept(id=None, name="FOLIC ACID ORAL", category=Category.MEDICATION),
-        Concept(id="7721411000001109", name="Selenium 50microgram tablets", category=Category.MEDICATION),
+        Concept(
+            id="7721411000001109",
+            name="Selenium 50microgram tablets",
+            category=Category.MEDICATION,
+        ),
         Concept(id=None, name="SELENIUM ORAL", category=Category.MEDICATION),
     ]
     assert concepts[0].dosage == Dosage(

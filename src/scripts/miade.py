@@ -287,9 +287,8 @@ def create_metacats(
 
     metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
     for category in category_names:
-        metacat.config.general[
-            'description'] = f"MiADE blank {category} MetaCAT model"
-        metacat.config.general['category_name'] = category
+        metacat.config.general["description"] = f"MiADE blank {category} MetaCAT model"
+        metacat.config.general["category_name"] = category
         metacat.save(str(os.path.join(output, f"meta_{category}")))
         log.info(f"Saved meta_{category} at {output}")
 

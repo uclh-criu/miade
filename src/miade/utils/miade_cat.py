@@ -17,6 +17,7 @@ from medcat.utils.filters import get_project_filters
 
 logger = logging.getLogger("cat")
 
+
 class MiADE_CAT(CAT):
     """Experimental - overriding medcat write out function - more control over spacy pipeline: add negex results"""
 
@@ -132,7 +133,6 @@ class MiADE_CAT(CAT):
         checkpoint: Optional[Checkpoint] = None,
         is_resumed: bool = False,
     ) -> Tuple:
-
         checkpoint = self._init_ckpts(is_resumed, checkpoint)
 
         # Backup filters

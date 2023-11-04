@@ -19,7 +19,6 @@ def build_model_pack(
     unigram_table_size: int,
     output_dir: Path,
 ):
-
     # TODO: option to input list of concept csv files
     cdb_builder = CDBBuilder(
         snomed_data_path=snomed_data_path, fdb_data_path=fdb_data_path, config=config
@@ -43,7 +42,6 @@ def build_model_pack(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("config_file")
     args = parser.parse_args()

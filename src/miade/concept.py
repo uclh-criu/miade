@@ -31,7 +31,6 @@ class Concept(object):
         meta_anns: Optional[List[MetaAnnotations]] = None,
         debug_dict: Optional[Dict] = None,
     ):
-
         self.name = name
         self.id = id
         self.category = category
@@ -50,11 +49,15 @@ class Concept(object):
     def from_entity(cls, entity: [Dict]):
         meta_anns = None
         if entity["meta_anns"]:
-            meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]
+            meta_anns = [
+                MetaAnnotations(**value) for value in entity["meta_anns"].values()
+            ]
 
         return Concept(
             id=entity["cui"],
-            name=entity["source_value"],  # can also use detected_name which is spell checked but delimited by ~ e.g. liver~failure
+            name=entity[
+                "source_value"
+            ],  # can also use detected_name which is spell checked but delimited by ~ e.g. liver~failure
             category=None,
             start=entity["start"],
             end=entity["end"],

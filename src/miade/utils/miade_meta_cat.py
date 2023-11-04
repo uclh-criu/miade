@@ -10,7 +10,11 @@ import numpy as np
 from typing import List, Optional, Dict, Tuple, Any
 from torch import nn
 from medcat.config_meta_cat import ConfigMetaCAT
-from sklearn.metrics import classification_report, precision_recall_fscore_support, confusion_matrix
+from sklearn.metrics import (
+    classification_report,
+    precision_recall_fscore_support,
+    confusion_matrix,
+)
 from medcat.meta_cat import MetaCAT
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBase
 from medcat.utils.meta_cat.data_utils import prepare_from_json, encode_category_values
@@ -18,8 +22,11 @@ from medcat.utils.meta_cat.ml_utils import train_model
 
 logger = logging.getLogger("meta_cat")
 
+
 # Hacky as hell, just for the dashboard, NOT permanent solution - will not merge with main branch
-def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: torch.device, pad_id: int) -> Tuple:
+def create_batch_piped_data(
+    data: List, start_ind: int, end_ind: int, device: torch.device, pad_id: int
+) -> Tuple:
     """Creates a batch given data and start/end that denote batch size, will also add
     padding and move to the right device.
     Args:
@@ -41,12 +48,17 @@ def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: to
             Center positions for the data
     """
     max_seq_len = max([len(x[0]) for x in data])
-    x = [x[0][0:max_seq_len] + [pad_id]*max(0, max_seq_len - len(x[0])) for x in data[start_ind:end_ind]]
+    x = [
+        x[0][0:max_seq_len] + [pad_id] * max(0, max_seq_len - len(x[0]))
+        for x in data[start_ind:end_ind]
+    ]
     cpos = [x[1] for x in data[start_ind:end_ind]]
     y = None
     if len(data[0]) == 3:
         # Means we have the y column
-        y = torch.tensor([x[2] for x in data[start_ind:end_ind]], dtype=torch.long).to(device)
+        y = torch.tensor([x[2] for x in data[start_ind:end_ind]], dtype=torch.long).to(
+            device
+        )
 
     x = torch.tensor(x, dtype=torch.long).to(device)
     cpos = torch.tensor(cpos, dtype=torch.long).to(device)
@@ -54,36 +66,46 @@ def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: to
     return x, cpos, y
 
 
-def print_report(epoch: int, running_loss: List, all_logits: List, y: Any, name: str = 'Train') -> None:
-    r''' Prints some basic stats during training
+def print_report(
+    epoch: int, running_loss: List, all_logits: List, y: Any, name: str = "Train"
+) -> None:
+    r"""Prints some basic stats during training
     Args:
         epoch
         running_loss
         all_logits
         y
         name
-    '''
+    """
     if all_logits:
-        print(f'Epoch: {epoch} ' + "*"*50 + f"  {name}")
-        print(classification_report(y, np.argmax(np.concatenate(all_logits, axis=0), axis=1)))
+        print(f"Epoch: {epoch} " + "*" * 50 + f"  {name}")
+        print(
+            classification_report(
+                y, np.argmax(np.concatenate(all_logits, axis=0), axis=1)
+            )
+        )
 
 
-def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: TokenizerWrapperBase) -> Dict:
+def eval_model(
+    model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: TokenizerWrapperBase
+) -> Dict:
     """Evaluate a trained model on the provided data
     Args:
         model
         data
         config
     """
-    device = torch.device(config.general['device'])  # Create a torch device
-    batch_size_eval = config.general['batch_size_eval']
-    pad_id = config.model['padding_idx']
-    ignore_cpos = config.model['ignore_cpos']
-    class_weights = config.train['class_weights']
+    device = torch.device(config.general["device"])  # Create a torch device
+    batch_size_eval = config.general["batch_size_eval"]
+    pad_id = config.model["padding_idx"]
+    ignore_cpos = config.model["ignore_cpos"]
+    class_weights = config.train["class_weights"]
 
     if class_weights is not None:
         class_weights = torch.FloatTensor(class_weights).to(device)
-        criterion = nn.CrossEntropyLoss(weight=class_weights)  # Set the criterion to Cross Entropy Loss
+        criterion = nn.CrossEntropyLoss(
+            weight=class_weights
+        )  # Set the criterion to Cross Entropy Loss
     else:
         criterion = nn.CrossEntropyLoss()  # Set the criterion to Cross Entropy Loss
 
@@ -96,8 +118,13 @@ def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: T
 
     with torch.no_grad():
         for i in range(num_batches):
-            x, cpos, y = create_batch_piped_data(data, i * batch_size_eval, (i + 1) * batch_size_eval,
-                                                 device=device, pad_id=pad_id)
+            x, cpos, y = create_batch_piped_data(
+                data,
+                i * batch_size_eval,
+                (i + 1) * batch_size_eval,
+                device=device,
+                pad_id=pad_id,
+            )
             logits = model(x, cpos, ignore_cpos=ignore_cpos)
             loss = criterion(logits, y)
 
@@ -105,39 +132,59 @@ def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: T
             running_loss.append(loss.item())
             all_logits.append(logits.detach().cpu().numpy())
 
-    print_report(0, running_loss, all_logits, y=y_eval, name='Eval')
+    print_report(0, running_loss, all_logits, y=y_eval, name="Eval")
 
-    score_average = config.train['score_average']
+    score_average = config.train["score_average"]
     predictions = np.argmax(np.concatenate(all_logits, axis=0), axis=1)
-    precision, recall, f1, support = precision_recall_fscore_support(y_eval, predictions, average=score_average)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_eval, predictions, average=score_average
+    )
 
-    labels = [name for (name, _) in sorted(config.general['category_value2id'].items(), key=lambda x: x[1])]
+    labels = [
+        name
+        for (name, _) in sorted(
+            config.general["category_value2id"].items(), key=lambda x: x[1]
+        )
+    ]
     confusion = pd.DataFrame(
-        data=confusion_matrix(y_eval, predictions, ),
+        data=confusion_matrix(
+            y_eval,
+            predictions,
+        ),
         columns=["true " + label for label in labels],
         index=["predicted " + label for label in labels],
     )
 
-    examples: Dict = {'FP': {}, 'FN': {}, 'TP': {}}
-    id2category_value = {v: k for k, v in config.general['category_value2id'].items()}
+    examples: Dict = {"FP": {}, "FN": {}, "TP": {}}
+    id2category_value = {v: k for k, v in config.general["category_value2id"].items()}
     for i, p in enumerate(predictions):
         y = id2category_value[y_eval[i]]
         p = id2category_value[p]
         c = data[i][1]
         tkns = data[i][0]
         assert tokenizer.hf_tokenizers is not None
-        text = tokenizer.hf_tokenizers.decode(tkns[0:c]) + " <<" + tokenizer.hf_tokenizers.decode(
-            tkns[c:c + 1]).strip() + ">> " + \
-               tokenizer.hf_tokenizers.decode(tkns[c + 1:])
+        text = (
+            tokenizer.hf_tokenizers.decode(tkns[0:c])
+            + " <<"
+            + tokenizer.hf_tokenizers.decode(tkns[c : c + 1]).strip()
+            + ">> "
+            + tokenizer.hf_tokenizers.decode(tkns[c + 1 :])
+        )
         info = "Predicted: {}, True: {}".format(p, y)
         if p != y:
             # We made a mistake
-            examples['FN'][y] = examples['FN'].get(y, []) + [(info, text)]
-            examples['FP'][p] = examples['FP'].get(p, []) + [(info, text)]
+            examples["FN"][y] = examples["FN"].get(y, []) + [(info, text)]
+            examples["FP"][p] = examples["FP"].get(p, []) + [(info, text)]
         else:
-            examples['TP'][y] = examples['TP'].get(y, []) + [(info, text)]
+            examples["TP"][y] = examples["TP"].get(y, []) + [(info, text)]
 
-    return {'precision': precision, 'recall': recall, 'f1': f1, 'examples': examples, 'confusion matrix': confusion}
+    return {
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "examples": examples,
+        "confusion matrix": confusion,
+    }
 
 
 def prepare_from_miade_csv(
@@ -315,35 +362,43 @@ class MiADE_MetaCAT(MetaCAT):
         return report
 
     def eval(self, json_path: str) -> Dict:
-        """Evaluate from json.
-
-        """
+        """Evaluate from json."""
         g_config = self.config.general
         t_config = self.config.train
 
-        with open(json_path, 'r') as f:
+        with open(json_path, "r") as f:
             data_loaded: Dict = json.load(f)
 
         # Prepare the data
         assert self.tokenizer is not None
-        data = prepare_from_json(data_loaded, g_config['cntx_left'], g_config['cntx_right'], self.tokenizer,
-                                 cui_filter=t_config['cui_filter'],
-                                 replace_center=g_config['replace_center'], prerequisites=t_config['prerequisites'],
-                                 lowercase=g_config['lowercase'])
+        data = prepare_from_json(
+            data_loaded,
+            g_config["cntx_left"],
+            g_config["cntx_right"],
+            self.tokenizer,
+            cui_filter=t_config["cui_filter"],
+            replace_center=g_config["replace_center"],
+            prerequisites=t_config["prerequisites"],
+            lowercase=g_config["lowercase"],
+        )
 
         # Check is the name there
-        category_name = g_config['category_name']
+        category_name = g_config["category_name"]
         if category_name not in data:
             raise Exception("The category name does not exist in this json file.")
 
         data = data[category_name]
 
         # We already have everything, just get the data
-        category_value2id = g_config['category_value2id']
-        data, _ = encode_category_values(data, existing_category_value2id=category_value2id)
+        category_value2id = g_config["category_value2id"]
+        data, _ = encode_category_values(
+            data, existing_category_value2id=category_value2id
+        )
 
         # Run evaluation
         assert self.tokenizer is not None
-        result = eval_model(self.model, data, config=self.config, tokenizer=self.tokenizer)
+        result = eval_model(
+            self.model, data, config=self.config, tokenizer=self.tokenizer
+        )
 
         return result

@@ -43,11 +43,8 @@ class VocabBuilder:
         self.vocab.make_unigram_table()
         return self.vocab
 
-    def make_model_pack(self,
-                        cdb: CDB,
-                        save_name: str,
-                        output_dir: Path = Path.cwd()
-                        ) -> None:
+    def make_model_pack(
+        self, cdb: CDB, save_name: str, output_dir: Path = Path.cwd()
+    ) -> None:
         cat = CAT(cdb=cdb, config=cdb.config, vocab=self.vocab)
         cat.create_model_pack(str(output_dir), save_name)
-

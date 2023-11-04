@@ -15,7 +15,9 @@ class ParagraphType(Enum):
 
 
 class Paragraph(object):
-    def __init__(self, heading: str, body: str, type: ParagraphType, start: int, end: int):
+    def __init__(
+        self, heading: str, body: str, type: ParagraphType, start: int, end: int
+    ):
         self.heading = heading
         self.body = body
         self.type = type

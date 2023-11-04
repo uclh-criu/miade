@@ -105,7 +105,7 @@ class CDBBuilder(object):
         if self.elg_data_path:
             self.vocab_files.append(str(self.preprocess_elg(self.temp_dir)))
         if self.custom_data_paths:
-            string_paths  = [str(path) for path in self.custom_data_paths]
+            string_paths = [str(path) for path in self.custom_data_paths]
             self.vocab_files.extend(string_paths)
 
     def create_cdb(self) -> CDB:
