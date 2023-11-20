@@ -56,3 +56,5 @@ where = ["src"]
 [tool.setuptools.package-data]
 miade = ["data/*.csv"]
 
+[tool.ruff]
+line-length = 120
