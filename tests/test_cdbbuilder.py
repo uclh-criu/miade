@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from miade.model_builders import CDBBuilder
 
 

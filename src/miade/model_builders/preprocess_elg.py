@@ -1,4 +1,4 @@
-from pandas import DataFrame, read_csv, isnull
+from pandas import DataFrame, read_csv
 from pathlib import Path
 
 

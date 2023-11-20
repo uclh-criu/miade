@@ -97,7 +97,7 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
         else:
             try:
                 quantity_dosage.value = float(quantities[0])
-            except:
+            except ValueError:
                 quantity_dosage.value = float(re.sub(r"[^\d.]+", "", quantities[0]))
         quantity_dosage.unit = units[0]
     elif len(quantities) == 2 and len(units) == 2:
@@ -105,7 +105,7 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
         try:
             quantity_dosage.low = float(quantities[0])
             quantity_dosage.high = float(quantities[1])
-        except:
+        except ValueError:
             quantity_dosage.low = float(re.sub(r"[^\d.]+", "", quantities[0]))
             quantity_dosage.high = float(re.sub(r"[^\d.]+", "", quantities[1]))
         if units[0] == units[1]:
@@ -162,7 +162,7 @@ def parse_frequency(text: str, results: Dict) -> Optional[Frequency]:
     if results["freq"] is not None and results["time"] is not None:
         try:
             frequency_dosage.value = results["time"] / results["freq"]
-        except ZeroDivisionError as e:
+        except ZeroDivisionError:
             frequency_dosage.value = None
         # here i convert time to hours if not institution specified
         # (every X hrs as opposed to X times day) but it's arbitrary really...

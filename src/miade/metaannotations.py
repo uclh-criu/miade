@@ -1,8 +1,16 @@
 from typing import Optional
 from pydantic import BaseModel, validator
+from enum import Enum
 
-from .utils.metaannotationstypes import *
-
+from .utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    Laterality,
+    ReactionPos,
+    SubstanceCategory,
+    AllergyType,
+    Severity,
+)
 
 META_ANNS_DICT = {
     "presence": Presence,

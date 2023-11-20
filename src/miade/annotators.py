@@ -2,6 +2,8 @@ import io
 import logging
 import pkgutil
 import re
+from enum import Enum
+
 import pandas as pd
 
 from typing import List, Optional, Tuple, Dict
@@ -15,7 +17,13 @@ from .concept import Concept, Category
 from .note import Note
 from .paragraph import ParagraphType
 from .dosageextractor import DosageExtractor
-from .utils.metaannotationstypes import *
+from .utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    ReactionPos,
+    SubstanceCategory,
+    Severity,
+)
 from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)

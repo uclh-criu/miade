@@ -1,8 +1,5 @@
 import pandas as pd
 
-from medcat.meta_cat import MetaCAT
-from medcat.config_meta_cat import ConfigMetaCAT
-from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
 from typing import Optional
 
@@ -42,7 +39,7 @@ def get_probs_meta_classes_data(
     cuis = []
     names = []
     texts = []
-    tokens = []
+    # tokens = []
     for ann in annotations:
         r_labels.append(ann.meta_relevance)
         p_labels.append(ann.meta_presence)
@@ -91,7 +88,7 @@ def get_meds_meta_classes_data(
     cuis = []
     names = []
     texts = []
-    tokens = []
+    # tokens = []
     for ann in annotations:
         substance_labels.append(ann.meta_substance_cat)
         allergy_labels.append(ann.meta_allergy_type)

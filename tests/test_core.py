@@ -2,7 +2,11 @@ from miade.core import NoteProcessor
 from miade.concept import Concept, Category
 from miade.annotators import Annotator
 from miade.metaannotations import MetaAnnotations
-from miade.utils.metaannotationstypes import *
+from miade.utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    Laterality,
+)
 
 
 def test_core(model_directory_path, test_note, test_negated_note, test_duplicated_note):

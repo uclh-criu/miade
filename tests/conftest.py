@@ -8,7 +8,15 @@ from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
-from miade.utils.metaannotationstypes import *
+from miade.utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    Laterality,
+    ReactionPos,
+    SubstanceCategory,
+    AllergyType,
+    Severity,
+)
 from miade.utils.miade_cat import MiADE_CAT
 
 

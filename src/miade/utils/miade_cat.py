@@ -3,9 +3,9 @@ import logging
 import pandas as pd
 from copy import deepcopy
 
-from typing import Union, List, Tuple, Optional, Dict, Iterable, Set
+from typing import List, Tuple, Optional, Dict, Set
 
-from tqdm.autonotebook import tqdm, trange
+from tqdm.autonotebook import trange
 from spacy.tokens import Span, Doc
 
 from medcat.cat import CAT

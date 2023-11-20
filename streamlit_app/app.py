@@ -1,3 +1,5 @@
+# ruff: noqa: F811
+
 import os
 import json
 from time import sleep
@@ -21,7 +23,13 @@ from spacy_streamlit import visualize_ner
 
 from medcat.cat import CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
-from utils import *
+from utils import (
+    load_documents,
+    load_annotations,
+    get_valid_annotations,
+    get_probs_meta_classes_data,
+    get_meds_meta_classes_data,
+)
 
 load_dotenv(find_dotenv())
 

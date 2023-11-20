@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from shutil import copy
 from typing import List, Optional

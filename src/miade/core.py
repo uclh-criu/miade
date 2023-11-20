@@ -3,15 +3,13 @@ import sys
 import yaml
 import logging
 
-from negspacy.negation import Negex
 from pathlib import Path
 from typing import List, Optional, Dict
 
 from .concept import Concept, Category
 from .note import Note
-from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator
+from .annotators import Annotator
 from .dosageextractor import DosageExtractor
-from .utils.metaannotationstypes import SubstanceCategory
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
 from .utils.annotatorconfig import AnnotatorConfig
@@ -127,7 +125,7 @@ class NoteProcessor:
                     continue
                 mapped_models[name] = cat_model
         else:
-            log.warning(f"No model ids configured!")
+            log.warning("No model ids configured!")
 
         mapped_annotators = {}
         # {name: <class Annotator>}
@@ -145,7 +143,7 @@ class NoteProcessor:
                     except AttributeError as e:
                         log.warning(f"{annotator_string} not found: {e}")
         else:
-            log.warning(f"No annotators configured!")
+            log.warning("No annotators configured!")
 
         mapped_configs = {}
         if "general" in config_dict:

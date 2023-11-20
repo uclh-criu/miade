@@ -2,7 +2,6 @@
     with a few minor changes adapted to reading snomed UK folder paths"""
 
 import os
-import json
 import re
 import hashlib
 import pandas as pd

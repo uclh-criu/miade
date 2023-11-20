@@ -2,7 +2,11 @@ from miade.core import NoteProcessor
 from miade.paragraph import Paragraph, ParagraphType
 from miade.metaannotations import MetaAnnotations
 
-from miade.utils.metaannotationstypes import *
+from miade.utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    SubstanceCategory,
+)
 
 
 def test_note(model_directory_path, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):

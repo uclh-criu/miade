@@ -240,7 +240,7 @@ def create_bbpe_tokenizer(
             data.append(tokenizer.encode(line).tokens)
             step += 1
 
-    log.info(f"Started training word2vec model with tokenized text...")
+    log.info("Started training word2vec model with tokenized text...")
     w2v = Word2Vec(data, vector_size=300, min_count=1)
 
     log.info(f"Creating embeddings matrix, vocab size {tokenizer.get_vocab_size()}")
@@ -271,7 +271,7 @@ def create_metacats(
 ):
     log.info(f"Loading tokenizer from {tokenizer_path}/...")
     tokenizer = TokenizerWrapperBPE.load(str(tokenizer_path))
-    log.info(f"Loading embeddings from embeddings.npy...")
+    log.info("Loading embeddings from embeddings.npy...")
     embeddings = np.load(str(os.path.join(tokenizer_path, "embeddings.npy")))
 
     assert len(embeddings) == tokenizer.get_size(), (
