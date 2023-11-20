@@ -62,9 +62,7 @@ class Route(BaseModel):
     code_system: Optional[str] = ROUTE_CODE_SYSTEM
 
 
-def parse_dose(
-    text: str, quantities: List[str], units: List[str], results: Dict
-) -> Optional[Dose]:
+def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict) -> Optional[Dose]:
     """
     :param text: (str) string containing dose
     :param quantities: (list) list of quantity entities NER
@@ -119,8 +117,7 @@ def parse_dose(
         # use caliber results as backup
         if results["units"] is not None:
             log.debug(
-                f"Inconclusive dose entities {quantities}, "
-                f"using lookup results {results['qty']} {results['units']}"
+                f"Inconclusive dose entities {quantities}, " f"using lookup results {results['qty']} {results['units']}"
             )
             quantity_dosage.unit = results["units"]
             #  only autofill 1 if non-quantitative units e.g. tab, cap, puff
@@ -327,13 +324,9 @@ class Dosage(object):
             # if duration not given in text could extract this from total dose if given
             if total_dose is not None and dose is not None and doc._.results["freq"]:
                 if dose.value is not None:
-                    daily_dose = float(dose.value) * (
-                        round(doc._.results["freq"] / doc._.results["time"])
-                    )
+                    daily_dose = float(dose.value) * (round(doc._.results["freq"] / doc._.results["time"]))
                 elif dose.high is not None:
-                    daily_dose = float(dose.high) * (
-                        round(doc._.results["freq"] / doc._.results["time"])
-                    )
+                    daily_dose = float(dose.high) * (round(doc._.results["freq"] / doc._.results["time"]))
 
         duration = parse_duration(
             text=duration_text,

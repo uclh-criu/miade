@@ -83,11 +83,7 @@ def build_model_pack(
     cat.config.version["ontology"] = ontology
 
     current_date = datetime.datetime.now().strftime("%b_%Y")
-    name = (
-        f"miade_{tag}_blank_modelpack_{current_date}"
-        if tag is not None
-        else f"miade_blank_modelpack_{current_date}"
-    )
+    name = f"miade_{tag}_blank_modelpack_{current_date}" if tag is not None else f"miade_blank_modelpack_{current_date}"
 
     cat.create_model_pack(str(output), name)
     log.info(f"Saved model pack at {output}/{name}_{cat.config.version['id']}")
@@ -123,9 +119,7 @@ def train(
     if checkpoint:
         log.info(f"Checkpoint steps configured to {checkpoint}")
         cat.config.general["checkpoint"]["steps"] = checkpoint
-        cat.config.general["checkpoint"]["output_dir"] = os.path.join(
-            Path.cwd(), "checkpoints"
-        )
+        cat.config.general["checkpoint"]["output_dir"] = os.path.join(Path.cwd(), "checkpoints")
 
     cat.train(training_data)
 
@@ -281,15 +275,13 @@ def create_metacats(
     embeddings = np.load(str(os.path.join(tokenizer_path, "embeddings.npy")))
 
     assert len(embeddings) == tokenizer.get_size(), (
-        f"Tokenizer and embeddings not the same size {len(embeddings)}, "
-        f"{tokenizer.get_size()}"
+        f"Tokenizer and embeddings not the same size {len(embeddings)}, " f"{tokenizer.get_size()}"
     )
 
     metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
     for category in category_names:
-        metacat.config.general[
-            'description'] = f"MiADE blank {category} MetaCAT model"
-        metacat.config.general['category_name'] = category
+        metacat.config.general["description"] = f"MiADE blank {category} MetaCAT model"
+        metacat.config.general["category_name"] = category
         metacat.save(str(os.path.join(output, f"meta_{category}")))
         log.info(f"Saved meta_{category} at {output}")
 
@@ -310,9 +302,7 @@ def train_metacat(
         description = f"MiADE meta-annotations model {model_path.stem} trained on {annotation_path.stem}"
 
     mc.config.general["description"] = description
-    mc.config.general["category_name"] = model_path.stem.split("_")[
-        -1
-    ]  # meta folder name should be e.g. meta_presence
+    mc.config.general["category_name"] = model_path.stem.split("_")[-1]  # meta folder name should be e.g. meta_presence
     mc.config.general["cntx_left"] = cntx_left
     mc.config.general["cntx_right"] = cntx_right
     mc.config.train["nepochs"] = nepochs
@@ -361,17 +351,11 @@ def add_metacat_models(
             stats[categories[-1]] = report
 
     log.info(f"Creating CAT with MetaCAT models {categories}...")
-    cat_w_meta = CAT(
-        cdb=cat.cdb, vocab=cat.vocab, config=cat.config, meta_cats=meta_cats
-    )
+    cat_w_meta = CAT(cdb=cat.cdb, vocab=cat.vocab, config=cat.config, meta_cats=meta_cats)
 
     if description is None:
         log.info("Automatically populating description field of model card...")
-        description = (
-            cat.config.version["description"]
-            + " | Packaged with MetaCAT model(s) "
-            + ", ".join(categories)
-        )
+        description = cat.config.version["description"] + " | Packaged with MetaCAT model(s) " + ", ".join(categories)
     cat.config.version["description"] = description
 
     for category in categories:

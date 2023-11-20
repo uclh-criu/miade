@@ -29,11 +29,15 @@ def create_annotator(name: str, model_factory: ModelFactory):
     """
     name = name.lower()
     if name not in model_factory.models:
-        raise ValueError(f"MedCAT model for {name} does not exist: either not configured in config.yaml or "
-                         f"missing from models directory")
+        raise ValueError(
+            f"MedCAT model for {name} does not exist: either not configured in config.yaml or "
+            f"missing from models directory"
+        )
 
     if name in model_factory.annotators.keys():
-        return model_factory.annotators[name](cat=model_factory.models.get(name), config=model_factory.configs.get(name))
+        return model_factory.annotators[name](
+            cat=model_factory.models.get(name), config=model_factory.configs.get(name)
+        )
     else:
         log.warning(f"Annotator {name} does not exist, loading generic Annotator")
         return Annotator(model_factory.models[name])
@@ -48,6 +52,7 @@ class NoteProcessor:
     :param device (str) whether inference should be run on cpu or gpu - default "cpu"
     :param custom_annotators (List[Annotators]) List of custom annotators
     """
+
     def __init__(
         self,
         model_directory: Path,
@@ -55,7 +60,7 @@ class NoteProcessor:
         log_level: int = logging.INFO,
         dosage_extractor_log_level: int = logging.INFO,
         device: str = "cpu",
-        custom_annotators: Optional[List[Annotator]] = None
+        custom_annotators: Optional[List[Annotator]] = None,
     ):
         logging.getLogger("miade").setLevel(log_level)
         logging.getLogger("miade.dosageextractor").setLevel(dosage_extractor_log_level)
@@ -152,12 +157,9 @@ class NoteProcessor:
         else:
             log.warning("No general settings configured, using default settings.")
 
-        model_factory_config = {"models": mapped_models,
-                                "annotators": mapped_annotators,
-                                "configs": mapped_configs}
+        model_factory_config = {"models": mapped_models, "annotators": mapped_annotators, "configs": mapped_configs}
 
         return ModelFactory(**model_factory_config)
-
 
     def add_annotator(self, name: str) -> None:
         """
@@ -167,7 +169,9 @@ class NoteProcessor:
         """
         try:
             annotator = create_annotator(name, self.model_factory)
-            log.info(f"Added {type(annotator).__name__} to processor with config {self.model_factory.configs.get(name)}")
+            log.info(
+                f"Added {type(annotator).__name__} to processor with config {self.model_factory.configs.get(name)}"
+            )
         except Exception as e:
             raise Exception(f"Error creating annotator: {e}")
 
@@ -214,11 +218,9 @@ class NoteProcessor:
 
         return concepts
 
-    def get_concept_dicts(self,
-                             note: Note,
-                             filter_uncategorized: bool = True,
-                             record_concepts: Optional[List[Concept]] = None
-                             ) -> List[Dict]:
+    def get_concept_dicts(
+        self, note: Note, filter_uncategorized: bool = True, record_concepts: Optional[List[Concept]] = None
+    ) -> List[Dict]:
         """
         Returns concepts in dictionary format
         :param note: (Note) note containing text to extract concepts from
@@ -233,10 +235,12 @@ class NoteProcessor:
                 continue
             concept_dict = concept.__dict__
             if concept.dosage is not None:
-                concept_dict["dosage"] = {"dose": concept.dosage.dose.dict() if concept.dosage.dose else None,
-                                          "duration": concept.dosage.duration.dict() if concept.dosage.duration else None,
-                                          "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
-                                          "route": concept.dosage.route.dict() if concept.dosage.route else None}
+                concept_dict["dosage"] = {
+                    "dose": concept.dosage.dose.dict() if concept.dosage.dose else None,
+                    "duration": concept.dosage.duration.dict() if concept.dosage.duration else None,
+                    "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
+                    "route": concept.dosage.route.dict() if concept.dosage.route else None,
+                }
             if concept.meta is not None:
                 meta_anns = []
                 for meta in concept.meta:
@@ -249,4 +253,3 @@ class NoteProcessor:
             concept_list.append(concept_dict)
 
         return concept_list
-

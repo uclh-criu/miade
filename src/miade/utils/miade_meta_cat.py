@@ -18,6 +18,7 @@ from medcat.utils.meta_cat.ml_utils import train_model
 
 logger = logging.getLogger("meta_cat")
 
+
 # Hacky as hell, just for the dashboard, NOT permanent solution - will not merge with main branch
 def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: torch.device, pad_id: int) -> Tuple:
     """Creates a batch given data and start/end that denote batch size, will also add
@@ -41,7 +42,7 @@ def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: to
             Center positions for the data
     """
     max_seq_len = max([len(x[0]) for x in data])
-    x = [x[0][0:max_seq_len] + [pad_id]*max(0, max_seq_len - len(x[0])) for x in data[start_ind:end_ind]]
+    x = [x[0][0:max_seq_len] + [pad_id] * max(0, max_seq_len - len(x[0])) for x in data[start_ind:end_ind]]
     cpos = [x[1] for x in data[start_ind:end_ind]]
     y = None
     if len(data[0]) == 3:
@@ -54,17 +55,17 @@ def create_batch_piped_data(data: List, start_ind: int, end_ind: int, device: to
     return x, cpos, y
 
 
-def print_report(epoch: int, running_loss: List, all_logits: List, y: Any, name: str = 'Train') -> None:
-    r''' Prints some basic stats during training
+def print_report(epoch: int, running_loss: List, all_logits: List, y: Any, name: str = "Train") -> None:
+    r"""Prints some basic stats during training
     Args:
         epoch
         running_loss
         all_logits
         y
         name
-    '''
+    """
     if all_logits:
-        print(f'Epoch: {epoch} ' + "*"*50 + f"  {name}")
+        print(f"Epoch: {epoch} " + "*" * 50 + f"  {name}")
         print(classification_report(y, np.argmax(np.concatenate(all_logits, axis=0), axis=1)))
 
 
@@ -75,11 +76,11 @@ def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: T
         data
         config
     """
-    device = torch.device(config.general['device'])  # Create a torch device
-    batch_size_eval = config.general['batch_size_eval']
-    pad_id = config.model['padding_idx']
-    ignore_cpos = config.model['ignore_cpos']
-    class_weights = config.train['class_weights']
+    device = torch.device(config.general["device"])  # Create a torch device
+    batch_size_eval = config.general["batch_size_eval"]
+    pad_id = config.model["padding_idx"]
+    ignore_cpos = config.model["ignore_cpos"]
+    class_weights = config.train["class_weights"]
 
     if class_weights is not None:
         class_weights = torch.FloatTensor(class_weights).to(device)
@@ -96,8 +97,9 @@ def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: T
 
     with torch.no_grad():
         for i in range(num_batches):
-            x, cpos, y = create_batch_piped_data(data, i * batch_size_eval, (i + 1) * batch_size_eval,
-                                                 device=device, pad_id=pad_id)
+            x, cpos, y = create_batch_piped_data(
+                data, i * batch_size_eval, (i + 1) * batch_size_eval, device=device, pad_id=pad_id
+            )
             logits = model(x, cpos, ignore_cpos=ignore_cpos)
             loss = criterion(logits, y)
 
@@ -105,39 +107,46 @@ def eval_model(model: nn.Module, data: List, config: ConfigMetaCAT, tokenizer: T
             running_loss.append(loss.item())
             all_logits.append(logits.detach().cpu().numpy())
 
-    print_report(0, running_loss, all_logits, y=y_eval, name='Eval')
+    print_report(0, running_loss, all_logits, y=y_eval, name="Eval")
 
-    score_average = config.train['score_average']
+    score_average = config.train["score_average"]
     predictions = np.argmax(np.concatenate(all_logits, axis=0), axis=1)
     precision, recall, f1, support = precision_recall_fscore_support(y_eval, predictions, average=score_average)
 
-    labels = [name for (name, _) in sorted(config.general['category_value2id'].items(), key=lambda x: x[1])]
+    labels = [name for (name, _) in sorted(config.general["category_value2id"].items(), key=lambda x: x[1])]
     confusion = pd.DataFrame(
-        data=confusion_matrix(y_eval, predictions, ),
+        data=confusion_matrix(
+            y_eval,
+            predictions,
+        ),
         columns=["true " + label for label in labels],
         index=["predicted " + label for label in labels],
     )
 
-    examples: Dict = {'FP': {}, 'FN': {}, 'TP': {}}
-    id2category_value = {v: k for k, v in config.general['category_value2id'].items()}
+    examples: Dict = {"FP": {}, "FN": {}, "TP": {}}
+    id2category_value = {v: k for k, v in config.general["category_value2id"].items()}
     for i, p in enumerate(predictions):
         y = id2category_value[y_eval[i]]
         p = id2category_value[p]
         c = data[i][1]
         tkns = data[i][0]
         assert tokenizer.hf_tokenizers is not None
-        text = tokenizer.hf_tokenizers.decode(tkns[0:c]) + " <<" + tokenizer.hf_tokenizers.decode(
-            tkns[c:c + 1]).strip() + ">> " + \
-               tokenizer.hf_tokenizers.decode(tkns[c + 1:])
+        text = (
+            tokenizer.hf_tokenizers.decode(tkns[0:c])
+            + " <<"
+            + tokenizer.hf_tokenizers.decode(tkns[c : c + 1]).strip()
+            + ">> "
+            + tokenizer.hf_tokenizers.decode(tkns[c + 1 :])
+        )
         info = "Predicted: {}, True: {}".format(p, y)
         if p != y:
             # We made a mistake
-            examples['FN'][y] = examples['FN'].get(y, []) + [(info, text)]
-            examples['FP'][p] = examples['FP'].get(p, []) + [(info, text)]
+            examples["FN"][y] = examples["FN"].get(y, []) + [(info, text)]
+            examples["FP"][p] = examples["FP"].get(p, []) + [(info, text)]
         else:
-            examples['TP'][y] = examples['TP'].get(y, []) + [(info, text)]
+            examples["TP"][y] = examples["TP"].get(y, []) + [(info, text)]
 
-    return {'precision': precision, 'recall': recall, 'f1': f1, 'examples': examples, 'confusion matrix': confusion}
+    return {"precision": precision, "recall": recall, "f1": f1, "examples": examples, "confusion matrix": confusion}
 
 
 def prepare_from_miade_csv(
@@ -181,11 +190,7 @@ def prepare_from_miade_csv(
                         e_ind = p_ind
 
                 ln = e_ind - s_ind
-                tkns = (
-                    tkns[:cpos]
-                    + tokenizer(replace_center)["input_ids"]
-                    + tkns[cpos + ln + 1 :]
-                )
+                tkns = tkns[:cpos] + tokenizer(replace_center)["input_ids"] + tkns[cpos + ln + 1 :]
 
             value = data[category_name].values[i]
             sample = [tkns, cpos, value]
@@ -222,9 +227,7 @@ class MiADE_MetaCAT(MetaCAT):
         # Create directories if they don't exist
         if t_config["auto_save_model"]:
             if save_dir_path is None:
-                raise Exception(
-                    "The `save_dir_path` argument is required if `aut_save_model` is `True` in the config"
-                )
+                raise Exception("The `save_dir_path` argument is required if `aut_save_model` is `True` in the config")
             else:
                 os.makedirs(save_dir_path, exist_ok=True)
 
@@ -276,9 +279,7 @@ class MiADE_MetaCAT(MetaCAT):
             g_config["category_value2id"] = category_value2id
         else:
             # We already have everything, just get the data
-            data, _ = encode_category_values(
-                data, existing_category_value2id=category_value2id
-            )
+            data, _ = encode_category_values(data, existing_category_value2id=category_value2id)
 
         # Make sure the config number of classes is the same as the one found in the data
         if len(category_value2id) != self.config.model["nclasses"]:
@@ -287,22 +288,16 @@ class MiADE_MetaCAT(MetaCAT):
                     self.config.model["nclasses"], len(category_value2id)
                 )
             )
-            logger.warning(
-                "Auto-setting the nclasses value in config and rebuilding the model."
-            )
+            logger.warning("Auto-setting the nclasses value in config and rebuilding the model.")
             self.config.model["nclasses"] = len(category_value2id)
             self.model = self.get_model(embeddings=self.embeddings)
 
-        report = train_model(
-            self.model, data=data, config=self.config, save_dir_path=save_dir_path
-        )
+        report = train_model(self.model, data=data, config=self.config, save_dir_path=save_dir_path)
 
         # If autosave, then load the best model here
         if t_config["auto_save_model"]:
             if save_dir_path is None:
-                raise Exception(
-                    "The `save_dir_path` argument is required if `aut_save_model` is `True` in the config"
-                )
+                raise Exception("The `save_dir_path` argument is required if `aut_save_model` is `True` in the config")
             else:
                 path = os.path.join(save_dir_path, "model.dat")
                 device = torch.device(g_config["device"])
@@ -315,31 +310,35 @@ class MiADE_MetaCAT(MetaCAT):
         return report
 
     def eval(self, json_path: str) -> Dict:
-        """Evaluate from json.
-
-        """
+        """Evaluate from json."""
         g_config = self.config.general
         t_config = self.config.train
 
-        with open(json_path, 'r') as f:
+        with open(json_path, "r") as f:
             data_loaded: Dict = json.load(f)
 
         # Prepare the data
         assert self.tokenizer is not None
-        data = prepare_from_json(data_loaded, g_config['cntx_left'], g_config['cntx_right'], self.tokenizer,
-                                 cui_filter=t_config['cui_filter'],
-                                 replace_center=g_config['replace_center'], prerequisites=t_config['prerequisites'],
-                                 lowercase=g_config['lowercase'])
+        data = prepare_from_json(
+            data_loaded,
+            g_config["cntx_left"],
+            g_config["cntx_right"],
+            self.tokenizer,
+            cui_filter=t_config["cui_filter"],
+            replace_center=g_config["replace_center"],
+            prerequisites=t_config["prerequisites"],
+            lowercase=g_config["lowercase"],
+        )
 
         # Check is the name there
-        category_name = g_config['category_name']
+        category_name = g_config["category_name"]
         if category_name not in data:
             raise Exception("The category name does not exist in this json file.")
 
         data = data[category_name]
 
         # We already have everything, just get the data
-        category_value2id = g_config['category_value2id']
+        category_value2id = g_config["category_value2id"]
         data, _ = encode_category_values(data, existing_category_value2id=category_value2id)
 
         # Run evaluation

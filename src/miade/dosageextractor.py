@@ -46,17 +46,12 @@ class DosageExtractor:
         """
         doc = self.dosage_extractor(text)
 
-        log.debug(
-            f"NER results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}"
-        )
+        log.debug(f"NER results: {[(e.text, e.label_, e._.total_dose) for e in doc.ents]}")
         log.debug(f"Lookup results: {doc._.results}")
 
         dosage = Dosage.from_doc(doc=doc, calculate=calculate)
 
-        if all(
-            v is None
-            for v in [dosage.dose, dosage.frequency, dosage.route, dosage.duration]
-        ):
+        if all(v is None for v in [dosage.dose, dosage.frequency, dosage.route, dosage.duration]):
             return None
 
         return dosage

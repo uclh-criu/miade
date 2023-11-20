@@ -60,24 +60,18 @@ class CDBBuilder(object):
         print("Exporting preprocessed SNOMED to csv...")
 
         if self.snomed_subset_path is not None:
-            snomed_subset = pd.read_csv(
-                str(self.snomed_subset_path), header=0, dtype={"cui": object}
-            )
+            snomed_subset = pd.read_csv(str(self.snomed_subset_path), header=0, dtype={"cui": object})
         else:
             snomed_subset = None
 
         if self.snomed_exclusions_path is not None:
-            snomed_exclusions = pd.read_csv(
-                str(self.snomed_exclusions_path), sep="\n", header=None
-            )
+            snomed_exclusions = pd.read_csv(str(self.snomed_exclusions_path), sep="\n", header=None)
             snomed_exclusions.columns = ["cui"]
         else:
             snomed_exclusions = None
 
         output_file = output_dir / Path("preprocessed_snomed.csv")
-        df = self.snomed.to_concept_df(
-            subset_list=snomed_subset, exclusion_list=snomed_exclusions
-        )
+        df = self.snomed.to_concept_df(subset_list=snomed_subset, exclusion_list=snomed_exclusions)
         df.to_csv(str(output_file), index=False)
         return output_file
 
@@ -105,7 +99,7 @@ class CDBBuilder(object):
         if self.elg_data_path:
             self.vocab_files.append(str(self.preprocess_elg(self.temp_dir)))
         if self.custom_data_paths:
-            string_paths  = [str(path) for path in self.custom_data_paths]
+            string_paths = [str(path) for path in self.custom_data_paths]
             self.vocab_files.extend(string_paths)
 
     def create_cdb(self) -> CDB:

@@ -11,9 +11,7 @@ import pandas as pd
 def parse_file(filename, first_row_header=True, columns=None):
     with open(filename, encoding="utf-8") as f:
         entities = [[n.strip() for n in line.split("\t")] for line in f]
-        return pd.DataFrame(
-            entities[1:], columns=entities[0] if first_row_header else columns
-        )
+        return pd.DataFrame(entities[1:], columns=entities[0] if first_row_header else columns)
 
 
 class Snomed:
@@ -64,9 +62,7 @@ class Snomed:
             if uk_code is None or snomed_v is None:
                 raise FileNotFoundError("Could not find file matching pattern")
 
-            int_terms = parse_file(
-                f"{contents_path}/sct2_Concept_{uk_code}Snapshot_{snomed_v}_{snomed_release}.txt"
-            )
+            int_terms = parse_file(f"{contents_path}/sct2_Concept_{uk_code}Snapshot_{snomed_v}_{snomed_release}.txt")
             active_terms = int_terms[int_terms.active == "1"]
             del int_terms
 
@@ -86,16 +82,10 @@ class Snomed:
             del active_terms
             del active_descs
 
-            active_with_primary_desc = _[
-                _["typeId"] == "900000000000003001"
-            ]  # active description
-            active_with_synonym_desc = _[
-                _["typeId"] == "900000000000013009"
-            ]  # active synonym
+            active_with_primary_desc = _[_["typeId"] == "900000000000003001"]  # active description
+            active_with_synonym_desc = _[_["typeId"] == "900000000000013009"]  # active synonym
             del _
-            active_with_all_desc = pd.concat(
-                [active_with_primary_desc, active_with_synonym_desc]
-            )
+            active_with_all_desc = pd.concat([active_with_primary_desc, active_with_synonym_desc])
 
             active_snomed_df = active_with_all_desc[["id_x", "term", "typeId"]]
             del active_with_all_desc
@@ -110,12 +100,8 @@ class Snomed:
             )
             active_snomed_df.reset_index(drop=True, inplace=True)
 
-            temp_df = active_snomed_df[active_snomed_df["name_status"] == "P"][
-                ["cui", "name"]
-            ]
-            temp_df["description_type_ids"] = temp_df["name"].str.extract(
-                r"\((\w+\s?.?\s?\w+.?\w+.?\w+.?)\)$"
-            )
+            temp_df = active_snomed_df[active_snomed_df["name_status"] == "P"][["cui", "name"]]
+            temp_df["description_type_ids"] = temp_df["name"].str.extract(r"\((\w+\s?.?\s?\w+.?\w+.?\w+.?)\)$")
             active_snomed_df = pd.merge(
                 active_snomed_df,
                 temp_df.loc[:, ["cui", "description_type_ids"]],
@@ -129,10 +115,7 @@ class Snomed:
             active_snomed_df["type_ids"] = (
                 active_snomed_df["description_type_ids"]
                 .dropna()
-                .apply(
-                    lambda x: int(hashlib.sha256(x.encode("utf-8")).hexdigest(), 16)
-                    % 10**8
-                )
+                .apply(lambda x: int(hashlib.sha256(x.encode("utf-8")).hexdigest(), 16) % 10**8)
             )
             df2merge.append(active_snomed_df)
 
@@ -184,8 +167,6 @@ class Snomed:
             active_relat = int_relat[int_relat.active == "1"]
             del int_relat
 
-            all_rela.extend(
-                [relationship for relationship in active_relat["typeId"].unique()]
-            )
+            all_rela.extend([relationship for relationship in active_relat["typeId"].unique()])
 
         return all_rela

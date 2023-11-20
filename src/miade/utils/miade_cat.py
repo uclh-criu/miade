@@ -17,6 +17,7 @@ from medcat.utils.filters import get_project_filters
 
 logger = logging.getLogger("cat")
 
+
 class MiADE_CAT(CAT):
     """Experimental - overriding medcat write out function - more control over spacy pipeline: add negex results"""
 
@@ -64,10 +65,7 @@ class MiADE_CAT(CAT):
                     out_ent["pretty_name"] = self.cdb.get_name(cui)
                     out_ent["cui"] = cui
                     out_ent["type_ids"] = list(self.cdb.cui2type_ids.get(cui, ""))
-                    out_ent["types"] = [
-                        self.cdb.addl_info["type_id2name"].get(tui, "")
-                        for tui in out_ent["type_ids"]
-                    ]
+                    out_ent["types"] = [self.cdb.addl_info["type_id2name"].get(tui, "") for tui in out_ent["type_ids"]]
                     out_ent["source_value"] = ent.text
                     out_ent["detected_name"] = str(ent._.detected_name)
                     out_ent["acc"] = float(ent._.context_similarity)
@@ -76,9 +74,7 @@ class MiADE_CAT(CAT):
                     out_ent["end"] = ent.end_char
                     for addl in addl_info:
                         tmp = self.cdb.addl_info.get(addl, {}).get(cui, [])
-                        out_ent[addl.split("2")[-1]] = (
-                            list(tmp) if type(tmp) == set else tmp
-                        )
+                        out_ent[addl.split("2")[-1]] = list(tmp) if type(tmp) == set else tmp
                     out_ent["id"] = ent._.id
                     out_ent["meta_anns"] = {}
 
@@ -87,12 +83,8 @@ class MiADE_CAT(CAT):
                         out_ent["end_tkn"] = ent.end
 
                     if context_left > 0 and context_right > 0:
-                        out_ent["context_left"] = doc_tokens[
-                            max(ent.start - context_left, 0) : ent.start
-                        ]
-                        out_ent["context_right"] = doc_tokens[
-                            ent.end : min(ent.end + context_right, len(doc_tokens))
-                        ]
+                        out_ent["context_left"] = doc_tokens[max(ent.start - context_left, 0) : ent.start]
+                        out_ent["context_right"] = doc_tokens[ent.end : min(ent.end + context_right, len(doc_tokens))]
                         out_ent["context_center"] = doc_tokens[ent.start : ent.end]
 
                     if hasattr(ent._, "meta_anns") and ent._.meta_anns:
@@ -105,10 +97,7 @@ class MiADE_CAT(CAT):
                 else:
                     out["entities"][ent._.id] = cui
 
-            if (
-                cnf_annotation_output.get("include_text_in_output", False)
-                or out_with_text
-            ):
+            if cnf_annotation_output.get("include_text_in_output", False) or out_with_text:
                 out["text"] = doc.text
         return out
 
@@ -132,7 +121,6 @@ class MiADE_CAT(CAT):
         checkpoint: Optional[Checkpoint] = None,
         is_resumed: bool = False,
     ) -> Tuple:
-
         checkpoint = self._init_ckpts(is_resumed, checkpoint)
 
         # Backup filters
@@ -149,9 +137,7 @@ class MiADE_CAT(CAT):
             test_set = data
             train_set = data
         else:
-            train_set, test_set, _, _ = make_mc_train_test(
-                data, self.cdb, test_size=test_size
-            )
+            train_set, test_set, _, _ = make_mc_train_test(data, self.cdb, test_size=test_size)
 
         if print_stats > 0:
             fp, fn, tp, p, r, f1, cui_counts, examples = self._print_stats(
@@ -184,9 +170,7 @@ class MiADE_CAT(CAT):
                             self.unlink_concept_name(ann["cui"], ann["value"])
 
         latest_trained_step = checkpoint.count if checkpoint is not None else 0
-        current_epoch, current_project, current_document = self._get_training_start(
-            train_set, latest_trained_step
-        )
+        current_epoch, current_project, current_document = self._get_training_start(train_set, latest_trained_step)
 
         for epoch in trange(
             current_epoch,
@@ -221,9 +205,7 @@ class MiADE_CAT(CAT):
                     )
 
                     if project_filter:
-                        filters["cuis"] = intersect_nonempty_set(
-                            project_filter, filters["cuis"]
-                        )
+                        filters["cuis"] = intersect_nonempty_set(project_filter, filters["cuis"])
 
                 for idx_doc in trange(
                     current_document,
@@ -243,9 +225,7 @@ class MiADE_CAT(CAT):
                             cui = ann["cui"]
                             start = ann["start"]
                             end = ann["end"]
-                            spacy_entity = tkns_from_doc(
-                                spacy_doc=spacy_doc, start=start, end=end
-                            )
+                            spacy_entity = tkns_from_doc(spacy_doc=spacy_doc, start=start, end=end)
                             deleted = ann.get("deleted", False)
                             self.add_and_train_concept(
                                 cui=cui,
@@ -288,9 +268,7 @@ class MiADE_CAT(CAT):
                     name = synth_data.name.values[i]
                     start = synth_data.start.values[i]
                     end = synth_data.end.values[i]
-                    spacy_entity = tkns_from_doc(
-                        spacy_doc=spacy_doc, start=start, end=end
-                    )
+                    spacy_entity = tkns_from_doc(spacy_doc=spacy_doc, start=start, end=end)
                     self.add_and_train_concept(
                         cui=cui,
                         name=name,

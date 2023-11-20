@@ -81,8 +81,7 @@ class Preprocessor:
 
         # remove numbers relating to strength of med e.g. aspirin 200mg tablets...
         processed_text = re.sub(
-            r" (\d+\.?\d*) (mg|ml|g|mcg|microgram|gram|%)"
-            r"(\s|/)(tab|cap|gel|cream|dose|pessaries)",
+            r" (\d+\.?\d*) (mg|ml|g|mcg|microgram|gram|%)" r"(\s|/)(tab|cap|gel|cream|dose|pessaries)",
             "",
             processed_text,
         )
@@ -102,9 +101,7 @@ class Preprocessor:
                 if replacement == " ":
                     log.debug(f"Removed multiword match '{words}'")
                 else:
-                    log.debug(
-                        f"Replaced multiword match '{words}' with '{replacement}'"
-                    )
+                    log.debug(f"Replaced multiword match '{words}' with '{replacement}'")
             processed_text = new_text
 
         # numbers replace 2

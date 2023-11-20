@@ -4,8 +4,8 @@ from miade.metaannotations import MetaAnnotations
 
 from miade.utils.metaannotationstypes import *
 
-def test_note(model_directory_path, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):
 
+def test_note(model_directory_path, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):
     test_clean_and_paragraphing_note.clean_text()
     test_clean_and_paragraphing_note.get_paragraphs()
 
@@ -28,8 +28,7 @@ def test_note(model_directory_path, test_clean_and_paragraphing_note, test_parag
     processor.add_annotator("meds/allergies")
 
     concepts = processor.annotators[0].process_paragraphs(
-        test_clean_and_paragraphing_note,
-        test_paragraph_chunking_concepts
+        test_clean_and_paragraphing_note, test_paragraph_chunking_concepts
     )
     # prose
     assert concepts[0].meta == [
@@ -82,6 +81,7 @@ def test_note(model_directory_path, test_clean_and_paragraphing_note, test_parag
     ]
     # for concept in concepts:
     #     print(concept)
+
 
 def test_long_problem_list():
     # TODO

@@ -11,7 +11,7 @@ META_ANNS_DICT = {
     "substance_category": SubstanceCategory,
     "reaction_pos": ReactionPos,
     "allergy_type": AllergyType,
-    "severity": Severity
+    "severity": Severity,
 }
 
 
@@ -20,7 +20,7 @@ class MetaAnnotations(BaseModel):
     value: Enum
     confidence: Optional[float]
 
-    @validator('value', pre=True)
+    @validator("value", pre=True)
     def validate_value(cls, value, values):
         enum_dict = META_ANNS_DICT
         if isinstance(value, str):
@@ -36,8 +36,4 @@ class MetaAnnotations(BaseModel):
         return value
 
     def __eq__(self, other):
-        return (
-            self.name == other.name
-            and self.value == other.value
-        )
-
+        return self.name == other.name and self.value == other.value
