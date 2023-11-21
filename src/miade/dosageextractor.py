@@ -5,7 +5,9 @@ from spacy import Language
 from typing import Optional
 
 from .dosage import Dosage
-
+from .drugdoseade.preprocessor import Preprocessor  # noqa: F401
+from .drugdoseade.pattern_matcher import PatternMatcher  # noqa: F401
+from .drugdoseade.entities_refiner import EntitiesRefiner  # noqa: F401
 
 log = logging.getLogger(__name__)
 

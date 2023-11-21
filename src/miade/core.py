@@ -3,12 +3,13 @@ import sys
 import yaml
 import logging
 
+from negspacy.negation import Negex  # noqa: F401
 from pathlib import Path
 from typing import List, Optional, Dict
 
 from .concept import Concept, Category
 from .note import Note
-from .annotators import Annotator
+from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator  # noqa: F401
 from .dosageextractor import DosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
