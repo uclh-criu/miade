@@ -3,6 +3,7 @@ from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotato
 from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
 
+
 def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
     dosage_extractor = DosageExtractor()
@@ -14,9 +15,7 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
     assert concepts[2].dosage.text == "aspirin IM q daily x 2 weeks with concurrent "
     assert concepts[3].dosage.text == "DOXYCYCLINE 500mg tablets for two weeks"
 
-    assert concepts[0].dosage.dose == Dose(
-        source="75 mg", value=75, unit="mg", low=None, high=None
-    )
+    assert concepts[0].dosage.dose == Dose(source="75 mg", value=75, unit="mg", low=None, high=None)
 
     assert concepts[0].dosage.frequency == Frequency(
         source="start 75 mg every day ",
@@ -32,6 +31,7 @@ def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, te
 
 def test_calculate_word_distance():
     from miade.note import Note
+
     note = Note("the quick broooooown fox jumped over the lazy dog")
     start1, end1 = 10, 20
     start2, end2 = 10, 20
@@ -62,7 +62,6 @@ def test_calculate_word_distance():
     assert calculate_word_distance(start1, end1, start2, end2, note) == 1
 
 
-
 def test_deduplicate(
     test_problems_medcat_model,
     test_duplicate_concepts_note,
@@ -79,14 +78,11 @@ def test_deduplicate(
         Concept(id="7", name="test2", category=Category.MEDICATION),
         Concept(id="5", name="test2", category=Category.PROBLEM),
     ]
-    assert annotator.deduplicate(
-        concepts=test_self_duplicate_concepts_note, record_concepts=None) == [
+    assert annotator.deduplicate(concepts=test_self_duplicate_concepts_note, record_concepts=None) == [
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.MEDICATION),
     ]
-    assert annotator.deduplicate(
-        concepts=test_duplicate_concepts_note, record_concepts=None
-    ) == [
+    assert annotator.deduplicate(concepts=test_duplicate_concepts_note, record_concepts=None) == [
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
@@ -95,9 +91,7 @@ def test_deduplicate(
         Concept(id="5", name="test2", category=Category.PROBLEM),
         Concept(id="6", name="test2", category=Category.MEDICATION),
     ]
-    assert annotator.deduplicate(
-        concepts=test_duplicate_concepts_note, record_concepts=[]
-    ) == [
+    assert annotator.deduplicate(concepts=test_duplicate_concepts_note, record_concepts=[]) == [
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.PROBLEM),
         Concept(id="3", name="test2", category=Category.PROBLEM),
@@ -113,27 +107,17 @@ def test_deduplicate(
         Concept(id=None, name="vtm1", category=Category.MEDICATION),
         Concept(id=None, name="vtm3", category=Category.MEDICATION),
     ]
-    assert (
-        annotator.deduplicate(
-            concepts=[], record_concepts=test_duplicate_concepts_record
-        )
-        == []
-    )
+    assert annotator.deduplicate(concepts=[], record_concepts=test_duplicate_concepts_record) == []
+
 
 def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_concepts):
     annotator = ProblemsAnnotator(test_problems_medcat_model)
 
     assert annotator.postprocess(test_meta_annotations_concepts) == [
         Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
-        Concept(
-            id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM
-        ),  # negex true, meta ignored
-        Concept(
-            id="431956005", name="Arthritis (suspected)", category=Category.PROBLEM
-        ),  # negex false, meta processed
-        Concept(
-            id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
-        ),
+        Concept(id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM),  # negex true, meta ignored
+        Concept(id="431956005", name="Arthritis (suspected)", category=Category.PROBLEM),  # negex false, meta processed
+        Concept(id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM),
         Concept(
             id="1847009",
             name="Endophthalmitis",
@@ -158,11 +142,8 @@ def test_meta_annotations(test_problems_medcat_model, test_meta_annotations_conc
         Concept(
             id="1415005", name="Lymphangitis", category=Category.PROBLEM
         ),  # negex false, meta processed but ignore negation
-        Concept(
-            id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM
-        ),  # negex false, meta processed
-        Concept(id="0000", name="historic concept", category=Category.PROBLEM
-        ),  # historic with no conversion
+        Concept(id="413241009", name="Gastritis (suspected)", category=Category.PROBLEM),  # negex false, meta processed
+        Concept(id="0000", name="historic concept", category=Category.PROBLEM),  # historic with no conversion
     ]
 
 
@@ -171,6 +152,7 @@ def test_problems_filtering_list(test_problems_medcat_model, test_filtering_list
     assert annotator.postprocess(test_filtering_list_concepts) == [
         Concept(id="123", name="real concept", category=Category.PROBLEM),
     ]
+
 
 def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_with_meta_anns, test_meds_allergy_note):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
@@ -193,6 +175,7 @@ def test_allergy_annotator(test_meds_algy_medcat_model, test_substance_concepts_
         Concept(id="419076005", name="Nausea", category=Category.REACTION),
     ]
     assert concepts[2].linked_concepts == []
+
 
 def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)

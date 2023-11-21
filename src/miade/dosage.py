@@ -62,9 +62,7 @@ class Route(BaseModel):
     code_system: Optional[str] = ROUTE_CODE_SYSTEM
 
 
-def parse_dose(
-    text: str, quantities: List[str], units: List[str], results: Dict
-) -> Optional[Dose]:
+def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict) -> Optional[Dose]:
     """
     :param text: (str) string containing dose
     :param quantities: (list) list of quantity entities NER
@@ -99,7 +97,7 @@ def parse_dose(
         else:
             try:
                 quantity_dosage.value = float(quantities[0])
-            except:
+            except ValueError:
                 quantity_dosage.value = float(re.sub(r"[^\d.]+", "", quantities[0]))
         quantity_dosage.unit = units[0]
     elif len(quantities) == 2 and len(units) == 2:
@@ -107,7 +105,7 @@ def parse_dose(
         try:
             quantity_dosage.low = float(quantities[0])
             quantity_dosage.high = float(quantities[1])
-        except:
+        except ValueError:
             quantity_dosage.low = float(re.sub(r"[^\d.]+", "", quantities[0]))
             quantity_dosage.high = float(re.sub(r"[^\d.]+", "", quantities[1]))
         if units[0] == units[1]:
@@ -119,8 +117,7 @@ def parse_dose(
         # use caliber results as backup
         if results["units"] is not None:
             log.debug(
-                f"Inconclusive dose entities {quantities}, "
-                f"using lookup results {results['qty']} {results['units']}"
+                f"Inconclusive dose entities {quantities}, " f"using lookup results {results['qty']} {results['units']}"
             )
             quantity_dosage.unit = results["units"]
             #  only autofill 1 if non-quantitative units e.g. tab, cap, puff
@@ -165,7 +162,7 @@ def parse_frequency(text: str, results: Dict) -> Optional[Frequency]:
     if results["freq"] is not None and results["time"] is not None:
         try:
             frequency_dosage.value = results["time"] / results["freq"]
-        except ZeroDivisionError as e:
+        except ZeroDivisionError:
             frequency_dosage.value = None
         # here i convert time to hours if not institution specified
         # (every X hrs as opposed to X times day) but it's arbitrary really...
@@ -327,13 +324,9 @@ class Dosage(object):
             # if duration not given in text could extract this from total dose if given
             if total_dose is not None and dose is not None and doc._.results["freq"]:
                 if dose.value is not None:
-                    daily_dose = float(dose.value) * (
-                        round(doc._.results["freq"] / doc._.results["time"])
-                    )
+                    daily_dose = float(dose.value) * (round(doc._.results["freq"] / doc._.results["time"]))
                 elif dose.high is not None:
-                    daily_dose = float(dose.high) * (
-                        round(doc._.results["freq"] / doc._.results["time"])
-                    )
+                    daily_dose = float(dose.high) * (round(doc._.results["freq"] / doc._.results["time"]))
 
         duration = parse_duration(
             text=duration_text,

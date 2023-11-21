@@ -92,9 +92,7 @@ def numbers_replace(text):
         text,
     )
     # 3 weeks...
-    text = re.sub(
-        r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text
-    )
+    text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
     # 3 months ... NB assume 30 days in a month
     text = re.sub(
         r" ([\d.]+) (month) ",
