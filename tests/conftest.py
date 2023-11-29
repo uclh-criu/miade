@@ -571,25 +571,25 @@ def test_substance_concepts_with_meta_anns() -> List[Concept]:
         Concept(id="226021002", name="Eggs", start=14, end=17, meta_anns=[
             MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
             MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
-            MetaAnnotations(name="allergytype", value=AllergyType.INTOLERANCE),
+            MetaAnnotations(name="allergy_type", value=AllergyType.INTOLERANCE),
             MetaAnnotations(name="severity", value=Severity.MILD),
         ]),
         Concept(id="159002", name="Penicillin", start=64, end=73, meta_anns=[
             MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
             MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
-            MetaAnnotations(name="allergytype", value=AllergyType.ALLERGY),
+            MetaAnnotations(name="allergy_type", value=AllergyType.ALLERGY),
             MetaAnnotations(name="severity", value=Severity.MODERATE),
         ]),
         Concept(id="140004", name="Rash", start=24, end=27, meta_anns=[
             MetaAnnotations(name="reactionpos", value=ReactionPos.AFTER_SUBSTANCE),
             MetaAnnotations(name="category", value=SubstanceCategory.NOT_SUBSTANCE),
-            MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+            MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
             MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
         ]),
         Concept(id="832007", name="Nausea", start=50, end=55, meta_anns=[
             MetaAnnotations(name="reactionpos", value=ReactionPos.BEFORE_SUBSTANCE),
-            MetaAnnotations(name="category", value=SubstanceCategory.NOT_SUBSTANCE),
-            MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+            MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
+            MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
             MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
         ]),
         Concept(id="7336002", name="Paracetamol", start=83, end=93,
@@ -602,7 +602,7 @@ def test_substance_concepts_with_meta_anns() -> List[Concept]:
                 meta_anns=[
                     MetaAnnotations(name="reactionpos", value=ReactionPos.NOT_REACTION),
                     MetaAnnotations(name="category", value=SubstanceCategory.TAKING),
-                    MetaAnnotations(name="allergytype", value=AllergyType.UNSPECIFIED),
+                    MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
                     MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
         ]),
     ]
