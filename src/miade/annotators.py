@@ -1,6 +1,5 @@
-import io
+import os
 import logging
-import pkgutil
 import re
 from enum import Enum
 
@@ -43,25 +42,23 @@ class AllergenType(Enum):
 
 
 def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = False):
-    lookup_data = pkgutil.get_data(__name__, filename)
     if as_dict:
         return (
             pd.read_csv(
-                io.BytesIO(lookup_data),
+                filename,
                 index_col=0,
             )
             .squeeze("columns")
             .T.to_dict()
         )
     if no_header:
-        return pd.read_csv(io.BytesIO(lookup_data), header=None)
+        return pd.read_csv(filename, header=None)
     else:
-        return pd.read_csv(io.BytesIO(lookup_data)).drop_duplicates()
+        return pd.read_csv(filename).drop_duplicates()
 
 
 def load_allergy_type_combinations(filename: str) -> Dict:
-    data = pkgutil.get_data(__name__, filename)
-    df = pd.read_csv(io.BytesIO(data))
+    df = pd.read_csv(filename)
 
     # Convert 'allergenType' and 'adverseReactionType' columns to lowercase
     df["allergenType"] = df["allergenType"].str.lower()
@@ -371,10 +368,18 @@ class ProblemsAnnotator(Annotator):
         self.concept_types = [Category.PROBLEM]
         self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
 
-        self.negated_lookup = load_lookup_data("./data/negated.csv", as_dict=True)
-        self.historic_lookup = load_lookup_data("./data/historic.csv", as_dict=True)
-        self.suspected_lookup = load_lookup_data("./data/suspected.csv", as_dict=True)
-        self.filtering_blacklist = load_lookup_data("./data/problem_blacklist.csv", no_header=True)
+        self._load_problems_lookup_data()
+
+
+    def _load_problems_lookup_data(self) -> None:
+        if not os.path.isdir(self.config.lookup_data_path):
+            raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
+        else:
+            self.negated_lookup = load_lookup_data(self.config.lookup_data_path + "negated.csv", as_dict=True)
+            self.historic_lookup = load_lookup_data(self.config.lookup_data_path + "historic.csv", as_dict=True)
+            self.suspected_lookup = load_lookup_data(self.config.lookup_data_path + "suspected.csv", as_dict=True)
+            self.filtering_blacklist = load_lookup_data(self.config.lookup_data_path + "problem_blacklist.csv", no_header=True)
+
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
@@ -501,13 +506,19 @@ class MedsAllergiesAnnotator(Annotator):
             "deduplicator",
         ]
 
-        # load the lookup data
-        self.valid_meds = load_lookup_data("./data/valid_meds.csv", no_header=True)
-        self.reactions_subset_lookup = load_lookup_data("./data/reactions_subset.csv", as_dict=True)
-        self.allergens_subset_lookup = load_lookup_data("./data/allergens_subset.csv", as_dict=True)
-        self.allergy_type_lookup = load_allergy_type_combinations("./data/allergy_type.csv")
-        self.vtm_to_vmp_lookup = load_lookup_data("./data/vtm_to_vmp.csv")
-        self.vtm_to_text_lookup = load_lookup_data("./data/vtm_to_text.csv", as_dict=True)
+        self._load_med_allergy_lookup_data()
+
+
+    def _load_med_allergy_lookup_data(self) -> None:
+        if not os.path.isdir(self.config.lookup_data_path):
+            raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
+        else:
+            self.valid_meds = load_lookup_data(self.config.lookup_data_path + "valid_meds.csv", no_header=True)
+            self.reactions_subset_lookup = load_lookup_data(self.config.lookup_data_path + "reactions_subset.csv", as_dict=True)
+            self.allergens_subset_lookup = load_lookup_data(self.config.lookup_data_path + "allergens_subset.csv", as_dict=True)
+            self.allergy_type_lookup = load_allergy_type_combinations(self.config.lookup_data_path + "allergy_type.csv")
+            self.vtm_to_vmp_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_vmp.csv")
+            self.vtm_to_text_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_text.csv", as_dict=True)
 
     def _validate_meds(self, concept) -> bool:
         # check if substance is valid med
