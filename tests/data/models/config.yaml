@@ -8,8 +8,10 @@ annotators:
   custom: CustomAnnotator
 general:
   problems:
+    lookup_data_path: "./lookup_data/"
     negation_detection: negex  # negex or metacat or none
     disable: []
   meds/allergies:
+    lookup_data_path: "./lookup_data/"
     negation_detection: None
     disable: []
