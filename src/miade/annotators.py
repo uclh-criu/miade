@@ -19,7 +19,6 @@ from .utils.metaannotationstypes import *
 from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 # Precompile regular expressions
 sent_regex = re.compile(r"[^\s][^\n]+")
