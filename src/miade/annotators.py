@@ -193,10 +193,10 @@ class Annotator:
                                 if meta.name == "substance_category":
                                     if meta.value != SubstanceCategory.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.pmh:
                             prob_concepts.append(concept)
@@ -212,10 +212,10 @@ class Annotator:
                                 if meta.name == "substance_category":
                                     if meta.value != SubstanceCategory.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = SubstanceCategory.IRRELEVANT
                         elif paragraph.type == ParagraphType.med:
                             # problem is irrelevant and allergy is taking
@@ -223,18 +223,18 @@ class Annotator:
                                 if meta.name == "relevance":
                                     if meta.value != Relevance.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
                                     if meta.value != SubstanceCategory.TAKING:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{SubstanceCategory.TAKING} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{SubstanceCategory.TAKING} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = SubstanceCategory.TAKING
                         elif paragraph.type == ParagraphType.allergy:
                             # problem is irrelevant and allergy is as is
@@ -242,36 +242,45 @@ class Annotator:
                                 if meta.name == "relevance":
                                     if meta.value != Relevance.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category":
                                     # DO NOT CONVERT REACTIONS
-                                    if meta.value != SubstanceCategory.ADVERSE_REACTION and meta.value != SubstanceCategory.NOT_SUBSTANCE:
-                                        log.debug(f"Converted {meta.value} to "
-                                                f"{SubstanceCategory.ADVERSE_REACTION} for concept ({concept.id} | {concept.name}): "
-                                                f"paragraph is {paragraph.type}")
+                                    if (
+                                        meta.value != SubstanceCategory.ADVERSE_REACTION
+                                        and meta.value != SubstanceCategory.NOT_SUBSTANCE
+                                    ):
+                                        log.debug(
+                                            f"Converted {meta.value} to "
+                                            f"{SubstanceCategory.ADVERSE_REACTION} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = SubstanceCategory.ADVERSE_REACTION
-                        elif paragraph.type == ParagraphType.exam or paragraph.type == ParagraphType.ddx or paragraph.type == ParagraphType.plan:
+                        elif (
+                            paragraph.type == ParagraphType.exam
+                            or paragraph.type == ParagraphType.ddx
+                            or paragraph.type == ParagraphType.plan
+                        ):
                             # problem is irrelevant and allergy is irrelevant
                             for meta in concept.meta:
                                 if meta.name == "relevance":
                                     if meta.value != Relevance.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = Relevance.IRRELEVANT
                                 if meta.name == "substance_category":
                                     if meta.value != SubstanceCategory.IRRELEVANT:
                                         log.debug(
-                                        f"Converted {meta.value} to "
-                                          f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                          f"paragraph is {paragraph.type}"
-                                    )
+                                            f"Converted {meta.value} to "
+                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                                            f"paragraph is {paragraph.type}"
+                                        )
                                         meta.value = SubstanceCategory.IRRELEVANT
 
             # print(len(prob_concepts))
@@ -370,7 +379,6 @@ class ProblemsAnnotator(Annotator):
 
         self._load_problems_lookup_data()
 
-
     def _load_problems_lookup_data(self) -> None:
         if not os.path.isdir(self.config.lookup_data_path):
             raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
@@ -378,8 +386,9 @@ class ProblemsAnnotator(Annotator):
             self.negated_lookup = load_lookup_data(self.config.lookup_data_path + "negated.csv", as_dict=True)
             self.historic_lookup = load_lookup_data(self.config.lookup_data_path + "historic.csv", as_dict=True)
             self.suspected_lookup = load_lookup_data(self.config.lookup_data_path + "suspected.csv", as_dict=True)
-            self.filtering_blacklist = load_lookup_data(self.config.lookup_data_path + "problem_blacklist.csv", no_header=True)
-
+            self.filtering_blacklist = load_lookup_data(
+                self.config.lookup_data_path + "problem_blacklist.csv", no_header=True
+            )
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         # Add, convert, or ignore concepts
@@ -508,14 +517,17 @@ class MedsAllergiesAnnotator(Annotator):
 
         self._load_med_allergy_lookup_data()
 
-
     def _load_med_allergy_lookup_data(self) -> None:
         if not os.path.isdir(self.config.lookup_data_path):
             raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
         else:
             self.valid_meds = load_lookup_data(self.config.lookup_data_path + "valid_meds.csv", no_header=True)
-            self.reactions_subset_lookup = load_lookup_data(self.config.lookup_data_path + "reactions_subset.csv", as_dict=True)
-            self.allergens_subset_lookup = load_lookup_data(self.config.lookup_data_path + "allergens_subset.csv", as_dict=True)
+            self.reactions_subset_lookup = load_lookup_data(
+                self.config.lookup_data_path + "reactions_subset.csv", as_dict=True
+            )
+            self.allergens_subset_lookup = load_lookup_data(
+                self.config.lookup_data_path + "allergens_subset.csv", as_dict=True
+            )
             self.allergy_type_lookup = load_allergy_type_combinations(self.config.lookup_data_path + "allergy_type.csv")
             self.vtm_to_vmp_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_vmp.csv")
             self.vtm_to_text_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_text.csv", as_dict=True)
@@ -577,10 +589,13 @@ class MedsAllergiesAnnotator(Annotator):
             else:
                 log.warning(f"Double-checking if concept ({concept.id} | {concept.name}) is in reaction subset")
                 if self._validate_and_convert_reaction(concept) and (
-                    ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values):
+                    ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values
+                ):
                     concept.category = Category.REACTION
                 else:
-                    log.warning(f"Reaction concept ({concept.id} | {concept.name}) not in subset or reaction_pos is NOT_REACTION")
+                    log.warning(
+                        f"Reaction concept ({concept.id} | {concept.name}) not in subset or reaction_pos is NOT_REACTION"
+                    )
         if SubstanceCategory.TAKING in meta_ann_values:
             if self._validate_meds(concept):
                 concept.category = Category.MEDICATION
