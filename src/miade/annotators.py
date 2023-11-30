@@ -519,10 +519,9 @@ class MedsAllergiesAnnotator(Annotator):
         # check if substance is valid substance for allergy - if it is, convert it to Epic subset and return that concept
         lookup_result = self.allergens_subset_lookup.get(int(concept.id))
         if lookup_result is not None:
-            tag = " (converted)"
             log.debug(
                 f"Converted concept ({concept.id} | {concept.name}) to "
-                f"({lookup_result['subsetId']} | {concept.name + tag}): valid Epic allergen subset"
+                f"({lookup_result['subsetId']} | {concept.name}): valid Epic allergen subset"
             )
             concept.id = str(lookup_result["subsetId"])
 
