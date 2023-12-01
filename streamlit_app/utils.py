@@ -1,24 +1,23 @@
 import pandas as pd
 
-from medcat.meta_cat import MetaCAT
-from medcat.config_meta_cat import ConfigMetaCAT
-from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
 from typing import Optional
 
 
 def load_documents(data):
     documents = {}
-    for i in range(0,len(data['projects'][0]['documents'])):
-        documents[data['projects'][0]['documents'][i]['id']] = data['projects'][0]['documents'][i]['text']
+    for i in range(0, len(data["projects"][0]["documents"])):
+        documents[data["projects"][0]["documents"][i]["id"]] = data["projects"][0]["documents"][i]["text"]
     return documents
 
 
 def load_annotations(data):
     annotations = []
-    for i in range(0,len(data['projects'][0]['documents'])):
-        document_id = data['projects'][0]['documents'][i]['id']
-        annotations.extend([Annotation.from_dict(ann, document_id) for ann in data['projects'][0]['documents'][i]['annotations']])
+    for i in range(0, len(data["projects"][0]["documents"])):
+        document_id = data["projects"][0]["documents"][i]["id"]
+        annotations.extend(
+            [Annotation.from_dict(ann, document_id) for ann in data["projects"][0]["documents"][i]["annotations"]]
+        )
     return annotations
 
 
@@ -30,14 +29,17 @@ def get_valid_annotations(data):
     return annotations
 
 
-def get_probs_meta_classes_data(documents, annotations, ):
+def get_probs_meta_classes_data(
+    documents,
+    annotations,
+):
     r_labels = []
     p_labels = []
     l_labels = []
     cuis = []
     names = []
     texts = []
-    tokens = []
+    # tokens = []
     for ann in annotations:
         r_labels.append(ann.meta_relevance)
         p_labels.append(ann.meta_presence)
@@ -61,17 +63,24 @@ def get_probs_meta_classes_data(documents, annotations, ):
         # tkns = doc_text['tokens'][t_start:t_end]
         # tokens.append(tkns)
 
-    df = pd.DataFrame({"text": texts,
-                       "cui": cuis,
-                       "name": names,
-                       # "tokens": tokens,
-                       "relevance": r_labels,
-                       "presence": p_labels,
-                       "laterality (generic)": l_labels, })
+    df = pd.DataFrame(
+        {
+            "text": texts,
+            "cui": cuis,
+            "name": names,
+            # "tokens": tokens,
+            "relevance": r_labels,
+            "presence": p_labels,
+            "laterality (generic)": l_labels,
+        }
+    )
     return df
 
 
-def get_meds_meta_classes_data(documents, annotations, ):
+def get_meds_meta_classes_data(
+    documents,
+    annotations,
+):
     substance_labels = []
     allergy_labels = []
     severity_labels = []
@@ -79,7 +88,7 @@ def get_meds_meta_classes_data(documents, annotations, ):
     cuis = []
     names = []
     texts = []
-    tokens = []
+    # tokens = []
     for ann in annotations:
         substance_labels.append(ann.meta_substance_cat)
         allergy_labels.append(ann.meta_allergy_type)
@@ -104,41 +113,43 @@ def get_meds_meta_classes_data(documents, annotations, ):
         # tkns = doc_text['tokens'][t_start:t_end]
         # tokens.append(tkns)
 
-    df = pd.DataFrame({"text": texts,
-                       "cui": cuis,
-                       "name": names,
-                       # "tokens": tokens,
-                       "substance_category": substance_labels,
-                       "allergy_type": allergy_labels,
-                       "severity": severity_labels,
-                       "reaction_pos": reaction_labels})
+    df = pd.DataFrame(
+        {
+            "text": texts,
+            "cui": cuis,
+            "name": names,
+            # "tokens": tokens,
+            "substance_category": substance_labels,
+            "allergy_type": allergy_labels,
+            "severity": severity_labels,
+            "reaction_pos": reaction_labels,
+        }
+    )
     return df
-
-
 
 
 class Annotation:
     def __init__(
-            self,
-            alternative,
-            id,
-            document_id,
-            cui,
-            value,
-            deleted,
-            start,
-            end,
-            irrelevant,
-            killed,
-            manually_created,
-            meta_laterality,
-            meta_presence,
-            meta_relevance,
-            meta_allergy_type,
-            meta_substance_cat,
-            meta_severity,
-            meta_reaction_pos,
-            dictionary
+        self,
+        alternative,
+        id,
+        document_id,
+        cui,
+        value,
+        deleted,
+        start,
+        end,
+        irrelevant,
+        killed,
+        manually_created,
+        meta_laterality,
+        meta_presence,
+        meta_relevance,
+        meta_allergy_type,
+        meta_substance_cat,
+        meta_severity,
+        meta_reaction_pos,
+        dictionary,
     ):
         self.alternative = alternative
         self.id = id
@@ -173,40 +184,40 @@ class Annotation:
 
         meta_anns = d.get("meta_anns")
         if meta_anns is not None:
-            meta_ann_l = meta_anns.get('laterality (generic)')
+            meta_ann_l = meta_anns.get("laterality (generic)")
             if meta_ann_l is not None:
-                meta_laterality = meta_ann_l['value']
-            meta_ann_r = meta_anns.get('relevance')
+                meta_laterality = meta_ann_l["value"]
+            meta_ann_r = meta_anns.get("relevance")
             if meta_ann_r is not None:
-                meta_relevance = meta_ann_r['value']
-            meta_ann_p = meta_anns.get('presence')
+                meta_relevance = meta_ann_r["value"]
+            meta_ann_p = meta_anns.get("presence")
             if meta_ann_p is not None:
-                meta_presence = meta_ann_p['value']
+                meta_presence = meta_ann_p["value"]
 
-            meta_ann_allergy = meta_anns.get('allergy_type')
+            meta_ann_allergy = meta_anns.get("allergy_type")
             if meta_ann_allergy is not None:
-                meta_allergy_type = meta_ann_allergy['value']
-            meta_ann_substance = meta_anns.get('substance_category')
+                meta_allergy_type = meta_ann_allergy["value"]
+            meta_ann_substance = meta_anns.get("substance_category")
             if meta_ann_substance is not None:
-                meta_substance_cat = meta_ann_substance['value']
-            meta_ann_severity = meta_anns.get('severity')
+                meta_substance_cat = meta_ann_substance["value"]
+            meta_ann_severity = meta_anns.get("severity")
             if meta_ann_severity is not None:
-                meta_severity = meta_ann_severity['value']
-            meta_ann_reaction = meta_anns.get('reaction_pos')
+                meta_severity = meta_ann_severity["value"]
+            meta_ann_reaction = meta_anns.get("reaction_pos")
             if meta_ann_reaction is not None:
-                meta_reaction_pos = meta_ann_reaction['value']
+                meta_reaction_pos = meta_ann_reaction["value"]
         return cls(
-            alternative=d['alternative'],
-            id=d['id'],
+            alternative=d["alternative"],
+            id=d["id"],
             document_id=document_id,
-            cui=d['cui'],
-            value=d['value'],
-            deleted=d['deleted'],
-            start=d['start'],
-            end=d['end'],
-            irrelevant=d['irrelevant'],
-            killed=d['killed'],
-            manually_created=d['manually_created'],
+            cui=d["cui"],
+            value=d["value"],
+            deleted=d["deleted"],
+            start=d["start"],
+            end=d["end"],
+            irrelevant=d["irrelevant"],
+            killed=d["killed"],
+            manually_created=d["manually_created"],
             meta_laterality=meta_laterality,
             meta_presence=meta_presence,
             meta_relevance=meta_relevance,
@@ -245,45 +256,23 @@ manually created: {self.manually_created}
 
     def __eq__(self, other):
         return (
-                self.alternative == other.alternative
-                and
-                self.cui == other.cui
-                and
-                self.document_id == other.document_id
-                and
-                self.deleted == other.deleted
-                and
-                self.start == other.start
-                and
-                self.end == other.end
-                and
-                self.irrelevant == other.irrelevant
-                and
-                self.killed == other.killed
-                and
-                self.manually_created == other.manually_created
-                and
-                self.meta_laterality == other.meta_laterality
-                and
-                self.meta_presence == other.meta_presence
-                and
-                self.meta_relevance == other.meta_relevance
-                and
-                self.meta_substance_cat == other.meta_substance_cat
-                and
-                self.meta_allergy_type == other.meta_allergy_type
-                and
-                self.meta_severity == other.meta_severity
-                and
-                self.meta_reaction_pos == other.meta_reaction_pos
-
+            self.alternative == other.alternative
+            and self.cui == other.cui
+            and self.document_id == other.document_id
+            and self.deleted == other.deleted
+            and self.start == other.start
+            and self.end == other.end
+            and self.irrelevant == other.irrelevant
+            and self.killed == other.killed
+            and self.manually_created == other.manually_created
+            and self.meta_laterality == other.meta_laterality
+            and self.meta_presence == other.meta_presence
+            and self.meta_relevance == other.meta_relevance
+            and self.meta_substance_cat == other.meta_substance_cat
+            and self.meta_allergy_type == other.meta_allergy_type
+            and self.meta_severity == other.meta_severity
+            and self.meta_reaction_pos == other.meta_reaction_pos
         )
 
     def is_same_model_annotation(self, other):
-        return (
-                self.cui == other.cui
-                and
-                self.start == other.start
-                and
-                self.end == other.end
-        )
+        return self.cui == other.cui and self.start == other.start and self.end == other.end

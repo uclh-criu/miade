@@ -19,11 +19,8 @@ def build_model_pack(
     unigram_table_size: int,
     output_dir: Path,
 ):
-
     # TODO: option to input list of concept csv files
-    cdb_builder = CDBBuilder(
-        snomed_data_path=snomed_data_path, fdb_data_path=fdb_data_path, config=config
-    )
+    cdb_builder = CDBBuilder(snomed_data_path=snomed_data_path, fdb_data_path=fdb_data_path, config=config)
     cdb_builder.preprocess_snomed(output_dir=output_dir)
     cdb = cdb_builder.create_cdb(["preprocessed_snomed.csv"])
 
@@ -43,7 +40,6 @@ def build_model_pack(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("config_file")
     args = parser.parse_args()
@@ -52,9 +48,7 @@ if __name__ == "__main__":
     with open(config_file, "r") as stream:
         config = yaml.safe_load(stream)
 
-    with open(
-        Path(config["unsupervised_training_data_file"]), "r", encoding="utf-8"
-    ) as training_data:
+    with open(Path(config["unsupervised_training_data_file"]), "r", encoding="utf-8") as training_data:
         training_data_list = [line.strip() for line in training_data]
 
     # Load MedCAT configuration

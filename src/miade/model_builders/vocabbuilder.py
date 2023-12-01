@@ -29,9 +29,7 @@ class VocabBuilder:
 
         make_vocab = MakeVocab(cdb=cdb, config=config)
         make_vocab.make(training_data_list, out_folder=str(output_dir))
-        make_vocab.add_vectors(
-            in_path=str(output_dir / "data.txt"), unigram_table_size=unigram_table_size
-        )
+        make_vocab.add_vectors(in_path=str(output_dir / "data.txt"), unigram_table_size=unigram_table_size)
         self.vocab = make_vocab.vocab
         return self.vocab
 
@@ -43,11 +41,6 @@ class VocabBuilder:
         self.vocab.make_unigram_table()
         return self.vocab
 
-    def make_model_pack(self,
-                        cdb: CDB,
-                        save_name: str,
-                        output_dir: Path = Path.cwd()
-                        ) -> None:
+    def make_model_pack(self, cdb: CDB, save_name: str, output_dir: Path = Path.cwd()) -> None:
         cat = CAT(cdb=cdb, config=cdb.config, vocab=self.vocab)
         cat.create_model_pack(str(output_dir), save_name)
-

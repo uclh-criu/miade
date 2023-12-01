@@ -6,8 +6,10 @@ annotators:
   meds/allergies: MedsAllergiesAnnotator
 general:
   problems:
+    lookup_data_path: ./lookup_data/
     negation_detection: None
     disable: []
   meds/allergies:
+    lookup_data_path: ./lookup_data/
     negation_detection: None
     disable: []

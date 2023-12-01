@@ -1,8 +1,16 @@
 from typing import Optional
 from pydantic import BaseModel, validator
+from enum import Enum
 
-from .utils.metaannotationstypes import *
-
+from .utils.metaannotationstypes import (
+    Presence,
+    Relevance,
+    Laterality,
+    ReactionPos,
+    SubstanceCategory,
+    AllergyType,
+    Severity,
+)
 
 META_ANNS_DICT = {
     "presence": Presence,
@@ -11,7 +19,7 @@ META_ANNS_DICT = {
     "substance_category": SubstanceCategory,
     "reaction_pos": ReactionPos,
     "allergy_type": AllergyType,
-    "severity": Severity
+    "severity": Severity,
 }
 
 
@@ -20,7 +28,7 @@ class MetaAnnotations(BaseModel):
     value: Enum
     confidence: Optional[float]
 
-    @validator('value', pre=True)
+    @validator("value", pre=True)
     def validate_value(cls, value, values):
         enum_dict = META_ANNS_DICT
         if isinstance(value, str):
@@ -36,8 +44,4 @@ class MetaAnnotations(BaseModel):
         return value
 
     def __eq__(self, other):
-        return (
-            self.name == other.name
-            and self.value == other.value
-        )
-
+        return self.name == other.name and self.value == other.value
