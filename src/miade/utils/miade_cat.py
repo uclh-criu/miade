@@ -3,12 +3,18 @@ import logging
 import pandas as pd
 from copy import deepcopy
 
-from typing import List, Tuple, Optional, Dict, Set
+from typing import List, Tuple, Optional, Dict, Set, Union
 
+from spacy import Defaults
 from tqdm.autonotebook import trange
 from spacy.tokens import Span, Doc
 
 from medcat.cat import CAT
+from medcat.cdb import CDB
+from medcat.config import Config
+from medcat.meta_cat import MetaCAT
+from medcat.ner.transformers_ner import TransformersNER
+from medcat.vocab import Vocab
 from medcat.utils.matutils import intersect_nonempty_set
 from medcat.utils.data_utils import make_mc_train_test, get_false_positives
 from medcat.utils.checkpoint import Checkpoint
@@ -20,6 +26,16 @@ logger = logging.getLogger("cat")
 
 class MiADE_CAT(CAT):
     """Experimental - overriding medcat write out function - more control over spacy pipeline: add negex results"""
+
+    def __init__(self,
+                 cdb: CDB,
+                 vocab: Union[Vocab, None] = None,
+                 config: Optional[Config] = None,
+                 meta_cats: List[MetaCAT] = [],
+                 addl_ner: Union[TransformersNER, List[TransformersNER]] = []) -> None:
+        if config.preprocessing.stopwords is not None:
+            Defaults.stop_words = config.preprocessing.stopwords
+        super.__init__(cdb=cdb, vocab=vocab, config=config, meta_cats=meta_cats, addl_ner=addl_ner)
 
     def _doc_to_out(
         self,
