@@ -113,7 +113,9 @@ class NoteProcessor:
             try:
                 cat = MiADE_CAT.load_model_pack(str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict)
                 # temp fix reload to load stop words
-                cat.pipe._nlp = spacy.load(cat.config.general.spacy_model, disable=cat.config.general.spacy_disabled_components)
+                cat.pipe._nlp = spacy.load(
+                    cat.config.general.spacy_model, disable=cat.config.general.spacy_disabled_components
+                )
                 cat._create_pipeline(config=cat.config)
                 cat_id = cat.config.version["id"]
                 loaded_models[cat_id] = cat
