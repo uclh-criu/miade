@@ -5,7 +5,7 @@ from copy import deepcopy
 
 from typing import List, Tuple, Optional, Dict, Set, Union
 
-from spacy import Defaults
+from spacy.language import Language
 from tqdm.autonotebook import trange
 from spacy.tokens import Span, Doc
 
@@ -34,8 +34,8 @@ class MiADE_CAT(CAT):
                  meta_cats: List[MetaCAT] = [],
                  addl_ner: Union[TransformersNER, List[TransformersNER]] = []) -> None:
         if config.preprocessing.stopwords is not None:
-            Defaults.stop_words = config.preprocessing.stopwords
-        super.__init__(cdb=cdb, vocab=vocab, config=config, meta_cats=meta_cats, addl_ner=addl_ner)
+            Language.Defaults.stop_words = config.preprocessing.stopwords
+        super().__init__(cdb=cdb, vocab=vocab, config=config, meta_cats=meta_cats, addl_ner=addl_ner)
 
     def _doc_to_out(
         self,
