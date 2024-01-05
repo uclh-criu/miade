@@ -1,6 +1,9 @@
+from miade.annotators import Annotator
 from miade.core import NoteProcessor
+from miade.concept import Concept, Category
 from miade.paragraph import Paragraph, ParagraphType
 from miade.metaannotations import MetaAnnotations
+from miade.utils.annotatorconfig import AnnotatorConfig
 
 from miade.utils.metaannotationstypes import (
     Presence,
@@ -8,13 +11,11 @@ from miade.utils.metaannotationstypes import (
     SubstanceCategory,
 )
 
+def test_note_cleaning_and_paragraphing(test_clean_and_paragraphing_note):
 
-def test_note(model_directory_path, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):
     test_clean_and_paragraphing_note.clean_text()
     test_clean_and_paragraphing_note.get_paragraphs()
 
-    # for paragraph in test_clean_and_paragraphing_note.paragraphs:
-    #     print(paragraph)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
         Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=182),
@@ -28,10 +29,16 @@ def test_note(model_directory_path, test_clean_and_paragraphing_note, test_parag
         Paragraph(heading="", body="", type=ParagraphType.imp, start=507, end=523),
     ]
 
-    processor = NoteProcessor(model_directory_path)
-    processor.add_annotator("meds/allergies")
 
-    concepts = processor.annotators[0].process_paragraphs(
+def test_note(test_meds_algy_medcat_model, test_clean_and_paragraphing_note, test_paragraph_chunking_concepts):
+
+    config = AnnotatorConfig()
+    config.problem_list_limit = 10
+
+    annotator = Annotator(test_meds_algy_medcat_model, config)
+    annotator.preprocess(test_clean_and_paragraphing_note)
+
+    concepts = annotator.process_paragraphs(
         test_clean_and_paragraphing_note, test_paragraph_chunking_concepts
     )
     # prose
@@ -87,6 +94,46 @@ def test_note(model_directory_path, test_clean_and_paragraphing_note, test_parag
     #     print(concept)
 
 
-def test_long_problem_list():
-    # TODO
-    pass
+def test_problem_list_limit(test_problem_list_limit_note, test_problem_list_limit_concepts, test_problems_medcat_model):
+    
+    annotator = Annotator(test_problems_medcat_model)
+    annotator.preprocess(test_problem_list_limit_note)
+
+    assert annotator.process_paragraphs(test_problem_list_limit_note, test_problem_list_limit_concepts) == [
+        Concept(
+            id="1",
+            name="Fever",
+            category=Category.PROBLEM,
+            negex=False,
+            start=138,
+            end=143,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="2",
+            name="Diabetes",
+            category=Category.PROBLEM,
+            negex=False,
+            start=144,
+            end=152,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="4",
+            name="Arthritis",
+            category=Category.PROBLEM,
+            negex=False,
+            start=189,
+            end=196,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
+            ],
+        ),
+    ]

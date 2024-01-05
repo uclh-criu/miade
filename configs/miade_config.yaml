@@ -8,6 +8,7 @@ general:
   problems:
     lookup_data_path: ./lookup_data/
     negation_detection: None
+    problem_list_limit: 0
     disable: []
   meds/allergies:
     lookup_data_path: ./lookup_data/

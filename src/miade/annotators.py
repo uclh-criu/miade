@@ -14,7 +14,7 @@ from medcat.cat import CAT
 
 from .concept import Concept, Category
 from .note import Note
-from .paragraph import ParagraphType
+from .paragraph import Paragraph, ParagraphType
 from .dosageextractor import DosageExtractor
 from .utils.metaannotationstypes import (
     Presence,
@@ -169,10 +169,11 @@ class Annotator:
         note.get_paragraphs()
 
         return note
+    
 
-    @staticmethod
-    def process_paragraphs(note: Note, concepts: List[Concept]) -> List[Concept]:
+    def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
         prob_concepts: List[Concept] = []
+        prob_lists = [ParagraphType.prob, ParagraphType.imp, ParagraphType.pmh]
 
         for paragraph in note.paragraphs:
             for concept in concepts:
@@ -283,13 +284,11 @@ class Annotator:
                                         )
                                         meta.value = SubstanceCategory.IRRELEVANT
 
-            # print(len(prob_concepts))
-
         # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
-        if len(prob_concepts) > 10:
+        if len(prob_concepts) > self.config.problem_list_limit:
             log.debug(
                 f"Ignoring concepts elsewhere in the document because "
-                f"concepts in prob, imp, pmh sections exceed 10: {len(prob_concepts)}"
+                f"concept exists in prob, imp, pmh list sections: {len(prob_concepts)}"
             )
             return prob_concepts
         else:
