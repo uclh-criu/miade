@@ -136,7 +136,7 @@ class Annotator:
     Docstring for Annotator
     """
 
-    # TODO: Create abstract class methods for easier unit testing
+    # TODO: Create abstract class methods
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         self.cat = cat
         self.config = config if config is not None else AnnotatorConfig()
@@ -146,6 +146,17 @@ class Annotator:
 
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
+
+        self.structured_prob_lists = {
+            ParagraphType.prob: Relevance.PRESENT,
+            ParagraphType.imp: Relevance.PRESENT,
+            ParagraphType.pmh: Relevance.HISTORIC,
+        }
+        self.structured_med_lists = {
+            ParagraphType.med: SubstanceCategory.TAKING,
+            ParagraphType.allergy: SubstanceCategory.ADVERSE_REACTION,
+        }
+        self.irrelevant_paragraphs = [ParagraphType.ddx, ParagraphType.exam, ParagraphType.plan]
 
     def _add_negex_pipeline(self) -> None:
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
@@ -169,130 +180,6 @@ class Annotator:
         note.get_paragraphs()
 
         return note
-    
-
-    def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
-        prob_concepts: List[Concept] = []
-        prob_lists = [ParagraphType.prob, ParagraphType.imp, ParagraphType.pmh]
-
-        for paragraph in note.paragraphs:
-            for concept in concepts:
-                if concept.start >= paragraph.start and concept.end <= paragraph.end:
-                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
-                    if concept.meta is not None:
-                        if paragraph.type == ParagraphType.prob or paragraph.type == ParagraphType.imp:
-                            prob_concepts.append(concept)
-                            # problem is present and allergy is irrelevant
-                            for meta in concept.meta:
-                                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
-                                    log.debug(
-                                        f"Converted {meta.value} to "
-                                        f"{Relevance.PRESENT} for concept ({concept.id} | {concept.name}): "
-                                        f"paragraph is {paragraph.type}"
-                                    )
-                                    meta.value = Relevance.PRESENT
-                                if meta.name == "substance_category":
-                                    if meta.value != SubstanceCategory.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = SubstanceCategory.IRRELEVANT
-                        elif paragraph.type == ParagraphType.pmh:
-                            prob_concepts.append(concept)
-                            # problem is historic and allergy is irrelevant
-                            for meta in concept.meta:
-                                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
-                                    log.debug(
-                                        f"Converted {meta.value} to "
-                                        f"{Relevance.HISTORIC} for concept ({concept.id} | {concept.name}): "
-                                        f"paragraph is {paragraph.type}"
-                                    )
-                                    meta.value = Relevance.HISTORIC
-                                if meta.name == "substance_category":
-                                    if meta.value != SubstanceCategory.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = SubstanceCategory.IRRELEVANT
-                        elif paragraph.type == ParagraphType.med:
-                            # problem is irrelevant and allergy is taking
-                            for meta in concept.meta:
-                                if meta.name == "relevance":
-                                    if meta.value != Relevance.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = Relevance.IRRELEVANT
-                                if meta.name == "substance_category" and meta.value == SubstanceCategory.IRRELEVANT:
-                                    if meta.value != SubstanceCategory.TAKING:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{SubstanceCategory.TAKING} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = SubstanceCategory.TAKING
-                        elif paragraph.type == ParagraphType.allergy:
-                            # problem is irrelevant and allergy is as is
-                            for meta in concept.meta:
-                                if meta.name == "relevance":
-                                    if meta.value != Relevance.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = Relevance.IRRELEVANT
-                                if meta.name == "substance_category":
-                                    # DO NOT CONVERT REACTIONS
-                                    if (
-                                        meta.value != SubstanceCategory.ADVERSE_REACTION
-                                        and meta.value != SubstanceCategory.NOT_SUBSTANCE
-                                    ):
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{SubstanceCategory.ADVERSE_REACTION} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = SubstanceCategory.ADVERSE_REACTION
-                        elif (
-                            paragraph.type == ParagraphType.exam
-                            or paragraph.type == ParagraphType.ddx
-                            or paragraph.type == ParagraphType.plan
-                        ):
-                            # problem is irrelevant and allergy is irrelevant
-                            for meta in concept.meta:
-                                if meta.name == "relevance":
-                                    if meta.value != Relevance.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = Relevance.IRRELEVANT
-                                if meta.name == "substance_category":
-                                    if meta.value != SubstanceCategory.IRRELEVANT:
-                                        log.debug(
-                                            f"Converted {meta.value} to "
-                                            f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                                            f"paragraph is {paragraph.type}"
-                                        )
-                                        meta.value = SubstanceCategory.IRRELEVANT
-
-        # if more than 10 concepts in prob or imp or pmh sections, return only those and ignore all other concepts
-        if len(prob_concepts) > self.config.problem_list_limit:
-            log.debug(
-                f"Ignoring concepts elsewhere in the document because "
-                f"concept exists in prob, imp, pmh list sections: {len(prob_concepts)}"
-            )
-            return prob_concepts
-        else:
-            return concepts
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
@@ -458,6 +345,53 @@ class ProblemsAnnotator(Annotator):
             log.debug(f"Removed concept ({concept.id} | {concept.name}): concept in problems blacklist")
             return True
         return False
+
+    def _process_meta_ann_by_paragraph(
+        self, concept: Concept, paragraph: Paragraph, prob_concepts_in_structured_sections: List[Concept]
+    ):
+        # if paragraph is structured problems section, add to prob list and convert to corresponding relevance
+        if paragraph.type in self.structured_prob_lists:
+            prob_concepts_in_structured_sections.append(concept)
+            for meta in concept.meta:
+                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
+                    new_relevance = self.structured_prob_lists[paragraph.type]
+                    log.debug(
+                        f"Converted {meta.value} to "
+                        f"{new_relevance} for concept ({concept.id} | {concept.name}): "
+                        f"paragraph is {paragraph.type}"
+                    )
+                    meta.value = new_relevance
+        # if paragraph is meds or irrelevant section, convert problems to irrelevant
+        elif paragraph.type in self.structured_med_lists or paragraph.type in self.irrelevant_paragraphs:
+            for meta in concept.meta:
+                if meta.name == "relevance" and meta.value != Relevance.IRRELEVANT:
+                    log.debug(
+                        f"Converted {meta.value} to "
+                        f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                        f"paragraph is {paragraph.type}"
+                    )
+                    meta.value = Relevance.IRRELEVANT
+
+    def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
+        prob_concepts_in_structured_sections: List[Concept] = []
+
+        for paragraph in note.paragraphs:
+            for concept in concepts:
+                if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
+                    if concept.meta:
+                        self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
+
+        # if more than set no. concepts in prob or imp or pmh sections, return only those and ignore all other concepts
+        if len(prob_concepts_in_structured_sections) > self.config.problem_list_limit:
+            log.debug(
+                f"Ignoring concepts elsewhere in the document because "
+                f"more than {self.config.problem_list_limit} concepts exist "
+                f"in prob, imp, pmh structured sections: {len(prob_concepts_in_structured_sections)}"
+            )
+            return prob_concepts_in_structured_sections
+
+        return concepts
 
     def postprocess(self, concepts: List[Concept]) -> List[Concept]:
         # deepcopy so we still have reference to original list of concepts
@@ -712,6 +646,43 @@ class MedsAllergiesAnnotator(Annotator):
             log.warning(f"Allergen and adverse reaction type combination not found: {lookup_combination}")
 
         return True
+
+    def _process_meta_ann_by_paragraph(self, concept: Concept, paragraph: Paragraph):
+        # if paragraph is structured meds to convert to corresponding relevance
+        if paragraph.type in self.structured_med_lists:
+            for meta in concept.meta:
+                if meta.name == "substance_category" and meta.value in [
+                    SubstanceCategory.TAKING,
+                    SubstanceCategory.IRRELEVANT,
+                ]:
+                    new_relevance = self.structured_med_lists[paragraph.type]
+                    if meta.value != new_relevance:
+                        log.debug(
+                            f"Converted {meta.value} to "
+                            f"{new_relevance} for concept ({concept.id} | {concept.name}): "
+                            f"paragraph is {paragraph.type}"
+                        )
+                        meta.value = new_relevance
+        # if paragraph is probs or irrelevant section, convert substance to irrelevant
+        elif paragraph.type in self.structured_prob_lists or paragraph.type in self.irrelevant_paragraphs:
+            for meta in concept.meta:
+                if meta.name == "substance_category" and meta.value != SubstanceCategory.IRRELEVANT:
+                    log.debug(
+                        f"Converted {meta.value} to "
+                        f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                        f"paragraph is {paragraph.type}"
+                    )
+                    meta.value = SubstanceCategory.IRRELEVANT
+
+    def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
+        for paragraph in note.paragraphs:
+            for concept in concepts:
+                if concept.start >= paragraph.start and concept.end <= paragraph.end:
+                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
+                    if concept.meta:
+                        self._process_meta_ann_by_paragraph(concept, paragraph)
+
+        return concepts
 
     def postprocess(self, concepts: List[Concept], note: Note) -> List[Concept]:
         # deepcopy so we still have reference to original list of concepts

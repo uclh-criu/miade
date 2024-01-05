@@ -185,7 +185,7 @@ Penicillin
 
 
 @pytest.fixture(scope="function")
-def test_paragraph_chunking_concepts() -> List[Concept]:
+def test_paragraph_chunking_prob_concepts() -> List[Concept]:
     return [
         # prose
         Concept(
@@ -216,29 +216,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
         Concept(
             id="764146007",
             name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=331,
-            end=341,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
-        ),
-        # meds
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=356,
-            end=366,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-            ],
-        ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
             category=Category.PROBLEM,
             negex=False,
             start=396,
@@ -261,17 +238,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
                 MetaAnnotations(name="relevance", value=Relevance.PRESENT),
             ],
         ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=435,
-            end=445,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
-        ),
         # probs
         Concept(
             id="764146007",
@@ -283,17 +249,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
             meta_anns=[
                 MetaAnnotations(name="presence", value=Presence.CONFIRMED),
                 MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-            ],
-        ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=467,
-            end=477,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
             ],
         ),
         # plan
@@ -309,6 +264,60 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
                 MetaAnnotations(name="relevance", value=Relevance.PRESENT),
             ],
         ),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_paragraph_chunking_med_concepts() -> List[Concept]:
+    return [
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=331,
+            end=341,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
+            ],
+        ),
+        # meds
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=356,
+            end=366,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
+            ],
+        ),
+        # allergies
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=435,
+            end=445,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
+            ],
+        ),
+        # probs
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=467,
+            end=477,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+        # plan
         Concept(
             id="764146007",
             name="Penicillin",
@@ -333,6 +342,7 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
             ],
         ),
     ]
+
 
 @pytest.fixture(scope="function")
 def test_problem_list_limit_note() -> Note:
@@ -419,6 +429,7 @@ def test_problem_list_limit_concepts() -> List[Concept]:
             ],
         ),
     ]
+
 
 @pytest.fixture(scope="function")
 def test_duplicate_concepts_record() -> List[Concept]:
