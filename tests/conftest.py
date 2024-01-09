@@ -3,11 +3,13 @@ import pandas as pd
 
 from typing import List, Dict
 from pathlib import Path
+from miade.annotators import Annotator
 
 from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
+from miade.utils.annotatorconfig import AnnotatorConfig
 from miade.utils.metaannotationstypes import (
     Presence,
     Relevance,
@@ -37,6 +39,120 @@ def test_meds_algy_medcat_model() -> MiADE_CAT:
     return MiADE_CAT.load_model_pack(
         str("./tests/data/models/miade_meds_allergy_blank_modelpack_Jun_2023_75e13bf042cc55b8.zip")
     )
+
+
+@pytest.fixture(scope="function")
+def temp_dir() -> Path:
+    return Path("./tests/data/temp")
+
+
+@pytest.fixture(scope="function")
+def snomed_data_path() -> Path:
+    return Path("./tests/examples/example_snomed_sct2_20211124000001Z/")
+
+
+@pytest.fixture(scope="function")
+def snomed_subset_path() -> Path:
+    return Path("./tests/examples/example_snomed_subset.csv")
+
+
+@pytest.fixture(scope="function")
+def fdb_data_path() -> Path:
+    return Path("./tests/examples/example_fdb.csv")
+
+
+@pytest.fixture(scope="function")
+def elg_data_path() -> Path:
+    return Path("./tests/examples/example_elg.csv")
+
+
+@pytest.fixture(scope="function")
+def vocab_data_path() -> Path:
+    return Path("./tests/examples/vocab_data.txt")
+
+
+@pytest.fixture(scope="function")
+def text_data_path() -> Path:
+    return Path("./tests/examples/wikipedia_sample.txt")
+
+
+@pytest.fixture(scope="function")
+def cdb_data_path() -> Path:
+    return Path("./tests/examples/cdb.dat")
+
+
+@pytest.fixture(scope="function")
+def cdb_csv_paths() -> List[Path]:
+    return [
+        Path("./tests/data/preprocessed_snomed.csv"),
+        Path("./tests/data/preprocessed_fdb.csv"),
+        Path("./tests/data/preprocessed_elg.csv"),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_config() -> AnnotatorConfig:
+    return AnnotatorConfig()
+
+
+@pytest.fixture(scope="function")
+def test_annotator() -> Annotator:
+    class CustomAnnotator(Annotator):
+        def __init__(self, cat, config):
+            super().__init__(cat, config)
+
+        @property
+        def concept_types():
+            return []
+
+        @property
+        def pipeline():
+            return []
+
+        def postprocess(self):
+            return super().postprocess()
+
+        def process_paragraphs(self):
+            return super().process_paragraphs()
+
+    return CustomAnnotator
+
+
+@pytest.fixture(scope="function")
+def test_miade_doses() -> (List[Note], pd.DataFrame):
+    extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
+    return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
+
+
+@pytest.fixture(scope="function")
+def test_miade_med_concepts() -> List[Concept]:
+    data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
+    return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]
+
+
+@pytest.fixture(scope="function")
+def test_med_note() -> Note:
+    return Note(
+        text="Magnesium hydroxide 75mg daily \nparacetamol 500mg po 3 times a day as needed.\n"
+        "Patient treated with aspirin IM q daily x 2 weeks with concurrent DOXYCYCLINE 500mg tablets for "
+        "two weeks"
+    )
+
+
+@pytest.fixture(scope="function")
+def test_med_concepts() -> List[Concept]:
+    return [
+        Concept(
+            id="0",
+            name="Magnesium hydroxide",
+            category=Category.MEDICATION,
+            start=0,
+            end=19,
+        ),
+        Concept(id="1", name="Paracetamol", category=Category.MEDICATION, start=32, end=43),
+        Concept(id="2", name="Aspirin", category=Category.MEDICATION, start=99, end=107),
+        Concept(id="3", name="Doxycycline", category=Category.MEDICATION, start=144, end=156),
+    ]
 
 
 @pytest.fixture(scope="function")
@@ -99,7 +215,7 @@ Penicillin
 
 
 @pytest.fixture(scope="function")
-def test_paragraph_chunking_concepts() -> List[Concept]:
+def test_paragraph_chunking_prob_concepts() -> List[Concept]:
     return [
         # prose
         Concept(
@@ -130,29 +246,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
         Concept(
             id="764146007",
             name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=331,
-            end=341,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
-        ),
-        # meds
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=356,
-            end=366,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-            ],
-        ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
             category=Category.PROBLEM,
             negex=False,
             start=396,
@@ -175,17 +268,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
                 MetaAnnotations(name="relevance", value=Relevance.PRESENT),
             ],
         ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=435,
-            end=445,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
-        ),
         # probs
         Concept(
             id="764146007",
@@ -197,17 +279,6 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
             meta_anns=[
                 MetaAnnotations(name="presence", value=Presence.CONFIRMED),
                 MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-            ],
-        ),
-        Concept(
-            id="764146007",
-            name="Penicillin",
-            category=Category.MEDICATION,
-            negex=False,
-            start=467,
-            end=477,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
             ],
         ),
         # plan
@@ -223,6 +294,60 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
                 MetaAnnotations(name="relevance", value=Relevance.PRESENT),
             ],
         ),
+    ]
+
+
+@pytest.fixture(scope="function")
+def test_paragraph_chunking_med_concepts() -> List[Concept]:
+    return [
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=331,
+            end=341,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
+            ],
+        ),
+        # meds
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=356,
+            end=366,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
+            ],
+        ),
+        # allergies
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=435,
+            end=445,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
+            ],
+        ),
+        # probs
+        Concept(
+            id="764146007",
+            name="Penicillin",
+            category=Category.MEDICATION,
+            negex=False,
+            start=467,
+            end=477,
+            meta_anns=[
+                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
+            ],
+        ),
+        # plan
         Concept(
             id="764146007",
             name="Penicillin",
@@ -250,89 +375,90 @@ def test_paragraph_chunking_concepts() -> List[Concept]:
 
 
 @pytest.fixture(scope="function")
-def temp_dir() -> Path:
-    return Path("./tests/data/temp")
-
-
-@pytest.fixture(scope="function")
-def snomed_data_path() -> Path:
-    return Path("./tests/examples/example_snomed_sct2_20211124000001Z/")
-
-
-@pytest.fixture(scope="function")
-def snomed_subset_path() -> Path:
-    return Path("./tests/examples/example_snomed_subset.csv")
-
-
-@pytest.fixture(scope="function")
-def fdb_data_path() -> Path:
-    return Path("./tests/examples/example_fdb.csv")
-
-
-@pytest.fixture(scope="function")
-def elg_data_path() -> Path:
-    return Path("./tests/examples/example_elg.csv")
-
-
-@pytest.fixture(scope="function")
-def vocab_data_path() -> Path:
-    return Path("./tests/examples/vocab_data.txt")
-
-
-@pytest.fixture(scope="function")
-def text_data_path() -> Path:
-    return Path("./tests/examples/wikipedia_sample.txt")
-
-
-@pytest.fixture(scope="function")
-def cdb_data_path() -> Path:
-    return Path("./tests/examples/cdb.dat")
-
-
-@pytest.fixture(scope="function")
-def cdb_csv_paths() -> List[Path]:
-    return [
-        Path("./tests/data/preprocessed_snomed.csv"),
-        Path("./tests/data/preprocessed_fdb.csv"),
-        Path("./tests/data/preprocessed_elg.csv"),
-    ]
-
-
-@pytest.fixture(scope="function")
-def test_med_note() -> Note:
+def test_problem_list_limit_note() -> Note:
     return Note(
-        text="Magnesium hydroxide 75mg daily \nparacetamol 500mg po 3 times a day as needed.\n"
-        "Patient treated with aspirin IM q daily x 2 weeks with concurrent DOXYCYCLINE 500mg tablets for "
-        "two weeks"
+        """
+some prose here
+Patient has irrelevant condition such as fear
+
+Problems:
+This is a structured list, so prose should be completely ignored
+Fever
+Diabetes
+
+Allergies:
+Penicillin - rash
+
+pmh:
+Arthritis
+"""
     )
 
 
 @pytest.fixture(scope="function")
-def test_med_concepts() -> List[Concept]:
+def test_problem_list_limit_concepts() -> List[Concept]:
     return [
         Concept(
             id="0",
-            name="Magnesium hydroxide",
-            category=Category.MEDICATION,
-            start=0,
-            end=19,
+            name="Fear",
+            category=Category.PROBLEM,
+            negex=False,
+            start=58,
+            end=62,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
         ),
-        Concept(id="1", name="Paracetamol", category=Category.MEDICATION, start=32, end=43),
-        Concept(id="2", name="Aspirin", category=Category.MEDICATION, start=99, end=107),
-        Concept(id="3", name="Doxycycline", category=Category.MEDICATION, start=144, end=156),
+        Concept(
+            id="1",
+            name="Fever",
+            category=Category.PROBLEM,
+            negex=False,
+            start=138,
+            end=143,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="2",
+            name="Diabetes",
+            category=Category.PROBLEM,
+            negex=False,
+            start=144,
+            end=152,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="3",
+            name="Penicillin",
+            category=Category.PROBLEM,
+            negex=False,
+            start=165,
+            end=175,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
+            ],
+        ),
+        Concept(
+            id="4",
+            name="Arthritis",
+            category=Category.PROBLEM,
+            negex=False,
+            start=189,
+            end=196,
+            meta_anns=[
+                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
+                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
+            ],
+        ),
     ]
-
-
-@pytest.fixture(scope="function")
-def test_miade_doses() -> (List[Note], pd.DataFrame):
-    extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
-    return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
-
-
-@pytest.fixture(scope="function")
-def test_miade_med_concepts() -> List[Concept]:
-    data = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
-    return [Concept(id="387337001", name=drug, category=Category.MEDICATION) for drug in data.drug.to_list()]
 
 
 @pytest.fixture(scope="function")

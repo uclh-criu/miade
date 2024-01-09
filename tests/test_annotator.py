@@ -1,5 +1,5 @@
 from miade.core import Concept, Category
-from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, Annotator, calculate_word_distance
+from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, calculate_word_distance
 from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
 
@@ -70,7 +70,7 @@ def test_deduplicate(
     test_duplicate_vtm_concept_note,
     test_duplicate_vtm_concept_record,
 ):
-    annotator = Annotator(test_problems_medcat_model)
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
 
     assert annotator.deduplicate(
         concepts=test_duplicate_concepts_note, record_concepts=test_duplicate_concepts_record

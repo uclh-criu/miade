@@ -78,11 +78,8 @@ def test_adding_removing_annotators(model_directory_path):
     processor.print_model_cards()
 
 
-def test_adding_custom_annotators(model_directory_path):
-    class CustomAnnotator(Annotator):
-        pass
-
-    processor = NoteProcessor(model_directory_path, custom_annotators=[CustomAnnotator])
+def test_adding_custom_annotators(model_directory_path, test_annotator):
+    processor = NoteProcessor(model_directory_path, custom_annotators=[test_annotator])
 
     processor.add_annotator("custom")
     assert len(processor.annotators) == 1
