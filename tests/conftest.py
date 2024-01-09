@@ -3,11 +3,13 @@ import pandas as pd
 
 from typing import List, Dict
 from pathlib import Path
+from miade.annotators import Annotator
 
 from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
 from miade.concept import Concept, Category
 from miade.metaannotations import MetaAnnotations
+from miade.utils.annotatorconfig import AnnotatorConfig
 from miade.utils.metaannotationstypes import (
     Presence,
     Relevance,
@@ -86,6 +88,34 @@ def cdb_csv_paths() -> List[Path]:
         Path("./tests/data/preprocessed_fdb.csv"),
         Path("./tests/data/preprocessed_elg.csv"),
     ]
+
+
+@pytest.fixture(scope="function")
+def test_config() -> AnnotatorConfig:
+    return AnnotatorConfig()
+
+
+@pytest.fixture(scope="function")
+def test_annotator() -> Annotator:
+    class CustomAnnotator(Annotator):
+        def __init__(self, cat, config):
+            super().__init__(cat, config)
+
+        @property
+        def concept_types():
+            return []
+
+        @property
+        def pipeline():
+            return []
+
+        def postprocess(self):
+            return super().postprocess()
+
+        def process_paragraphs(self):
+            return super().process_paragraphs()
+
+    return CustomAnnotator
 
 
 @pytest.fixture(scope="function")

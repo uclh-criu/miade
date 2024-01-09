@@ -9,6 +9,8 @@ from typing import List, Optional, Tuple, Dict
 from collections import OrderedDict
 from copy import deepcopy
 from math import inf
+from abc import ABC, abstractmethod
+
 
 from medcat.cat import CAT
 
@@ -131,22 +133,19 @@ def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note
     return len(words) - 1
 
 
-class Annotator:
+class Annotator(ABC):
     """
     Docstring for Annotator
     """
 
-    # TODO: Create abstract class methods
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         self.cat = cat
         self.config = config if config is not None else AnnotatorConfig()
 
-        self.concept_types = []
-        self.pipeline = []
-
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
 
+        # TODO make paragraph processing params configurable
         self.structured_prob_lists = {
             ParagraphType.prob: Relevance.PRESENT,
             ParagraphType.imp: Relevance.PRESENT,
@@ -162,6 +161,42 @@ class Annotator:
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
+
+    @property
+    @abstractmethod
+    def concept_types(self):
+        pass
+
+    @property
+    @abstractmethod
+    def pipeline(self):
+        pass
+
+    @abstractmethod
+    def process_paragraphs(self):
+        pass
+
+    @abstractmethod
+    def postprocess(self):
+        pass
+
+    def run_pipeline(self, note: Note, record_concepts: List[Concept]) -> List[Concept]:
+        concepts: List[Concept] = []
+
+        for pipe in self.pipeline:
+            if pipe not in self.config.disable:
+                if pipe == "preprocessor":
+                    note = self.preprocess(note)
+                elif pipe == "medcat":
+                    concepts = self.get_concepts(note)
+                elif pipe == "paragrapher":
+                    concepts = self.process_paragraphs(note, concepts)
+                elif pipe == "postprocessor":
+                    concepts = self.postprocess(concepts)
+                elif pipe == "deduplicator":
+                    concepts = self.deduplicate(concepts, record_concepts)
+
+        return concepts
 
     def get_concepts(self, note: Note) -> List[Concept]:
         concepts: List[Concept] = []
@@ -208,32 +243,6 @@ class Annotator:
         return filtered_concepts
 
     @staticmethod
-    def add_dosages_to_concepts(
-        dosage_extractor: DosageExtractor, concepts: List[Concept], note: Note
-    ) -> List[Concept]:
-        """
-        Gets dosages for medication concepts
-        :param dosage_extractor:
-        :param concepts: (List) list of concepts extracted
-        :param note: (Note) input note
-        :return: (List) list of concepts with dosages for medication concepts
-        """
-
-        for ind, concept in enumerate(concepts):
-            next_med_concept = concepts[ind + 1] if len(concepts) > ind + 1 else None
-            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
-            if len(dosage_string.split()) > 2:
-                concept.dosage = dosage_extractor(dosage_string)
-                concept.category = Category.MEDICATION if concept.dosage is not None else None
-                if concept.dosage is not None:
-                    log.debug(
-                        f"Extracted dosage for medication concept "
-                        f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}"
-                    )
-
-        return concepts
-
-    @staticmethod
     def add_numbering_to_name(concepts: List[Concept]) -> List[Concept]:
         # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
         for i, concept in enumerate(concepts):
@@ -246,13 +255,10 @@ class Annotator:
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
     ):
-        if "preprocessor" not in self.config.disable:
-            note = self.preprocess(note)
+        concepts = self.run_pipeline(note, record_concepts)
 
-        concepts = self.get_concepts(note)
-
-        if "deduplicator" not in self.config.disable:
-            concepts = self.deduplicate(concepts, record_concepts)
+        if self.config.add_numbering:
+            concepts = self.add_numbering_to_name(concepts)
 
         return concepts
 
@@ -260,10 +266,15 @@ class Annotator:
 class ProblemsAnnotator(Annotator):
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
-        self.concept_types = [Category.PROBLEM]
-        self.pipeline = ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
-
         self._load_problems_lookup_data()
+
+    @property
+    def concept_types(self):
+        return [Category.PROBLEM]
+
+    @property
+    def pipeline(self):
+        return ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
 
     def _load_problems_lookup_data(self) -> None:
         if not os.path.isdir(self.config.lookup_data_path):
@@ -383,10 +394,10 @@ class ProblemsAnnotator(Annotator):
                         self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
 
         # if more than set no. concepts in prob or imp or pmh sections, return only those and ignore all other concepts
-        if len(prob_concepts_in_structured_sections) > self.config.problem_list_limit:
+        if len(prob_concepts_in_structured_sections) > self.config.structured_list_limit:
             log.debug(
                 f"Ignoring concepts elsewhere in the document because "
-                f"more than {self.config.problem_list_limit} concepts exist "
+                f"more than {self.config.structured_list_limit} concepts exist "
                 f"in prob, imp, pmh structured sections: {len(prob_concepts_in_structured_sections)}"
             )
             return prob_concepts_in_structured_sections
@@ -409,36 +420,19 @@ class ProblemsAnnotator(Annotator):
 
         return filtered_concepts
 
-    def __call__(
-        self,
-        note: Note,
-        record_concepts: Optional[List[Concept]] = None,
-    ):
-        if "preprocessor" not in self.config.disable:
-            note = self.preprocess(note)
-
-        concepts = self.get_concepts(note)
-
-        if "paragrapher" not in self.config.disable:
-            concepts = self.process_paragraphs(note, concepts)
-
-        if "postprocessor" not in self.config.disable:
-            concepts = self.postprocess(concepts)
-
-        if "deduplicator" not in self.config.disable:
-            concepts = self.deduplicate(concepts, record_concepts)
-
-        if "add_numbering" not in self.config.disable:
-            concepts = self.add_numbering_to_name(concepts)
-
-        return concepts
-
 
 class MedsAllergiesAnnotator(Annotator):
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
-        self.concept_types = [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
-        self.pipeline = [
+        self._load_med_allergy_lookup_data()
+
+    @property
+    def concept_types(self):
+        return [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
+
+    @property
+    def pipeline(self):
+        return [
             "preprocessor",
             "medcat",
             "paragrapher",
@@ -448,7 +442,31 @@ class MedsAllergiesAnnotator(Annotator):
             "deduplicator",
         ]
 
-        self._load_med_allergy_lookup_data()
+    def run_pipeline(
+        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor]
+    ) -> List[Concept]:
+        concepts: List[Concept] = []
+
+        for pipe in self.pipeline:
+            if pipe not in self.config.disable:
+                if pipe == "preprocessor":
+                    note = self.preprocess(note)
+                elif pipe == "medcat":
+                    concepts = self.get_concepts(note)
+                elif pipe == "paragrapher":
+                    concepts = self.process_paragraphs(note, concepts)
+                elif pipe == "postprocessor":
+                    concepts = self.postprocess(concepts, note)
+                elif pipe == "deduplicator":
+                    concepts = self.deduplicate(concepts, record_concepts)
+                elif pipe == "add_numbering":
+                    concepts = self.add_numbering_to_name(concepts)
+                elif pipe == "VTM_converter":
+                    concepts = self.convert_VTM_to_VMP_or_text(concepts)
+                elif pipe == "dosage_extractor" and dosage_extractor is not None:
+                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
+
+        return concepts
 
     def _load_med_allergy_lookup_data(self) -> None:
         if not os.path.isdir(self.config.lookup_data_path):
@@ -539,6 +557,32 @@ class MedsAllergiesAnnotator(Annotator):
                 concept.category = Category.REACTION
 
         return concept
+
+    @staticmethod
+    def add_dosages_to_concepts(
+        dosage_extractor: DosageExtractor, concepts: List[Concept], note: Note
+    ) -> List[Concept]:
+        """
+        Gets dosages for medication concepts
+        :param dosage_extractor:
+        :param concepts: (List) list of concepts extracted
+        :param note: (Note) input note
+        :return: (List) list of concepts with dosages for medication concepts
+        """
+
+        for ind, concept in enumerate(concepts):
+            next_med_concept = concepts[ind + 1] if len(concepts) > ind + 1 else None
+            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
+            if len(dosage_string.split()) > 2:
+                concept.dosage = dosage_extractor(dosage_string)
+                concept.category = Category.MEDICATION if concept.dosage is not None else None
+                if concept.dosage is not None:
+                    log.debug(
+                        f"Extracted dosage for medication concept "
+                        f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}"
+                    )
+
+        return concepts
 
     @staticmethod
     def _link_reactions_to_allergens(concept_list: List[Concept], note: Note, link_distance: int = 5) -> List[Concept]:
@@ -765,24 +809,9 @@ class MedsAllergiesAnnotator(Annotator):
         record_concepts: Optional[List[Concept]] = None,
         dosage_extractor: Optional[DosageExtractor] = None,
     ):
-        if "preprocessor" not in self.config.disable:
-            note = self.preprocess(note)
+        concepts = self.run_pipeline(note, record_concepts, dosage_extractor)
 
-        concepts = self.get_concepts(note)
-
-        if "paragrapher" not in self.config.disable:
-            concepts = self.process_paragraphs(note, concepts)
-
-        if "postprocessor" not in self.config.disable:
-            concepts = self.postprocess(concepts, note)
-
-        if dosage_extractor is not None and "dosage_extractor" not in self.config.disable:
-            concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-
-        if "VTM_convertor" not in self.config.disable:
-            concepts = self.convert_VTM_to_VMP_or_text(concepts)
-
-        if "deduplicator" not in self.config.disable:
-            concepts = self.deduplicate(concepts, record_concepts)
+        if self.config.add_numbering:
+            concepts = self.add_numbering_to_name(concepts)
 
         return concepts
