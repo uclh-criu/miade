@@ -11,7 +11,9 @@ general:
     lookup_data_path: "./lookup_data/"
     negation_detection: negex  # negex or metacat or none
     disable: []
+    add_numbering: True
   meds/allergies:
     lookup_data_path: "./lookup_data/"
     negation_detection: None
     disable: []
+    add_numbering: False
