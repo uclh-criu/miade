@@ -43,7 +43,7 @@ class Note(object):
     def __init__(self, text: str, regex_config_path: str = "./data/regex_para_chunk.csv"):
         self.text = text
         self.raw_text = text
-        self.regex_config = load_regex_config_mappings("./data/regex_para_chunk.csv")
+        self.regex_config = load_regex_config_mappings(regex_config_path)
         self.paragraphs: Optional[List[Paragraph]] = []
 
     def clean_text(self) -> None:
@@ -74,12 +74,9 @@ class Note(object):
             if match:
                 heading = match.group(1)
                 body = match.group(2)
-                if body == "":
-                    body = heading
-                    heading = ""
             else:
-                heading = ""
-                body = text
+                heading = text
+                body = ""
 
             end = start + len(text)
             paragraph = Paragraph(heading=heading, body=body, type=paragraph_type, start=start, end=end)
