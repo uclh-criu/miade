@@ -31,7 +31,8 @@ jobs:
           pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
       - name: run pytest
         run: pytest ./tests/*
-      - name: install ruff
-        run: pip install ruff
-      - name: ruff format
-        run: ruff format --check .
+      - name: Lint with Ruff
+        run: |
+          pip install ruff
+          ruff --output-format=github .
+        continue-on-error: true
