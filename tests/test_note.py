@@ -11,9 +11,9 @@ from miade.utils.metaannotationstypes import (
 )
 
 
-def test_note_cleaning_and_paragraphing(test_clean_and_paragraphing_note):
-    test_clean_and_paragraphing_note.clean_text()
-    test_clean_and_paragraphing_note.get_paragraphs()
+def test_note_cleaning_and_paragraphing(test_problems_medcat_model, test_clean_and_paragraphing_note):
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
+    annotator.preprocess(test_clean_and_paragraphing_note)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
         Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=182),
