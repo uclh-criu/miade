@@ -1,5 +1,4 @@
-from miade.annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator
-from miade.core import NoteProcessor
+from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator
 from miade.concept import Concept, Category
 from miade.paragraph import Paragraph, ParagraphType
 from miade.metaannotations import MetaAnnotations
@@ -66,7 +65,7 @@ def test_prob_paragraph_note(
     ]
 
 
-def test_prob_paragraph_note(
+def test_med_paragraph_note(
     test_meds_algy_medcat_model, test_clean_and_paragraphing_note, test_paragraph_chunking_med_concepts
 ):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)
