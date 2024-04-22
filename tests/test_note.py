@@ -1,5 +1,4 @@
-from miade.annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator
-from miade.core import NoteProcessor
+from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator
 from miade.concept import Concept, Category
 from miade.paragraph import Paragraph, ParagraphType
 from miade.metaannotations import MetaAnnotations
@@ -11,9 +10,9 @@ from miade.utils.metaannotationstypes import (
 )
 
 
-def test_note_cleaning_and_paragraphing(test_clean_and_paragraphing_note):
-    test_clean_and_paragraphing_note.clean_text()
-    test_clean_and_paragraphing_note.get_paragraphs()
+def test_note_cleaning_and_paragraphing(test_problems_medcat_model, test_clean_and_paragraphing_note):
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
+    annotator.preprocess(test_clean_and_paragraphing_note)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
         Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=182),
@@ -66,7 +65,7 @@ def test_prob_paragraph_note(
     ]
 
 
-def test_prob_paragraph_note(
+def test_med_paragraph_note(
     test_meds_algy_medcat_model, test_clean_and_paragraphing_note, test_paragraph_chunking_med_concepts
 ):
     annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model)

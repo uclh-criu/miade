@@ -40,10 +40,9 @@ def load_regex_config_mappings(filename: str) -> Dict:
 class Note(object):
     """docstring for Note."""
 
-    def __init__(self, text: str, regex_config_path: str = "./data/regex_para_chunk.csv"):
+    def __init__(self, text: str):
         self.text = text
         self.raw_text = text
-        self.regex_config = load_regex_config_mappings(regex_config_path)
         self.paragraphs: Optional[List[Paragraph]] = []
 
     def clean_text(self) -> None:
@@ -59,7 +58,7 @@ class Note(object):
         # Remove spaces if the entire line (between two line breaks) is just spaces
         self.text = re.sub(r"(?<=\n)\s+(?=\n)", "", self.text)
 
-    def get_paragraphs(self) -> None:
+    def get_paragraphs(self, paragraph_regex: Dict) -> None:
         paragraphs = re.split(r"\n\n+", self.text)
         start = 0
 
@@ -86,7 +85,7 @@ class Note(object):
             if heading:
                 heading = heading.lower()
                 # Iterate through the dictionary items and patterns
-                for paragraph_type, pattern in self.regex_config.items():
+                for paragraph_type, pattern in paragraph_regex.items():
                     if re.search(pattern, heading):
                         paragraph.type = paragraph_type
                         break  # Exit the loop if a match is found

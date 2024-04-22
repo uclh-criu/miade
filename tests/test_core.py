@@ -1,6 +1,5 @@
 from miade.core import NoteProcessor
 from miade.concept import Concept, Category
-from miade.annotators import Annotator
 from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import (
     Presence,

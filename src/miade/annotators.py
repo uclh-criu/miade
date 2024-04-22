@@ -44,6 +44,9 @@ class AllergenType(Enum):
 
 
 def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = False):
+    if not os.path.exists(filename):
+        log.error(f"Lookup data not configured, check {filename} exists!")
+
     if as_dict:
         return (
             pd.read_csv(
@@ -57,6 +60,22 @@ def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = Fal
         return pd.read_csv(filename, header=None)
     else:
         return pd.read_csv(filename).drop_duplicates()
+
+
+def load_regex_paragraph_mappings(data: pd.DataFrame) -> Dict:
+    regex_lookup = {}
+
+    for paragraph, regex in data.items():
+        paragraph_enum = None
+        try:
+            paragraph_enum = ParagraphType(paragraph)
+        except ValueError as e:
+            log.warning(e)
+
+        if paragraph_enum is not None:
+            regex_lookup[paragraph_enum] = regex
+
+    return regex_lookup
 
 
 def load_allergy_type_combinations(filename: str) -> Dict:
@@ -145,6 +164,8 @@ class Annotator(ABC):
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
 
+        self._load_paragraph_regex()
+
         # TODO make paragraph processing params configurable
         self.structured_prob_lists = {
             ParagraphType.prob: Relevance.PRESENT,
@@ -161,6 +182,10 @@ class Annotator(ABC):
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
+
+    def _load_paragraph_regex(self) -> None:
+        data = load_lookup_data(self.config.lookup_data_path + "regex_para_chunk.csv", as_dict=True)
+        self.paragraph_regex = load_regex_paragraph_mappings(data)
 
     @property
     @abstractmethod
@@ -209,10 +234,9 @@ class Annotator(ABC):
 
         return concepts
 
-    @staticmethod
-    def preprocess(note: Note) -> Note:
+    def preprocess(self, note: Note) -> Note:
         note.clean_text()
-        note.get_paragraphs()
+        note.get_paragraphs(self.paragraph_regex)
 
         return note
 
