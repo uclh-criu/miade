@@ -46,7 +46,7 @@ class AllergenType(Enum):
 def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = False):
     if not os.path.exists(filename):
         log.error(f"Lookup data not configured, check {filename} exists!")
-        
+
     if as_dict:
         return (
             pd.read_csv(
@@ -163,7 +163,7 @@ class Annotator(ABC):
 
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
-        
+
         self._load_paragraph_regex()
 
         # TODO make paragraph processing params configurable
@@ -182,7 +182,7 @@ class Annotator(ABC):
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
-    
+
     def _load_paragraph_regex(self) -> None:
         data = load_lookup_data(self.config.lookup_data_path + "regex_para_chunk.csv", as_dict=True)
         self.paragraph_regex = load_regex_paragraph_mappings(data)
