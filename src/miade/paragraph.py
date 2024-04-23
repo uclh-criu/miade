@@ -16,11 +16,11 @@ class ParagraphType(Enum):
 
 class Paragraph(object):
     def __init__(self, heading: str, body: str, type: ParagraphType, start: int, end: int):
-        self.heading = heading
-        self.body = body
-        self.type = type
-        self.start = start
-        self.end = end
+        self.heading: str = heading
+        self.body: str = body
+        self.type: ParagraphType = type
+        self.start: int = start
+        self.end: int = end
 
     def __str__(self):
         return str(self.__dict__)
