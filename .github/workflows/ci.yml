@@ -28,7 +28,7 @@ jobs:
       - name: download models
         run: |
           python -m spacy download en_core_web_md
-          pip install en-core-med7-lg
+          pip install -r requirements.txt
       - name: run pytest
         run: pytest ./tests/*
       - name: Lint with Ruff
