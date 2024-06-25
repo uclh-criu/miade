@@ -33,7 +33,7 @@ class Note(object):
         # Remove spaces if the entire line (between two line breaks) is just spaces
         self.text = re.sub(r"(?<=\n)\s+(?=\n)", "", self.text)
 
-    def get_numbered_lists(text):
+    def get_numbered_lists(self):
         """
         Finds multiple lists of sequentially ordered numbers (with more than one item) that directly follow a newline character
         and captures the text following these numbers up to the next newline.
@@ -49,7 +49,7 @@ class Note(object):
         pattern = re.compile(r"(?<=\n)(\d+.*)")
 
         # Finding all matches
-        matches = pattern.finditer(text)
+        matches = pattern.finditer(self.text)
 
         all_results = []
         results = []
@@ -71,8 +71,8 @@ class Note(object):
         # Add the last sequence if not empty and has more than one item
         if len(results) > 1:
             all_results.append(results)
-
-        return all_results
+        
+        self.numbered_list = all_results
 
     def get_paragraphs(self, paragraph_regex: Dict) -> None:
         paragraphs = re.split(r"\n\n+", self.text)
@@ -108,6 +108,26 @@ class Note(object):
 
             self.paragraphs.append(paragraph)
 
+    def merge_prose_sections(self):
+        last_section = None
+        last_prose = None
+        is_merge = False
+        all_prose = []
+        prose_section = []
+        for paragraph in self.paragraphs:
+            if paragraph.type == ParagraphType.prose:
+                if is_merge:
+                    prose_section.append(paragraph)
+                else:
+                    prose_section = [paragraph]
+                    is_merge = True
+            else:
+                # section paragraph
+                last_section = paragraph
+                all_prose.append(prose_section)
+                is_merge = False
+        
+        print(all_prose)
     def is_in_numbered_list(self) -> bool:
         pass
 
