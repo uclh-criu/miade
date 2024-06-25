@@ -28,7 +28,7 @@ jobs:
       - name: download model
         run: |
           python -m spacy download en_core_web_md
-          pip install --no-deps https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+          pip install -r requirements.txt
       - name: run pytest
         run: pytest ./tests/*
       - name: Lint with Ruff
