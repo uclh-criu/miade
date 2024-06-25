@@ -18,6 +18,7 @@ class Note(object):
         self.text = text
         self.raw_text = text
         self.paragraphs: Optional[List[Paragraph]] = []
+        self.prose_paragraphs: Optional[List[Paragraph]] = []
         self.numbered_list: List[tuple] = []
 
     def clean_text(self) -> None:
@@ -109,25 +110,54 @@ class Note(object):
             self.paragraphs.append(paragraph)
 
     def merge_prose_sections(self):
-        last_section = None
-        last_prose = None
         is_merge = False
         all_prose = []
         prose_section = []
-        for paragraph in self.paragraphs:
+        prose_indices = []
+    
+        for i, paragraph in enumerate(self.paragraphs):
             if paragraph.type == ParagraphType.prose:
                 if is_merge:
-                    prose_section.append(paragraph)
+                    prose_section.append((i, paragraph))
                 else:
-                    prose_section = [paragraph]
+                    prose_section = [(i, paragraph)]
                     is_merge = True
             else:
-                # section paragraph
-                last_section = paragraph
-                all_prose.append(prose_section)
+                if len(prose_section) > 0:
+                    all_prose.append(prose_section)
+                    prose_indices.extend([idx for idx, _ in prose_section])
                 is_merge = False
         
-        print(all_prose)
+        if len(prose_section) > 0:
+            all_prose.append(prose_section)
+            prose_indices.extend([idx for idx, _ in prose_section])
+        
+        new_paragraphs = self.paragraphs[:]
+        
+        for section in all_prose:
+            start = section[0][1].start
+            end = section[-1][1].end
+            new_prose_para = Paragraph(
+                heading=self.text[start:end], 
+                body="", 
+                type=ParagraphType.prose, 
+                start=start, 
+                end=end)
+            
+            # Replace the first paragraph in the section with the new merged paragraph
+            first_idx = section[0][0]
+            new_paragraphs[first_idx] = new_prose_para
+            
+            # Mark other paragraphs in the section for deletion
+            for _, paragraph in section[1:]:
+                index = self.paragraphs.index(paragraph)
+                new_paragraphs[index] = None
+        
+        # Remove the None entries from new_paragraphs
+        self.paragraphs = [para for para in new_paragraphs if para is not None]
+        
+        return all_prose
+
     def is_in_numbered_list(self) -> bool:
         pass
 
