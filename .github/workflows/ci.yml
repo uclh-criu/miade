@@ -28,9 +28,10 @@ jobs:
       - name: download spacy model
         run: |
           python -m spacy download en_core_web_md
+      - name: Download en-core-med7-lg wheel
+        run: wget -O en_core_med7_lg-any-py3-none-any.whl https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl 
       - name: Install en-core-med7-lg
-        run: |
-          pip install --find-links https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+        run: pip install en_core_med7_lg-any-py3-none-any.whl
       - name: run pytest
         run: pytest ./tests/*
       - name: Lint with Ruff
