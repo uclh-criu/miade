@@ -178,7 +178,7 @@ def test_clean_and_paragraphing_note() -> Note:
     return Note(
         """
     This is an example of text with various types of spaces: 
-\tTabs,    \u00A0Non-breaking spaces, \u2003Em spaces, \u2002En spaces.
+\tTabs,    \u00a0Non-breaking spaces, \u2003Em spaces, \u2002En spaces.
 Some lines may contain only punctuation and spaces, like this:
     !?  ...  - -- ???
     \n

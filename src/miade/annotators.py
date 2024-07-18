@@ -459,9 +459,7 @@ class MedsAllergiesAnnotator(Annotator):
                     concepts = self.postprocess(concepts, note)
                 elif pipe == "deduplicator":
                     concepts = self.deduplicate(concepts, record_concepts)
-                elif pipe == "add_numbering":
-                    concepts = self.add_numbering_to_name(concepts)
-                elif pipe == "VTM_converter":
+                elif pipe == "vtm_converter":
                     concepts = self.convert_VTM_to_VMP_or_text(concepts)
                 elif pipe == "dosage_extractor" and dosage_extractor is not None:
                     concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)

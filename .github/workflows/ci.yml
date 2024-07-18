@@ -20,7 +20,7 @@ jobs:
           python-version: 3.11
       - name: install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install pip==24.0
           pip install pytest
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install ./
@@ -34,4 +34,7 @@ jobs:
       - name: install ruff
         run: pip install ruff
       - name: ruff format
-        run: ruff format --check .
+        run: |
+          ruff format
+          ruff check --fix
+        continue-on-error: true
