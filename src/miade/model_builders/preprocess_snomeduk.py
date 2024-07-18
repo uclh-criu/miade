@@ -1,5 +1,5 @@
 """This module is essentially the same as the MedCAT util preprocess_snomed.py
-    with a few minor changes adapted to reading snomed UK folder paths"""
+with a few minor changes adapted to reading snomed UK folder paths"""
 
 import os
 import re
