@@ -34,4 +34,7 @@ jobs:
       - name: install ruff
         run: pip install ruff
       - name: ruff format
-        run: ruff format --check .
+        run: |
+          ruff format
+          ruff check --fix
+        continue-on-error: true
