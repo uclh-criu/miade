@@ -1,17 +1,23 @@
-# Welcome to MkDocs
+# Welcome to the MiADE Documentation
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+![](assets/miade-logo.png)
 
-## Commands
+MiADE (Medical information AI Data Extractor) is a set of tools for extracting formattable data from clinical notes stored in electronic health record systems (EHRs). Built with Cogstack's [MedCAT](https://github.com/CogStack/MedCAT) package.
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+## Installing
 
-## Project layout
+To install MiADE, you need to download the spacy base model and Med7 model first:
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+```bash
+pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+python -m spacy download en_core_web_md
+```
+Then, install MiADE:
+
+```bash
+pip install miade
+```
+
+## License
+
+MiADE is licensed under Elastic License 2.0

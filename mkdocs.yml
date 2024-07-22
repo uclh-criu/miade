@@ -1,1 +1,63 @@
-site_name: My Docs
+site_name: MiADE
+site_description: A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
+
+# Repository
+repo_name: uclh-criu/miade
+repo_url: https://github.com/uclh-criu/miade
+
+# Configuration for the theme
+theme:
+  name: material
+  logo: assets/miade-logo-small.png
+  favicon: assets/miade-logo-small.png
+  palette:
+    primary: teal
+    accent: red
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.instant
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - toc.integrate 
+    - content.code.copy
+    - content.code.select
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+# Pages
+nav:
+  - Home: index.md
+  - User Guide:
+    - Quickstart: user-guide/quickstart.md
+    - Configuration: user-guide/configuration.md
+  - API Reference:
+    - NoteProcessor: api-reference/noteprocessor.md
+    - Note: api-reference/note.md
+    - Annotator: api-reference/annotator.md
+    - DosageExtractor: api-reference/dosageextractor.md
+  - About:
+    - Overview: about/overview.md
+    - Team: about/team.md
+  - Community: contributing.md
+
+# Plugins
+# plugins:
+#   - search
+#   - minify:
+#       minify_html: true

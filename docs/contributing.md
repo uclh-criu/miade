@@ -1,0 +1,3 @@
+# Contributing
+
+Contribute to MiADE!
