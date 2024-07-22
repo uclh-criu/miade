@@ -13,6 +13,15 @@ log = logging.getLogger(__name__)
 
 
 def load_regex_config_mappings(filename: str) -> Dict:
+    """
+    Load regex configuration mappings from a file.
+
+    Args:
+        filename (str): The name of the file containing the regex configuration.
+
+    Returns:
+        dict: A dictionary mapping paragraph types to their corresponding regex patterns.
+    """
     regex_config = pkgutil.get_data(__name__, filename)
     data = (
         pd.read_csv(
@@ -38,7 +47,14 @@ def load_regex_config_mappings(filename: str) -> Dict:
 
 
 class Note(object):
-    """docstring for Note."""
+    """Represents a note object.
+
+    Attributes:
+        text (str): The text content of the note.
+        raw_text (str): The raw text content of the note.
+        regex_config (str): The path to the regex configuration file.
+        paragraphs (Optional[List[Paragraph]]): A list of paragraphs in the note.
+    """
 
     def __init__(self, text: str, regex_config_path: str = "./data/regex_para_chunk.csv"):
         self.text = text
@@ -47,6 +63,12 @@ class Note(object):
         self.paragraphs: Optional[List[Paragraph]] = []
 
     def clean_text(self) -> None:
+        """Cleans the text content of the note.
+
+        This method performs various cleaning operations on the text content of the note,
+        such as replacing spaces, removing punctuation, and removing empty lines.
+        """
+
         # Replace all types of spaces with a single normal space, preserving "\n"
         self.text = re.sub(r"(?:(?!\n)\s)+", " ", self.text)
 
@@ -60,6 +82,12 @@ class Note(object):
         self.text = re.sub(r"(?<=\n)\s+(?=\n)", "", self.text)
 
     def get_paragraphs(self) -> None:
+        """Splits the note into paragraphs.
+
+        This method splits the text content of the note into paragraphs based on double line breaks.
+        It also assigns a paragraph type to each paragraph based on matching patterns in the heading.
+        """
+
         paragraphs = re.split(r"\n\n+", self.text)
         start = 0
 

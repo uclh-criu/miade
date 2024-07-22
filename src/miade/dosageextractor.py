@@ -15,6 +15,10 @@ log = logging.getLogger(__name__)
 class DosageExtractor:
     """
     Parses and extracts drug dosage
+
+    Attributes:
+        model (str): The name of the model to be used for dosage extraction.
+        dosage_extractor (Language): The Spacy pipeline for dosage extraction.
     """
 
     def __init__(self, model: str = "en_core_med7_lg"):
@@ -25,7 +29,9 @@ class DosageExtractor:
         """
         Creates a spacy pipeline with given model (default med7)
         and customised pipeline components for dosage extraction
-        :return: nlp (spacy.Language)
+
+        Returns:
+            nlp (spacy.Language): The Spacy pipeline for dosage extraction.
         """
         nlp = spacy.load(self.model)
         nlp.add_pipe("preprocessor", first=True)
@@ -39,9 +45,13 @@ class DosageExtractor:
     def extract(self, text: str, calculate: bool = True) -> Optional[Dosage]:
         """
         Processes a string that contains dosage instructions (excluding drug concept as this is handled by core)
-        :param text: (str) string containing dosage
-        :param calculate: (bool) whether to calculate duration from total and daily dose, if given
-        :return: dosage: (Dosage) dosage object with parsed dosages in CDA format
+
+        Args:
+            text (str): The string containing dosage instructions.
+            calculate (bool): Whether to calculate duration from total and daily dose, if given.
+
+        Returns:
+            dosage (Optional[Dosage]): The dosage object with parsed dosages in CDA format.
         """
         doc = self.dosage_extractor(text)
 

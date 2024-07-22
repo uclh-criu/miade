@@ -135,7 +135,26 @@ def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note
 
 class Annotator(ABC):
     """
-    Docstring for Annotator
+    An abstract base class for annotators.
+
+    Annotators are responsible for processing medical notes and extracting relevant concepts from them.
+
+    Attributes:
+        cat (CAT): The MedCAT instance used for concept extraction.
+        config (AnnotatorConfig): The configuration for the annotator.
+
+    Methods:
+        _add_negex_pipeline: Adds the negex pipeline to the MedCAT instance.
+        concept_types: Abstract property that should return a list of concept types supported by the annotator.
+        pipeline: Abstract property that should return a list of pipeline steps for the annotator.
+        process_paragraphs: Abstract method that should implement the logic for processing paragraphs in a note.
+        postprocess: Abstract method that should implement the logic for post-processing extracted concepts.
+        run_pipeline: Runs the annotation pipeline on a given note and returns the extracted concepts.
+        get_concepts: Extracts concepts from a note using the MedCAT instance.
+        preprocess: Preprocesses a note by cleaning its text and splitting it into paragraphs.
+        deduplicate: Removes duplicate concepts from the extracted concepts list.
+        add_numbering_to_name: Adds numbering to the names of problem concepts.
+
     """
 
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
@@ -264,6 +283,31 @@ class Annotator(ABC):
 
 
 class ProblemsAnnotator(Annotator):
+    """
+    Annotator class for identifying and processing problems in medical notes.
+
+    This class extends the base `Annotator` class and provides specific functionality
+    for identifying and processing problems in medical notes. It implements methods
+    for loading problem lookup data, processing meta annotations, filtering concepts,
+    and post-processing the annotated concepts.
+
+    Attributes:
+        cat (CAT): The CAT (Concept Annotation Tool) instance used for annotation.
+        config (AnnotatorConfig): The configuration object for the annotator.
+
+    Properties:
+        concept_types (list): A list of concept types supported by this annotator.
+        pipeline (list): The list of processing steps in the annotation pipeline.
+
+    Methods:
+        _load_problems_lookup_data: Loads the problem lookup data from the configured path.
+        _process_meta_annotations: Processes the meta annotations of a concept.
+        _is_blacklist: Checks if a concept is in the problems blacklist.
+        _process_meta_ann_by_paragraph: Processes the meta annotations of a concept based on the paragraph type.
+        process_paragraphs: Processes the paragraphs in a medical note and filters the concepts.
+        postprocess: Performs post-processing on the annotated concepts.
+
+    """
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
         self._load_problems_lookup_data()
@@ -422,6 +466,31 @@ class ProblemsAnnotator(Annotator):
 
 
 class MedsAllergiesAnnotator(Annotator):
+    """
+    Annotator class for medication and allergy concepts.
+
+    This class extends the `Annotator` base class and provides methods for running a pipeline of
+    annotation tasks on a given note, as well as validating and converting concepts related to
+    medications and allergies.
+
+    Attributes:
+        valid_meds (List[int]): A list of valid medication IDs.
+        reactions_subset_lookup (Dict[int, str]): A dictionary mapping reaction IDs to their corresponding subset IDs.
+        allergens_subset_lookup (Dict[int, str]): A dictionary mapping allergen IDs to their corresponding subset IDs.
+        allergy_type_lookup (Dict[str, List[str]]): A dictionary mapping allergen types to their corresponding codes.
+        vtm_to_vmp_lookup (Dict[str, str]): A dictionary mapping VTM (Virtual Therapeutic Moiety) IDs to VMP (Virtual Medicinal Product) IDs.
+        vtm_to_text_lookup (Dict[str, str]): A dictionary mapping VTM IDs to their corresponding text.
+
+    Methods:
+        run_pipeline: Runs the annotation pipeline on a given note.
+        _load_med_allergy_lookup_data: Loads the medication and allergy lookup data.
+        _validate_meds: Validates if a concept represents a valid medication.
+        _validate_and_convert_substance: Validates and converts a concept representing a substance for allergy.
+        _validate_and_convert_reaction: Validates and converts a concept representing a reaction.
+        _validate_and_convert_concepts: Validates and converts concepts based on their categories and metadata.
+        add_dosages_to_concepts: Adds dosages to medication concepts.
+        _link_reactions_to_allergens: Links reaction concepts to allergen concepts.
+    """
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
         self._load_med_allergy_lookup_data()

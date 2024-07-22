@@ -24,6 +24,15 @@ META_ANNS_DICT = {
 
 
 class MetaAnnotations(BaseModel):
+    """
+    Represents a meta annotation with a name, value, and optional confidence.
+
+    Attributes:
+        name (str): The name of the meta annotation.
+        value (Enum): The value of the meta annotation.
+        confidence (float, optional): The confidence level of the meta annotation.
+    """
+
     name: str
     value: Enum
     confidence: Optional[float]
