@@ -47,17 +47,28 @@ nav:
     - Quickstart: user-guide/quickstart.md
     - Configuration: user-guide/configuration.md
   - API Reference:
-    - NoteProcessor: api-reference/noteprocessor.md
-    - Note: api-reference/note.md
-    - Annotator: api-reference/annotator.md
-    - DosageExtractor: api-reference/dosageextractor.md
+    - Pipeline Components:
+      - NoteProcessor: api-reference/noteprocessor.md
+      - Annotator: api-reference/annotator.md
+      - ProblemsAnnotator: api-reference/problemsannotator.md
+      - MedsAllergiesAnnotator: api-reference/medsallergiesannotator.md
+      - DosageExtractor: api-reference/dosageextractor.md
+    - Objects:
+      - Note: api-reference/note.md
+      - Concept: api-reference/concept.md
+      - Dosage: api-reference/dosage.md
+      - MetaAnnotations: api-reference/metaannotations.md
+
   - About:
     - Overview: about/overview.md
     - Team: about/team.md
   - Community: contributing.md
 
-# Plugins
-# plugins:
-#   - search
-#   - minify:
-#       minify_html: true
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
