@@ -12,13 +12,14 @@ Built with Cogstack's [MedCAT](https://github.com/CogStack/MedCAT) package.
 ## Installing
 
 ### Download the models
-MiADE uses MedCAT for medical NER and Med7 NER for drug dose detection, so you will have to download the required models first:
+MiADE uses MedCAT and Med7 NER, so you will have to download the required models first:
 ```bash
 pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
 python -m spacy download en_core_web_md
 ```
 
 ### Install MiADE
+
 To install the stable release:
 ```bash
 pip install miade
@@ -28,7 +29,6 @@ To install the latest development version of MiADE:
 ```bash
 pip install .
 ```
-The `-e` flag sets the install to auto-update, useful when developing. Remove for production.
 
 
 ## Quickstart
@@ -48,7 +48,7 @@ miade.add_annotator("meds/allergies")
 Create a note:
 
 ```python
-text = "Patient has diabetes"
+text = "Patient has penicillin allergy with rash"
 note = Note(text)
 ```
 

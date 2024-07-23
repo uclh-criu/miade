@@ -14,17 +14,18 @@ INSERT LINK TO SOME SORT OF FORUM
 
 ### Dependencies
 
-You can find a list of dependencies in our [pyproject.toml](https://github.com/uclh-criu/miade/blob/master/pyproject.toml) file.
+You can find a list of dependencies in our [pyproject.toml](https://github.com/uclh-criu/miade/blob/master/pyproject.toml) file. MiADE is compatible with Python 3.8 and above.
 
-To install the project with dev dependencies, run:
+To install the project with the dev dependencies, run:
 
 ```bash
 pip install -e .[dev]
 ```
+The `-e` flag sets the install to auto-update, useful when developing.
 
 ### Testing
 
-MiADE uses pytest, which can be run with:
+MiADE uses [pytest](https://docs.pytest.org/en/8.2.x/), which can be run with:
 
 ```bash
 pytest ./tests/*
@@ -33,7 +34,7 @@ pytest ./tests/*
 
 ### Formatting and Linting
 
-We use ruff as a linter. Run:
+We use [ruff](https://docs.astral.sh/ruff/) for linting and formatting. Run:
 
 ```bash
 ruff format 
@@ -77,17 +78,17 @@ The process described here has several goals:
 
 Please follow these steps to have your contribution considered by the maintainers:
 
-1. Follow all instructions in [the template](link to pull request template)
+1. Follow all instructions in [the template](https://github.com/uclh-criu/miade/blob/documentation/.github/PULL_REQUEST_TEMPLATE.md)
 2. Follow the [styleguides](#styleguides)
 3. After you submit your pull request, verify that all tests are passing
 
 ## Styleguides
 
-### Docstring style
-We use Google docstring style.
+We use [Google Python style docstring](https://google.github.io/styleguide/pyguide.html).
 
 ### Versioning
 Versioning is performed through git tags, which should follow the [semantic versioning](https://semver.org/) approach prefixed with a "v".
 E.g.: `v0.1.2-alpha`
+
 
 Thank you for reading through the contributing guide and for your interest in making MiADE better. We look forward to your contributions!
