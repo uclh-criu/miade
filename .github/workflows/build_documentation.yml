@@ -17,4 +17,5 @@ jobs:
       - name: Build the documentation
         run: |
           pip install -r docs-requirements.txt
+          pip install ./
           mkdocs build
