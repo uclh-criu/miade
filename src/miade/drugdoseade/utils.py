@@ -7,9 +7,19 @@ from typing import Dict, List
 log = logging.getLogger(__name__)
 
 
-def word_replace(word: str, dictionary: Dict[str, str], processed_text: List[str]):
-    """Replaces words with entries from CALIBERdrugdose singleword dict"""
+def word_replace(word: str, dictionary: Dict[str, str], processed_text: List[str]) -> List[str]:
+    """
+    Replaces words with entries from CALIBERdrugdose singleword dict
 
+    Args:
+        word (str): The word to be replaced.
+        dictionary (Dict[str, str]): A dictionary containing word replacements.
+        processed_text (List[str]): A list to store the processed text.
+
+    Returns:
+        The processed text with word replacements.
+
+    """
     replacement = dictionary.get(word, None)
     if isinstance(replacement, str):
         # replace with dict entry
@@ -35,7 +45,17 @@ def word_replace(word: str, dictionary: Dict[str, str], processed_text: List[str
     return processed_text
 
 
-def numbers_replace(text):
+def numbers_replace(text) -> str:
+    """
+    Replaces numbers and units in the given text according to specific patterns.
+
+    Args:
+        text (str): The input text to be processed.
+
+    Returns:
+        The processed text with numbers and units replaced.
+
+    """
     # 10 ml etc
     text = re.sub(
         r" (\d+) o (ml|microgram|mcg|gram|mg) ",

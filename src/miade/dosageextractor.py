@@ -51,7 +51,7 @@ class DosageExtractor:
             calculate (bool): Whether to calculate duration from total and daily dose, if given.
 
         Returns:
-            dosage (Optional[Dosage]): The dosage object with parsed dosages in CDA format.
+            The dosage object with parsed dosages in CDA format.
         """
         doc = self.dosage_extractor(text)
 

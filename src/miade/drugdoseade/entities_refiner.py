@@ -1,5 +1,6 @@
 import logging
 
+from spacy import Doc
 from spacy.language import Language
 from spacy.tokens import Span
 
@@ -8,8 +9,17 @@ log = logging.getLogger(__name__)
 
 
 @Language.component("entities_refiner")
-def EntitiesRefiner(doc):
-    """Refines NER results"""
+def EntitiesRefiner(doc) -> Doc:
+    """
+    Refines NER results by merging consecutive labels with the same tag,
+    removing strength labels, and merging drug labels with dosage labels.
+
+    Args:
+        doc (spacy.tokens.Doc): The input document containing named entities.
+
+    Returns:
+        spacy.tokens.Doc: The refined document with updated named entities.
+    """
 
     new_ents = []
     for ind, ent in enumerate(doc.ents):

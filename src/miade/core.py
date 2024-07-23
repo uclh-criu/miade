@@ -19,13 +19,22 @@ from .utils.annotatorconfig import AnnotatorConfig
 log = logging.getLogger(__name__)
 
 
-def create_annotator(name: str, model_factory: ModelFactory):
+def create_annotator(name: str, model_factory: ModelFactory) -> Annotator:
     """
-    Returns Annotator created from ModelFactory configs
-    :param name: (str) alias of model
-    :param model_factory: (ModelFactory) model factory loaded from config.yaml containing mapping of alias/name
-    to MedCAT model id and MiADE annotator
-    :return: Annotator
+    Returns Annotator created from ModelFactory configs.
+
+    Args:
+        name (str): Alias of the model.
+        model_factory (ModelFactory): Model factory loaded from config.yaml containing mapping of alias/name
+            to MedCAT model id and MiADE annotator.
+
+    Returns:
+        Annotator object created from the ModelFactory configs.
+
+    Raises:
+        ValueError: If the MedCAT model for the given name does not exist, either because it is not configured
+            in config.yaml or missing from the models directory.
+
     """
     name = name.lower()
     if name not in model_factory.models:
@@ -47,10 +56,14 @@ class NoteProcessor:
     """
     Main processor of MiADE which extract, postprocesses, and deduplicates concepts given
     annotators (MedCAT models), Note, and existing concepts
-    :param model_directory (Path) path to directory that contains medcat models and a config.yaml file
-    :param log_level (int) log level - Default - INFO
-    :param device (str) whether inference should be run on cpu or gpu - default "cpu"
-    :param custom_annotators (List[Annotators]) List of custom annotators
+
+    Args:
+        model_directory (Path): Path to directory that contains medcat models and a config.yaml file
+        model_config_path (Path, optional): Path to the model config file. Defaults to None.
+        log_level (int, optional): Log level. Defaults to logging.INFO.
+        dosage_extractor_log_level (int, optional): Log level for dosage extractor. Defaults to logging.INFO.
+        device (str, optional): Device to run inference on (cpu or gpu). Defaults to "cpu".
+        custom_annotators (List[Annotator], optional): List of custom annotators. Defaults to None.
     """
 
     def __init__(
@@ -76,9 +89,11 @@ class NoteProcessor:
 
     def _load_config(self) -> Dict:
         """
-        Loads configuration file (config.yaml) in configured model path, default to model directory if not
-        passed explicitly
-        :return: (Dict) config file
+        Loads the configuration file (config.yaml) in the configured model path.
+        If the model path is not explicitly passed, it defaults to the model directory.
+
+        Returns:
+            A dictionary containing the loaded config file.
         """
         if self.model_config_path is None:
             config_path = os.path.join(self.model_directory, "config.yaml")
@@ -97,12 +112,18 @@ class NoteProcessor:
 
     def _load_model_factory(self, custom_annotators: Optional[List[Annotator]] = None) -> ModelFactory:
         """
-        Loads model factory which maps model alias to medcat model id and miade annotator
-        There could be a less redundant way to structure the model configs - for now, if it ain't broke...
-        :param custom_annotators (List[Annotators]) List of custom annotators to initialise
-        :return: ModelFactory object
-        """
+        Loads the model factory which maps model aliases to MedCAT model IDs and MiADE annotators.
 
+        Args:
+            custom_annotators (List[Annotators], optional): List of custom annotators to initialize. Defaults to None.
+
+        Returns:
+            The initialized ModelFactory object.
+
+        Raises:
+            Exception: If there is an error loading MedCAT models.
+
+        """
         meta_cat_config_dict = {"general": {"device": self.device}}
         config_dict = self._load_config()
         loaded_models = {}
@@ -168,9 +189,16 @@ class NoteProcessor:
 
     def add_annotator(self, name: str) -> None:
         """
-        Adds annotators to processor
-        :param name: (str) alias of annotator to add
-        :return: None
+        Adds an annotator to the processor.
+
+        Args:
+            name (str): The alias of the annotator to add.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If there is an error creating the annotator.
         """
         try:
             annotator = create_annotator(name, self.model_factory)
@@ -184,9 +212,13 @@ class NoteProcessor:
 
     def remove_annotator(self, name: str) -> None:
         """
-        Removes annotators from processor
-        :param name: (str) alias of annotator to remove
-        :return: None
+        Removes an annotator from the processor.
+
+        Args:
+            name (str): The alias of the annotator to remove.
+
+        Returns:
+            None
         """
         annotator_found = False
         annotator_name = self.model_factory.annotators[name]
@@ -201,11 +233,27 @@ class NoteProcessor:
         if not annotator_found:
             log.warning(f"Annotator {type(name).__name__} not found in processor")
 
-    def print_model_cards(self):
+    def print_model_cards(self) -> None:
+        """
+        Prints the model cards for each annotator in the `annotators` list.
+
+        Each model card includes the name of the annotator's class and its category.
+        """
         for annotator in self.annotators:
             print(f"{type(annotator).__name__}: {annotator.cat}")
 
     def process(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+        """
+        Process the given note and extract concepts using the loaded annotators.
+
+        Args:
+            note (Note): The note to be processed.
+            record_concepts (Optional[List[Concept]]): A list of existing concepts in the EHR record.
+
+        Returns:
+            A list of extracted concepts.
+
+        """
         if not self.annotators:
             log.warning("No annotators loaded, use .add_annotator() to load annotators")
             return []
@@ -227,11 +275,15 @@ class NoteProcessor:
         self, note: Note, filter_uncategorized: bool = True, record_concepts: Optional[List[Concept]] = None
     ) -> List[Dict]:
         """
-        Returns concepts in dictionary format
-        :param note: (Note) note containing text to extract concepts from
-        :param filter_uncategorized (bool) if True, does not return concepts where category=None, default TRUE
-        :param record_concepts: (List[Concepts] list of concepts in existing record
-        :return: List[Dict] extracted concepts in json compatible dict format
+        Returns concepts in dictionary format.
+
+        Args:
+            note (Note): Note containing text to extract concepts from.
+            filter_uncategorized (bool): If True, does not return concepts where category=None. Default is True.
+            record_concepts (Optional[List[Concept]]): List of concepts in existing record.
+
+        Returns:
+            Extracted concepts in JSON-compatible dictionary format.
         """
         concepts = self.process(note, record_concepts)
         concept_list = []

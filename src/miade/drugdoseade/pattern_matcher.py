@@ -57,6 +57,16 @@ class PatternMatcher:
             )
 
     def __call__(self, doc: Doc) -> Doc:
+        """
+        Process the given document and extract dosage information.
+
+        Args:
+            doc (Doc): The input document to process.
+
+        Returns:
+            The processed document with extracted dosage information.
+
+        """
         new_entities = []
         dose_string = doc.text
 

@@ -20,7 +20,7 @@ def load_regex_config_mappings(filename: str) -> Dict:
         filename (str): The name of the file containing the regex configuration.
 
     Returns:
-        dict: A dictionary mapping paragraph types to their corresponding regex patterns.
+        A dictionary mapping paragraph types to their corresponding regex patterns.
     """
     regex_config = pkgutil.get_data(__name__, filename)
     data = (
@@ -47,7 +47,8 @@ def load_regex_config_mappings(filename: str) -> Dict:
 
 
 class Note(object):
-    """Represents a note object.
+    """
+    Represents a note object.
 
     Attributes:
         text (str): The text content of the note.
@@ -63,7 +64,8 @@ class Note(object):
         self.paragraphs: Optional[List[Paragraph]] = []
 
     def clean_text(self) -> None:
-        """Cleans the text content of the note.
+        """
+        Cleans the text content of the note.
 
         This method performs various cleaning operations on the text content of the note,
         such as replacing spaces, removing punctuation, and removing empty lines.
@@ -82,7 +84,8 @@ class Note(object):
         self.text = re.sub(r"(?<=\n)\s+(?=\n)", "", self.text)
 
     def get_paragraphs(self) -> None:
-        """Splits the note into paragraphs.
+        """
+        Splits the note into paragraphs.
 
         This method splits the text content of the note into paragraphs based on double line breaks.
         It also assigns a paragraph type to each paragraph based on matching patterns in the heading.
