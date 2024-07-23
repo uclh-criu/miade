@@ -26,7 +26,7 @@ pip install miade
 
 To install the latest development version of MiADE:
 ```bash
-pip install -e .
+pip install .
 ```
 The `-e` flag sets the install to auto-update, useful when developing. Remove for production.
 
@@ -64,14 +64,6 @@ for concept in concepts:
 # {name: penicillin, id: 764146007, category: Category.ALLERGY, start: 191, end: 201, dosage: None, negex: False, meta: None} 
 ```
 
-## Testing
-
-This project uses pytest tests, which can be run with:
-```bash
-pytest ./tests/*
-```
-> Remember, if using a virtual environment, to install pytest within your environment itself, otherwise you will be using the system python install of pytest, which will use system python and will not find your modules.
-
 ## Contributing
 See [contributing](CONTRIBUTING.md)
 
@@ -81,7 +73,6 @@ See [contributing](CONTRIBUTING.md)
 |-----------------|-----------------------------|
 | James Brandreth | j.brandreth@ucl.ac.uk       |
 | Jennifer Jiang  | jennifer.jiang.13@ucl.ac.uk |
-
 
 
 ## Acknowledgement
