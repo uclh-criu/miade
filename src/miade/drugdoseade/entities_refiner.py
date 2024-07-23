@@ -1,6 +1,6 @@
 import logging
 
-from spacy import Doc
+from spacy.tokens import Doc
 from spacy.language import Language
 from spacy.tokens import Span
 
