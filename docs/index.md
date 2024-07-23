@@ -20,4 +20,6 @@ pip install miade
 
 ## License
 
-MiADE is licensed under Elastic License 2.0
+MiADE is licensed under [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license).
+
+ The Elastic License 2.0 is a flexible license that allows you to use, copy, distribute, make available, and prepare derivative works of the software, as long as you do not provide the software to others as a managed service or include it in a free software directory. For the full license text, see our [license page](https://github.com/uclh-criu/miade/blob/master/LICENCE.md).
