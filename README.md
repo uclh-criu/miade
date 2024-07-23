@@ -12,7 +12,7 @@ Built with Cogstack's [MedCAT](https://github.com/CogStack/MedCAT) package.
 ## Installing
 
 ### Download the models
-MiADE uses MedCAT and Med7 NER, so you will have to download the required models first:
+MiADE uses MedCAT and [Med7](https://huggingface.co/kormilitzin/en_core_med7_lg), so you will have to download the required models first:
 ```bash
 pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
 python -m spacy download en_core_web_md
@@ -82,4 +82,4 @@ This project wouldn't be possible without the work at [Cogstack](https://cogstac
 
 ## Licence
 
-This project is licensed under the Elastic License 2.0. See [LICENSE](LICENSE) for the full license text.
+This project is licensed under the Elastic License 2.0. See [LICENSE](https://github.com/uclh-criu/miade/blob/documentation/LICENCE.md) for the full license text.
