@@ -9,10 +9,4 @@ general:
     lookup_data_path: ./lookup_data/
     negation_detection: None
     structured_list_limit: 0  # if more than this number of concepts in structure section, ignore concepts in prose
-    disable: []
     add_numbering: True
-  meds/allergies:
-    lookup_data_path: ./lookup_data/
-    negation_detection: None
-    disable: []
-    add_numbering: False
