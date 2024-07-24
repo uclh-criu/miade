@@ -27,7 +27,6 @@ dependencies = [
     "negspacy>=1.0.3",
 ]
 readme = "README.md"
-license = {file = "LICENCE.md"}
 keywords = ["nlp", "natural-language-processing", "ml", "ehr", "electronic-health-records", "ai", "health", "healthcare"]
 classifiers=[
     "Development Status :: 5 - Production/Stable",
