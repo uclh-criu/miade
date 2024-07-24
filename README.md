@@ -1,4 +1,4 @@
-# <img src="assets/miade-logo.png" width="40%">
+# <img src="https://uclh-criu.github.io/miade/assets/miade-logo.png" width="40%">
 
 [![Build Status](https://github.com/uclh-criu/miade/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/uclh-criu/miade/actions/workflows/ci.yml?query=Tests)
 ![License: Elastic License 2.0](https://img.shields.io/badge/License-Elastic%202.0-blue.svg)
