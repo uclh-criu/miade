@@ -216,6 +216,7 @@ def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
         route=None,
     )
 
+
 def test_annotator_config(test_meds_algy_medcat_model, test_problems_medcat_model, test_config):
     # check that all loads ok if pass in explicit path
     test_config.lookup_data_path = "./src/miade/data/"

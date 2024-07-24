@@ -482,7 +482,9 @@ class ProblemsAnnotator(Annotator):
                 raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
 
         self.negated_lookup = load_lookup_data(data_path + "negated.csv", is_package_data=is_package_data, as_dict=True)
-        self.historic_lookup = load_lookup_data(data_path + "historic.csv", is_package_data=is_package_data, as_dict=True)
+        self.historic_lookup = load_lookup_data(
+            data_path + "historic.csv", is_package_data=is_package_data, as_dict=True
+        )
         self.suspected_lookup = load_lookup_data(
             data_path + "suspected.csv", is_package_data=is_package_data, as_dict=True
         )
@@ -773,7 +775,9 @@ class MedsAllergiesAnnotator(Annotator):
             if not os.path.isdir(data_path):
                 raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
 
-        self.valid_meds = load_lookup_data(data_path + "valid_meds.csv", is_package_data=is_package_data, no_header=True)
+        self.valid_meds = load_lookup_data(
+            data_path + "valid_meds.csv", is_package_data=is_package_data, no_header=True
+        )
         self.reactions_subset_lookup = load_lookup_data(
             data_path + "reactions_subset.csv", is_package_data=is_package_data, as_dict=True
         )
