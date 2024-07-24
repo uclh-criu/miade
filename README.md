@@ -3,20 +3,10 @@
 [![Build Status](https://github.com/uclh-criu/miade/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/uclh-criu/miade/actions/workflows/ci.yml?query=Tests)
 ![License: Elastic License 2.0](https://img.shields.io/badge/License-Elastic%202.0-blue.svg)
 
-A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
-For the reference server implementation, see: [miade-server](https://github.com/uclh-criu/miade-server).
-
-Built with Cogstack's [MedCAT](https://github.com/CogStack/MedCAT) package.
+A set of tools for extracting formattable data from clinical notes stored in electronic health record systems. Powered by [MedCAT](https://github.com/CogStack/MedCAT) models.
 
 
 ## Installing
-
-### Download the models
-MiADE uses MedCAT and [Med7](https://huggingface.co/kormilitzin/en_core_med7_lg), so you will have to download the required models first:
-```bash
-pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
-python -m spacy download en_core_web_md
-```
 
 ### Install MiADE
 
@@ -25,11 +15,22 @@ To install the stable release:
 pip install miade
 ```
 
-To install the latest development version of MiADE:
+To install the latest development version of MiADE, clone this repository and run:
 ```bash
 pip install .
 ```
 
+### Downloading models
+You may also need to download these additional models to run MiADE:
+
+[spaCy](https://spacy.io/models/en) - required for MedCAT
+```bash
+python -m spacy download en_core_web_md
+```
+[med7](https://huggingface.co/kormilitzin/en_core_med7_lg) - required for medication dosage extraction
+```bash
+pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+```
 
 ## Quickstart
 
@@ -77,7 +78,7 @@ See [contributing](CONTRIBUTING.md)
 
 ## Acknowledgement
 
-This project wouldn't be possible without the work at [Cogstack](https://cogstack.org/), [spaCy](https://spacy.io/), and [Med7](https://huggingface.co/kormilitzin/en_core_med7_lg)!
+This project wouldn't be possible without the work at [Cogstack](https://cogstack.org/), [spaCy](https://spacy.io/), and [med7](https://huggingface.co/kormilitzin/en_core_med7_lg)!
 
 
 ## Licence
