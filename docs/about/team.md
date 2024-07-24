@@ -1,0 +1,3 @@
+# Team
+
+The [MiADE](https://www.ucl.ac.uk/health-informatics/research/medical-information-ai-data-extractor-miade) project is developed by a team of clinicians, developers, AI researchers, and data standard experts at [University College London (UCL)](https://www.ucl.ac.uk/health-informatics/) and the [University College London Hospitals (UCLH)](https://www.uclhospitals.brc.nihr.ac.uk/clinical-research-informatics-unit), in collaboration with the [Cogstack](https://cogstack.org/) at King's College London (KCL).

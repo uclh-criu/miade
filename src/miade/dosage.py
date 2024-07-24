@@ -64,11 +64,16 @@ class Route(BaseModel):
 
 def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict) -> Optional[Dose]:
     """
-    :param text: (str) string containing dose
-    :param quantities: (list) list of quantity entities NER
-    :param units: (list) list of unit entities from NER
-    :param results: (dict) dosage lookup results
-    :return: dose: (Dose) pydantic model containing dose in CDA format; returns None if inconclusive
+    Parses the dose information from the given text, quantities, units, and results.
+
+    Args:
+        text (str): String containing the dose.
+        quantities (List[str]): List of quantity entities from NER.
+        units (List[str]): List of unit entities from NER.
+        results (Dict): Dosage lookup results.
+
+    Returns:
+        Pydantic model containing the dose in CDA format. Returns None if inconclusive.
     """
 
     quantity_dosage = Dose(source=text)
@@ -148,9 +153,14 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
 
 def parse_frequency(text: str, results: Dict) -> Optional[Frequency]:
     """
-    :param text: (str) processed text which the lookup is performed on
-    :param results: (dict) dosage lookup results
-    :return: dose: (Frequency) pydantic model containing frequency in CDA format; returns None if inconclusive
+    Parses the frequency of a dosage from processed text.
+
+    Args:
+        text (str): The processed text on which the lookup is performed.
+        results (Dict): The dosage lookup results.
+
+    Returns:
+        A Frequency object containing the frequency in CDA format. Returns None if inconclusive.
     """
 
     # TODO: extract frequency range
@@ -186,11 +196,16 @@ def parse_duration(
     text: str, results: Dict, total_dose: Optional[float], daily_dose: Optional[float]
 ) -> Optional[Duration]:
     """
-    :param text: (str) string containing duration
-    :param results: (dict) dosage lookup results
-    :param total_dose: (float) total dose of the medication if extracted
-    :param daily_dose: (float) total dose of the medication in a day if extracted
-    :return: dose: (Duration) pydantic model containing duration in CDA format; returns None if inconclusive
+    Parses the duration of a medication dosage.
+
+    Args:
+        text (str): String containing the duration.
+        results (dict): Dosage lookup results.
+        total_dose (float): Total dose of the medication if extracted.
+        daily_dose (float): Total dose of the medication in a day if extracted.
+
+    Returns:
+        Pydantic model containing duration in CDA format; returns None if inconclusive.
     """
 
     duration_dosage = Duration(source=text)
@@ -216,9 +231,14 @@ def parse_duration(
 
 def parse_route(text: str, dose: Optional[Dose]) -> Optional[Route]:
     """
-    :param text: (str) string containing route
-    :param dose: (Dose) dose object
-    :return: (Route) pydantic model containing route in CDA format; returns None if inconclusive
+    Parses the route from the given text and dose.
+
+    Args:
+        text (str): String containing the route.
+        dose (Optional[Dose]): Dose object.
+
+    Returns:
+        Pydantic model containing the route in CDA format. Returns None if inconclusive.
     """
     # prioritise oral and inhalation
     route_dosage = Route(source=text)
@@ -267,12 +287,16 @@ class Dosage(object):
     @classmethod
     def from_doc(cls, doc: Doc, calculate: bool = True):
         """
-        Parses dosage from a spacy doc object
-        :param doc: (Doc) spacy doc object with processed dosage text
-        :param calculate: (bool) whether to calculate duration if total and daily dose is given
-        :return:
-        """
+        Parses dosage from a spacy doc object.
 
+        Args:
+            doc (Doc): Spacy doc object with processed dosage text.
+            calculate (bool, optional): Whether to calculate duration if total and daily dose is given. Defaults to True.
+
+        Returns:
+            An instance of the class with the parsed dosage information.
+
+        """
         quantities = []
         units = []
         dose_start = 1000

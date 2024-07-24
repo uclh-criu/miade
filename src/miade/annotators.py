@@ -1,5 +1,7 @@
+import io
 import os
 import logging
+import pkgutil
 import re
 from enum import Enum
 
@@ -43,24 +45,61 @@ class AllergenType(Enum):
     ANIMAL = "animal"
 
 
-def load_lookup_data(filename: str, as_dict: bool = False, no_header: bool = False):
+def load_lookup_data(filename: str, is_package_data: bool = False, as_dict: bool = False, no_header: bool = False):
+    """
+    Load lookup data from a CSV file.
+
+    Args:
+        filename (str): The path to the CSV file.
+        package_data (bool, optional): If True, indicates that the filename is a package data file. Defaults to False.
+        as_dict (bool, optional): If True, return the data as a dictionary. Defaults to False.
+        no_header (bool, optional): If True, assume the CSV file has no header. Defaults to False.
+
+    Returns:
+        pandas.DataFrame or dict: The loaded data.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+    """
+    if is_package_data:
+        lookup_data = pkgutil.get_data(__name__, filename)
+        lookup_data = io.BytesIO(lookup_data)
+    else:
+        lookup_data = filename
+
     if as_dict:
         return (
             pd.read_csv(
-                filename,
+                lookup_data,
                 index_col=0,
             )
             .squeeze("columns")
             .T.to_dict()
         )
     if no_header:
-        return pd.read_csv(filename, header=None)
+        return pd.read_csv(lookup_data, header=None)
     else:
-        return pd.read_csv(filename).drop_duplicates()
+        return pd.read_csv(lookup_data).drop_duplicates()
 
 
-def load_allergy_type_combinations(filename: str) -> Dict:
-    df = pd.read_csv(filename)
+def load_allergy_type_combinations(filename: str, is_package_data: bool = False) -> Dict:
+    """
+    Load allergy type combinations from a CSV file and return a dictionary.
+
+    Args:
+        filename (str): The path to the CSV file containing the allergy type combinations.
+
+    Returns:
+        dict: A dictionary where the keys are tuples of (allergenType, adverseReactionType)
+              and the values are tuples of (reaction_id, reaction_name).
+    """
+    if is_package_data:
+        lookup_data = pkgutil.get_data(__name__, filename)
+        lookup_data = io.BytesIO(lookup_data)
+    else:
+        lookup_data = filename
+
+    df = pd.read_csv(lookup_data)
 
     # Convert 'allergenType' and 'adverseReactionType' columns to lowercase
     df["allergenType"] = df["allergenType"].str.lower()
@@ -77,11 +116,15 @@ def load_allergy_type_combinations(filename: str) -> Dict:
 
 def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> str:
     """
-    Finds chunks of text that contain single dosage instructions to input into DosageProcessor
-    :param med: (Concept) medications concept
-    :param next_med: (Concept) next consecutive medication concept if there is one
-    :param text: (str) whole text
-    :return: (str) dosage text
+    Finds chunks of text that contain single dosage instructions to input into DosageProcessor.
+
+    Args:
+        med (Concept): The medications concept.
+        next_med (Concept, optional): The next consecutive medication concept if there is one.
+        text (str): The whole text.
+
+    Returns:
+        str: The dosage text.
     """
     sents = sent_regex.findall(text[med.start : next_med.start] if next_med is not None else text[med.start :])
 
@@ -104,15 +147,18 @@ def get_dosage_string(med: Concept, next_med: Optional[Concept], text: str) -> s
 
 def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note: Note) -> int:
     """
-    Calculates how many words are in between the given text spans based on character indices.
-    :param start1: Character index of the start of word 1.
-    :param end1: Character index of the end of word 1.
-    :param start2: Character index of the start of word 2.
-    :param end2: Character index of the end of word 2.
-    :param note: Note object that contains the whole text.
-    :return: Number of words between the two text spans.
-    """
+    Calculates the number of words between two text spans based on character indices.
 
+    Args:
+        start1 (int): Character index of the start of word 1.
+        end1 (int): Character index of the end of word 1.
+        start2 (int): Character index of the start of word 2.
+        end2 (int): Character index of the end of word 2.
+        note (Note): Note object that contains the whole text.
+
+    Returns:
+        int: Number of words between the two text spans.
+    """
     if start1 > end1 or start2 > end2:
         return -1  # Invalid input: start index should be less than or equal to the end index
 
@@ -135,7 +181,13 @@ def calculate_word_distance(start1: int, end1: int, start2: int, end2: int, note
 
 class Annotator(ABC):
     """
-    Docstring for Annotator
+    An abstract base class for annotators.
+
+    Annotators are responsible for processing medical notes and extracting relevant concepts from them.
+
+    Attributes:
+        cat (CAT): The MedCAT instance used for concept extraction.
+        config (AnnotatorConfig): The configuration for the annotator.
     """
 
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
@@ -158,6 +210,9 @@ class Annotator(ABC):
         self.irrelevant_paragraphs = [ParagraphType.ddx, ParagraphType.exam, ParagraphType.plan]
 
     def _add_negex_pipeline(self) -> None:
+        """
+        Adds the negex pipeline to the MedCAT instance.
+        """
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
@@ -165,22 +220,41 @@ class Annotator(ABC):
     @property
     @abstractmethod
     def concept_types(self):
+        """
+        Abstract property that should return a list of concept types supported by the annotator.
+        """
         pass
 
     @property
     @abstractmethod
     def pipeline(self):
-        pass
-
-    @abstractmethod
-    def process_paragraphs(self):
+        """
+        Abstract property that should return a list of pipeline steps for the annotator.
+        """
         pass
 
     @abstractmethod
     def postprocess(self):
+        """
+        Abstract method that should implement the logic for post-processing extracted concepts.
+        """
         pass
 
-    def run_pipeline(self, note: Note, record_concepts: List[Concept]) -> List[Concept]:
+    def run_pipeline(
+        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor] = None
+    ) -> List[Concept]:
+        """
+        Runs the annotation pipeline on a given note and returns the extracted concepts.
+
+        Args:
+            note (Note): The input note to process.
+            record_concepts (List[Concept]): The list of concepts from existing EHR records.
+            dosage_extractor (Optional[DosageExtractor]): An optional dosage extractor to add dosages to concepts.
+
+        Returns:
+            List[Concept]: The extracted concepts from the note.
+        """
+        # TODO: make this more extensible
         concepts: List[Concept] = []
 
         for pipe in self.pipeline:
@@ -195,10 +269,21 @@ class Annotator(ABC):
                     concepts = self.postprocess(concepts)
                 elif pipe == "deduplicator":
                     concepts = self.deduplicate(concepts, record_concepts)
+                elif pipe == "dosage_extractor" and dosage_extractor is not None:
+                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
 
         return concepts
 
     def get_concepts(self, note: Note) -> List[Concept]:
+        """
+        Extracts concepts from a note using the MedCAT instance.
+
+        Args:
+            note (Note): The input note to extract concepts from.
+
+        Returns:
+            The extracted concepts from the note.
+        """
         concepts: List[Concept] = []
         for entity in self.cat.get_entities(note)["entities"].values():
             try:
@@ -211,6 +296,15 @@ class Annotator(ABC):
 
     @staticmethod
     def preprocess(note: Note) -> Note:
+        """
+        Preprocesses a note by cleaning its text and splitting it into paragraphs.
+
+        Args:
+            note (Note): The input note to preprocess.
+
+        Returns:
+            The preprocessed note.
+        """
         note.clean_text()
         note.get_paragraphs()
 
@@ -218,6 +312,16 @@ class Annotator(ABC):
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+        """
+        Removes duplicate concepts from the extracted concepts list by strict ID matching.
+
+        Args:
+            concepts (List[Concept]): The list of extracted concepts.
+            record_concepts (Optional[List[Concept]]): The list of concepts from existing EHR records.
+
+        Returns:
+            The deduplicated list of concepts.
+        """
         if record_concepts is not None:
             record_ids = {record_concept.id for record_concept in record_concepts}
             record_names = {record_concept.name for record_concept in record_concepts}
@@ -243,7 +347,46 @@ class Annotator(ABC):
         return filtered_concepts
 
     @staticmethod
+    def add_dosages_to_concepts(
+        dosage_extractor: DosageExtractor, concepts: List[Concept], note: Note
+    ) -> List[Concept]:
+        """
+        Gets dosages for medication concepts
+
+        Args:
+            dosage_extractor (DosageExtractor): The dosage extractor object
+            concepts (List[Concept]): List of concepts extracted
+            note (Note): The input note
+
+        Returns:
+            List of concepts with dosages for medication concepts
+        """
+
+        for ind, concept in enumerate(concepts):
+            next_med_concept = concepts[ind + 1] if len(concepts) > ind + 1 else None
+            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
+            if len(dosage_string.split()) > 2:
+                concept.dosage = dosage_extractor(dosage_string)
+                concept.category = Category.MEDICATION if concept.dosage is not None else None
+                if concept.dosage is not None:
+                    log.debug(
+                        f"Extracted dosage for medication concept "
+                        f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}"
+                    )
+
+        return concepts
+
+    @staticmethod
     def add_numbering_to_name(concepts: List[Concept]) -> List[Concept]:
+        """
+        Adds numbering to the names of problem concepts to control output ordering.
+
+        Args:
+            concepts (List[Concept]): The list of concepts to add numbering to.
+
+        Returns:
+            The list of concepts with numbering added to their names.
+        """
         # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
         for i, concept in enumerate(concepts):
             concept.name = f"{i:02} {concept.name}"
@@ -254,8 +397,23 @@ class Annotator(ABC):
         self,
         note: Note,
         record_concepts: Optional[List[Concept]] = None,
-    ):
-        concepts = self.run_pipeline(note, record_concepts)
+        dosage_extractor: Optional[DosageExtractor] = None,
+    ) -> List[Concept]:
+        """
+        Runs the annotation pipeline on a given note and returns the extracted concepts.
+
+        Args:
+            note (Note): The input note to process.
+            record_concepts (Optional[List[Concept]]): The list of concepts from existing EHR records.
+            dosage_extractor (Optional[DosageExtractor]): The dosage extractor to use for extracting dosage information.
+
+        Returns:
+            List[Concept]: The extracted concepts from the note.
+        """
+        if dosage_extractor is not None:
+            concepts = self.run_pipeline(note, record_concepts, dosage_extractor)
+        else:
+            concepts = self.run_pipeline(note, record_concepts)
 
         if self.config.add_numbering:
             concepts = self.add_numbering_to_name(concepts)
@@ -264,30 +422,89 @@ class Annotator(ABC):
 
 
 class ProblemsAnnotator(Annotator):
+    """
+    Annotator class for identifying and processing problems in medical notes.
+
+    This class extends the base `Annotator` class and provides specific functionality
+    for identifying and processing problems in medical notes. It implements methods
+    for loading problem lookup data, processing meta annotations, filtering concepts,
+    and post-processing the annotated concepts.
+
+    Attributes:
+        cat (CAT): The CAT (Concept Annotation Tool) instance used for annotation.
+        config (AnnotatorConfig): The configuration object for the annotator.
+
+    Properties:
+        concept_types (list): A list of concept types supported by this annotator.
+        pipeline (list): The list of processing steps in the annotation pipeline.
+    """
+
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
         self._load_problems_lookup_data()
 
     @property
-    def concept_types(self):
+    def concept_types(self) -> List[Category]:
+        """
+        Get the list of concept types supported by this annotator.
+
+        Returns:
+            [Category.PROBLEM]
+        """
         return [Category.PROBLEM]
 
     @property
-    def pipeline(self):
+    def pipeline(self) -> List[str]:
+        """
+        Get the list of processing steps in the annotation pipeline.
+
+        Returns:
+            ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
+        """
         return ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
 
     def _load_problems_lookup_data(self) -> None:
-        if not os.path.isdir(self.config.lookup_data_path):
-            raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
+        """
+        Load the problem lookup data. Load prepackaged lookups if lookup_data_path is None.
+
+        Raises:
+            RuntimeError: If the lookup data directory does not exist.
+        """
+        if self.config.lookup_data_path is None:
+            data_path = "./data/"
+            is_package_data = True
+            log.info("Loading preconfigured lookup data for ProblemsAnnotator")
         else:
-            self.negated_lookup = load_lookup_data(self.config.lookup_data_path + "negated.csv", as_dict=True)
-            self.historic_lookup = load_lookup_data(self.config.lookup_data_path + "historic.csv", as_dict=True)
-            self.suspected_lookup = load_lookup_data(self.config.lookup_data_path + "suspected.csv", as_dict=True)
-            self.filtering_blacklist = load_lookup_data(
-                self.config.lookup_data_path + "problem_blacklist.csv", no_header=True
-            )
+            data_path = self.config.lookup_data_path
+            is_package_data = False
+            log.info(f"Loading lookup data from {data_path} for ProblemsAnnotator")
+            if not os.path.isdir(data_path):
+                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
+
+        self.negated_lookup = load_lookup_data(data_path + "negated.csv", is_package_data=is_package_data, as_dict=True)
+        self.historic_lookup = load_lookup_data(
+            data_path + "historic.csv", is_package_data=is_package_data, as_dict=True
+        )
+        self.suspected_lookup = load_lookup_data(
+            data_path + "suspected.csv", is_package_data=is_package_data, as_dict=True
+        )
+        self.filtering_blacklist = load_lookup_data(
+            data_path + "problem_blacklist.csv", is_package_data=is_package_data, no_header=True
+        )
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
+        """
+        Process the meta annotations for a concept.
+
+        Args:
+            concept (Concept): The concept to process.
+
+        Returns:
+           The processed concept, or None if it should be removed.
+
+        Raises:
+            ValueError: If the concept has an invalid negex value.
+        """
         # Add, convert, or ignore concepts
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
@@ -351,6 +568,15 @@ class ProblemsAnnotator(Annotator):
         return concept
 
     def _is_blacklist(self, concept):
+        """
+        Check if a concept is in the filtering blacklist.
+
+        Args:
+            concept: The concept to check.
+
+        Returns:
+            True if the concept is in the blacklist, False otherwise.
+        """
         # filtering blacklist
         if int(concept.id) in self.filtering_blacklist.values:
             log.debug(f"Removed concept ({concept.id} | {concept.name}): concept in problems blacklist")
@@ -360,6 +586,14 @@ class ProblemsAnnotator(Annotator):
     def _process_meta_ann_by_paragraph(
         self, concept: Concept, paragraph: Paragraph, prob_concepts_in_structured_sections: List[Concept]
     ):
+        """
+        Process the meta annotations for a concept based on the paragraph type.
+
+        Args:
+            concept (Concept): The concept to process.
+            paragraph (Paragraph): The paragraph containing the concept.
+            prob_concepts_in_structured_sections (List[Concept]): The list of problem concepts in structured sections.
+        """
         # if paragraph is structured problems section, add to prob list and convert to corresponding relevance
         if paragraph.type in self.structured_prob_lists:
             prob_concepts_in_structured_sections.append(concept)
@@ -384,6 +618,16 @@ class ProblemsAnnotator(Annotator):
                     meta.value = Relevance.IRRELEVANT
 
     def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
+        """
+        Process the paragraphs in a note and filter the concepts.
+
+        Args:
+            note (Note): The note to process.
+            concepts (List[Concept]): The list of concepts to filter.
+
+        Returns:
+            The filtered list of concepts.
+        """
         prob_concepts_in_structured_sections: List[Concept] = []
 
         for paragraph in note.paragraphs:
@@ -405,6 +649,15 @@ class ProblemsAnnotator(Annotator):
         return concepts
 
     def postprocess(self, concepts: List[Concept]) -> List[Concept]:
+        """
+        Post-process the concepts and filter out irrelevant concepts.
+
+        Args:
+            concepts (List[Concept]): The list of concepts to post-process.
+
+        Returns:
+            The filtered list of concepts.
+        """
         # deepcopy so we still have reference to original list of concepts
         all_concepts = deepcopy(concepts)
         filtered_concepts = []
@@ -422,16 +675,46 @@ class ProblemsAnnotator(Annotator):
 
 
 class MedsAllergiesAnnotator(Annotator):
+    """
+    Annotator class for medication and allergy concepts.
+
+    This class extends the `Annotator` base class and provides methods for running a pipeline of
+    annotation tasks on a given note, as well as validating and converting concepts related to
+    medications and allergies.
+
+    Attributes:
+        valid_meds (List[int]): A list of valid medication IDs.
+        reactions_subset_lookup (Dict[int, str]): A dictionary mapping reaction IDs to their corresponding subset IDs.
+        allergens_subset_lookup (Dict[int, str]): A dictionary mapping allergen IDs to their corresponding subset IDs.
+        allergy_type_lookup (Dict[str, List[str]]): A dictionary mapping allergen types to their corresponding codes.
+        vtm_to_vmp_lookup (Dict[str, str]): A dictionary mapping VTM (Virtual Therapeutic Moiety) IDs to VMP (Virtual Medicinal Product) IDs.
+        vtm_to_text_lookup (Dict[str, str]): A dictionary mapping VTM IDs to their corresponding text.
+    """
+
     def __init__(self, cat: CAT, config: AnnotatorConfig = None):
         super().__init__(cat, config)
         self._load_med_allergy_lookup_data()
 
     @property
-    def concept_types(self):
+    def concept_types(self) -> List[Category]:
+        """
+        Returns a list of concept types.
+
+        Returns:
+            [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
+        """
         return [Category.MEDICATION, Category.ALLERGY, Category.REACTION]
 
     @property
-    def pipeline(self):
+    def pipeline(self) -> List[str]:
+        """
+        Returns a list of annotators in the pipeline.
+
+        The annotators are executed in the order they appear in the list.
+
+        Returns:
+            ["preprocessor", "medcat", "paragrapher", "postprocessor", "dosage_extractor", "vtm_converter", "deduplicator"]
+        """
         return [
             "preprocessor",
             "medcat",
@@ -445,6 +728,17 @@ class MedsAllergiesAnnotator(Annotator):
     def run_pipeline(
         self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor]
     ) -> List[Concept]:
+        """
+        Runs the annotation pipeline on the given note.
+
+        Args:
+            note (Note): The input note to run the pipeline on.
+            record_concepts (List[Concept]): The list of previously recorded concepts.
+            dosage_extractor (Optional[DosageExtractor]): The dosage extractor function.
+
+        Returns:
+            The list of annotated concepts.
+        """
         concepts: List[Concept] = []
 
         for pipe in self.pipeline:
@@ -467,27 +761,62 @@ class MedsAllergiesAnnotator(Annotator):
         return concepts
 
     def _load_med_allergy_lookup_data(self) -> None:
-        if not os.path.isdir(self.config.lookup_data_path):
-            raise RuntimeError(f"No lookup data configured: {self.config.lookup_data_path} does not exist!")
+        """
+        Loads the medication and allergy lookup data.
+        """
+        if self.config.lookup_data_path is None:
+            data_path = "./data/"
+            is_package_data = True
+            log.info("Loading preconfigured lookup data for MedsAllergiesAnnotator")
         else:
-            self.valid_meds = load_lookup_data(self.config.lookup_data_path + "valid_meds.csv", no_header=True)
-            self.reactions_subset_lookup = load_lookup_data(
-                self.config.lookup_data_path + "reactions_subset.csv", as_dict=True
-            )
-            self.allergens_subset_lookup = load_lookup_data(
-                self.config.lookup_data_path + "allergens_subset.csv", as_dict=True
-            )
-            self.allergy_type_lookup = load_allergy_type_combinations(self.config.lookup_data_path + "allergy_type.csv")
-            self.vtm_to_vmp_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_vmp.csv")
-            self.vtm_to_text_lookup = load_lookup_data(self.config.lookup_data_path + "vtm_to_text.csv", as_dict=True)
+            data_path = self.config.lookup_data_path
+            is_package_data = False
+            log.info(f"Loading lookup data from {data_path} for MedsAllergiesAnnotator")
+            if not os.path.isdir(data_path):
+                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
+
+        self.valid_meds = load_lookup_data(
+            data_path + "valid_meds.csv", is_package_data=is_package_data, no_header=True
+        )
+        self.reactions_subset_lookup = load_lookup_data(
+            data_path + "reactions_subset.csv", is_package_data=is_package_data, as_dict=True
+        )
+        self.allergens_subset_lookup = load_lookup_data(
+            data_path + "allergens_subset.csv", is_package_data=is_package_data, as_dict=True
+        )
+        self.allergy_type_lookup = load_allergy_type_combinations(
+            data_path + "allergy_type.csv", is_package_data=is_package_data
+        )
+        self.vtm_to_vmp_lookup = load_lookup_data(data_path + "vtm_to_vmp.csv", is_package_data=is_package_data)
+        self.vtm_to_text_lookup = load_lookup_data(
+            data_path + "vtm_to_text.csv", is_package_data=is_package_data, as_dict=True
+        )
 
     def _validate_meds(self, concept) -> bool:
+        """
+        Validates if the concept is a valid medication.
+
+        Args:
+            concept: The concept to validate.
+
+        Returns:
+            True if the concept is a valid medication, False otherwise.
+        """
         # check if substance is valid med
         if int(concept.id) in self.valid_meds.values:
             return True
         return False
 
     def _validate_and_convert_substance(self, concept) -> bool:
+        """
+        Validates and converts a substance concept for allergy.
+
+        Args:
+            concept: The substance concept to be validated and converted.
+
+        Returns:
+            True if the substance is valid and converted successfully, False otherwise.
+        """
         # check if substance is valid substance for allergy - if it is, convert it to Epic subset and return that concept
         lookup_result = self.allergens_subset_lookup.get(int(concept.id))
         if lookup_result is not None:
@@ -513,6 +842,16 @@ class MedsAllergiesAnnotator(Annotator):
             return False
 
     def _validate_and_convert_reaction(self, concept) -> bool:
+        """
+        Validates and converts a reaction concept to the Epic subset.
+
+        Args:
+            concept: The concept to be validated and converted.
+
+        Returns:
+            True if the concept is a valid reaction and successfully converted to the Epic subset,
+                  False otherwise.
+        """
         # check if substance is valid reaction - if it is, convert it to Epic subset and return that concept
         lookup_result = self.reactions_subset_lookup.get(int(concept.id), None)
         if lookup_result is not None:
@@ -527,6 +866,16 @@ class MedsAllergiesAnnotator(Annotator):
             return False
 
     def _validate_and_convert_concepts(self, concept: Concept) -> Concept:
+        """
+        Validates and converts the given concept based on its metadata annotations.
+
+        Args:
+            concept (Concept): The concept to be validated and converted.
+
+        Returns:
+            The validated and converted concept.
+
+        """
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
 
         # assign categories
@@ -557,33 +906,19 @@ class MedsAllergiesAnnotator(Annotator):
         return concept
 
     @staticmethod
-    def add_dosages_to_concepts(
-        dosage_extractor: DosageExtractor, concepts: List[Concept], note: Note
-    ) -> List[Concept]:
-        """
-        Gets dosages for medication concepts
-        :param dosage_extractor:
-        :param concepts: (List) list of concepts extracted
-        :param note: (Note) input note
-        :return: (List) list of concepts with dosages for medication concepts
-        """
-
-        for ind, concept in enumerate(concepts):
-            next_med_concept = concepts[ind + 1] if len(concepts) > ind + 1 else None
-            dosage_string = get_dosage_string(concept, next_med_concept, note.text)
-            if len(dosage_string.split()) > 2:
-                concept.dosage = dosage_extractor(dosage_string)
-                concept.category = Category.MEDICATION if concept.dosage is not None else None
-                if concept.dosage is not None:
-                    log.debug(
-                        f"Extracted dosage for medication concept "
-                        f"({concept.id} | {concept.name}): {concept.dosage.text} {concept.dosage.dose}"
-                    )
-
-        return concepts
-
-    @staticmethod
     def _link_reactions_to_allergens(concept_list: List[Concept], note: Note, link_distance: int = 5) -> List[Concept]:
+        """
+        Links reaction concepts to allergen concepts based on their proximity in the given concept list.
+
+        Args:
+            concept_list (List[Concept]): The list of concepts to search for reaction and allergen concepts.
+            note (Note): The note object containing the text.
+            link_distance (int, optional): The maximum distance between a reaction and an allergen to be considered linked.
+                Defaults to 5.
+
+        Returns:
+            The updated concept list with reaction concepts removed and linked to their corresponding allergen concepts.
+        """
         allergy_concepts = [concept for concept in concept_list if concept.category == Category.ALLERGY]
         reaction_concepts = [concept for concept in concept_list if concept.category == Category.REACTION]
 
@@ -635,6 +970,15 @@ class MedsAllergiesAnnotator(Annotator):
 
     @staticmethod
     def _convert_allergy_severity_to_code(concept: Concept) -> bool:
+        """
+        Converts allergy severity to corresponding codes and links them to the concept.
+
+        Args:
+            concept (Concept): The concept to convert severity for.
+
+        Returns:
+            True if the conversion is successful, False otherwise.
+        """
         meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
         if Severity.MILD in meta_ann_values:
             concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
@@ -656,6 +1000,15 @@ class MedsAllergiesAnnotator(Annotator):
         return True
 
     def _convert_allergy_type_to_code(self, concept: Concept) -> bool:
+        """
+        Converts the allergy type of a concept to a code and adds it as a linked concept.
+
+        Args:
+            concept (Concept): The concept whose allergy type needs to be converted.
+
+        Returns:
+            True if the conversion and linking were successful, False otherwise.
+        """
         # get the ALLERGYTYPE meta-annotation
         allergy_type = [meta_ann for meta_ann in concept.meta if meta_ann.name == "allergy_type"]
         if len(allergy_type) != 1:
@@ -690,6 +1043,16 @@ class MedsAllergiesAnnotator(Annotator):
         return True
 
     def _process_meta_ann_by_paragraph(self, concept: Concept, paragraph: Paragraph):
+        """
+        Process the meta annotations for a given concept and paragraph.
+
+        Args:
+            concept (Concept): The concept object.
+            paragraph (Paragraph): The paragraph object.
+
+        Returns:
+            None
+        """
         # if paragraph is structured meds to convert to corresponding relevance
         if paragraph.type in self.structured_med_lists:
             for meta in concept.meta:
@@ -717,6 +1080,16 @@ class MedsAllergiesAnnotator(Annotator):
                     meta.value = SubstanceCategory.IRRELEVANT
 
     def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
+        """
+        Process the paragraphs in a note and update the list of concepts.
+
+        Args:
+            note (Note): The note object containing the paragraphs.
+            concepts (List[Concept]): The list of concepts to be updated.
+
+        Returns:
+            The updated list of concepts.
+        """
         for paragraph in note.paragraphs:
             for concept in concepts:
                 if concept.start >= paragraph.start and concept.end <= paragraph.end:
@@ -727,6 +1100,16 @@ class MedsAllergiesAnnotator(Annotator):
         return concepts
 
     def postprocess(self, concepts: List[Concept], note: Note) -> List[Concept]:
+        """
+        Postprocesses a list of concepts and links reactions to allergens.
+
+        Args:
+            concepts (List[Concept]): The list of concepts to be postprocessed.
+            note (Note): The note object associated with the concepts.
+
+        Returns:
+           The postprocessed list of concepts.
+        """
         # deepcopy so we still have reference to original list of concepts
         all_concepts = deepcopy(concepts)
         processed_concepts = []
@@ -740,6 +1123,16 @@ class MedsAllergiesAnnotator(Annotator):
         return processed_concepts
 
     def convert_VTM_to_VMP_or_text(self, concepts: List[Concept]) -> List[Concept]:
+        """
+        Converts medication concepts from VTM (Virtual Therapeutic Moiety) to VMP (Virtual Medicinal Product) or text.
+
+        Args:
+            concepts (List[Concept]): A list of medication concepts.
+
+        Returns:
+            A list of medication concepts with updated IDs, names, and dosages.
+
+        """
         # Get medication concepts
         med_concepts = [concept for concept in concepts if concept.category == Category.MEDICATION]
         self.vtm_to_vmp_lookup["dose"] = self.vtm_to_vmp_lookup["dose"].astype(float)
@@ -798,18 +1191,5 @@ class MedsAllergiesAnnotator(Annotator):
                 log.debug(f"Converted ({concept.id} | {concept.name}) to (None | {lookup_result}): no dosage detected")
                 concept.id = None
                 concept.name = lookup_result
-
-        return concepts
-
-    def __call__(
-        self,
-        note: Note,
-        record_concepts: Optional[List[Concept]] = None,
-        dosage_extractor: Optional[DosageExtractor] = None,
-    ):
-        concepts = self.run_pipeline(note, record_concepts, dosage_extractor)
-
-        if self.config.add_numbering:
-            concepts = self.add_numbering_to_name(concepts)
 
         return concepts

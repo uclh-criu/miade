@@ -68,6 +68,16 @@ class Preprocessor:
             Doc.set_extension("original_text", default="")
 
     def __call__(self, doc: Doc) -> Doc:
+        """
+        Preprocesses a spaCy `Doc` object by performing various text transformations.
+
+        Args:
+            doc (Doc): The input spaCy `Doc` object to be preprocessed.
+
+        Returns:
+            The preprocessed spaCy `Doc` object.
+
+        """
         processed_text = []
 
         # singleword replacement

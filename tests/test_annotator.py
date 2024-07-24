@@ -215,3 +215,19 @@ def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
         duration=None,
         route=None,
     )
+
+
+def test_annotator_config(test_meds_algy_medcat_model, test_problems_medcat_model, test_config):
+    # check that all loads ok if pass in explicit path
+    test_config.lookup_data_path = "./src/miade/data/"
+
+    meds_annotator = MedsAllergiesAnnotator(test_meds_algy_medcat_model, test_config)
+    assert meds_annotator.allergens_subset_lookup
+    assert meds_annotator.reactions_subset_lookup
+    assert meds_annotator.allergy_type_lookup
+
+    probs_annotator = ProblemsAnnotator(test_problems_medcat_model, test_config)
+    assert probs_annotator.historic_lookup
+    assert probs_annotator.negated_lookup
+    assert probs_annotator.suspected_lookup
+    assert probs_annotator.filtering_blacklist is not None
