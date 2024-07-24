@@ -1,0 +1,74 @@
+site_name: MiADE
+site_description: A set of tools for extracting formattable data from clinical notes stored in electronic health record systems.
+
+# Repository
+repo_name: uclh-criu/miade
+repo_url: https://github.com/uclh-criu/miade
+
+# Configuration for the theme
+theme:
+  name: material
+  logo: assets/miade-logo-small.png
+  favicon: assets/miade-logo-small.png
+  palette:
+    primary: teal
+    accent: red
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.instant
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - toc.integrate 
+    - content.code.copy
+    - content.code.select
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+# Pages
+nav:
+  - Home: index.md
+  - User Guide:
+    - Quickstart: user-guide/quickstart.md
+    - Configurations: user-guide/configurations.md
+    - Cookbook: user-guide/cookbook.md
+  - API Reference:
+    - Pipeline Components:
+      - NoteProcessor: api-reference/noteprocessor.md
+      - Annotator: api-reference/annotator.md
+      - ProblemsAnnotator: api-reference/problemsannotator.md
+      - MedsAllergiesAnnotator: api-reference/medsallergiesannotator.md
+      - DosageExtractor: api-reference/dosageextractor.md
+    - Objects:
+      - Note: api-reference/note.md
+      - Concept: api-reference/concept.md
+      - Dosage: api-reference/dosage.md
+      - MetaAnnotations: api-reference/metaannotations.md
+  - About:
+    - Overview: about/overview.md
+    - Team: about/team.md
+  - Community: contributing.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true

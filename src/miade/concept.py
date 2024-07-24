@@ -16,7 +16,20 @@ class Category(Enum):
 
 
 class Concept(object):
-    """docstring for Concept."""
+    """Represents a concept in the system.
+
+    Attributes:
+        id (str): The unique identifier of the concept.
+        name (str): The name of the concept.
+        category (Optional[Enum]): The category of the concept (optional).
+        start (Optional[int]): The start position of the concept (optional).
+        end (Optional[int]): The end position of the concept (optional).
+        dosage (Optional[Dosage]): The dosage of the concept (optional).
+        linked_concepts (Optional[List[Concept]]): The linked concepts of the concept (optional).
+        negex (Optional[bool]): The negex value of the concept (optional).
+        meta_anns (Optional[List[MetaAnnotations]]): The meta annotations of the concept (optional).
+        debug_dict (Optional[Dict]): The debug dictionary of the concept (optional).
+    """
 
     def __init__(
         self,
@@ -46,7 +59,16 @@ class Concept(object):
             self.linked_concepts = []
 
     @classmethod
-    def from_entity(cls, entity: [Dict]):
+    def from_entity(cls, entity: Dict) -> Concept:
+        """
+        Converts an entity dictionary into a Concept object.
+
+        Args:
+            entity (Dict): The entity dictionary containing the necessary information.
+
+        Returns:
+            The Concept object created from the entity dictionary.
+        """
         meta_anns = None
         if entity["meta_anns"]:
             meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]

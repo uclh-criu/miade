@@ -43,6 +43,7 @@ venv.bak/
 *.zip
 src/miade/model_builders/output/
 !src/miade/data/*
+.DS_Store
 
 #testing
 tests/data/

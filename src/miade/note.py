@@ -10,7 +10,15 @@ log = logging.getLogger(__name__)
 
 
 class Note(object):
-    """docstring for Note."""
+    """
+    Represents a note object.
+
+    Attributes:
+        text (str): The text content of the note.
+        raw_text (str): The raw text content of the note.
+        regex_config (str): The path to the regex configuration file.
+        paragraphs (Optional[List[Paragraph]]): A list of paragraphs in the note.
+    """
 
     # TODO: refactor paragraph methods to a separate class. It's too much.
 
@@ -22,6 +30,13 @@ class Note(object):
         self.numbered_list: List[tuple] = []
 
     def clean_text(self) -> None:
+        """
+        Cleans the text content of the note.
+
+        This method performs various cleaning operations on the text content of the note,
+        such as replacing spaces, removing punctuation, and removing empty lines.
+        """
+
         # Replace all types of spaces with a single normal space, preserving "\n"
         self.text = re.sub(r"(?:(?!\n)\s)+", " ", self.text)
 

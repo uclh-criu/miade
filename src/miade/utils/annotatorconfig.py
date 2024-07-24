@@ -3,7 +3,7 @@ from typing import List, Optional
 
 
 class AnnotatorConfig(BaseModel):
-    lookup_data_path: Optional[str] = "./lookup_data/"
+    lookup_data_path: Optional[str] = None
     negation_detection: Optional[str] = "negex"
     structured_list_limit: Optional[int] = 100
     disable: List[str] = []

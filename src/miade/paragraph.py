@@ -15,6 +15,17 @@ class ParagraphType(Enum):
 
 
 class Paragraph(object):
+    """
+    Represents a paragraph in a document.
+
+    Attributes:
+        heading (str): The heading of the paragraph.
+        body (str): The body text of the paragraph.
+        type (ParagraphType): The type of the paragraph.
+        start (int): The starting position of the paragraph.
+        end (int): The ending position of the paragraph.
+    """
+
     def __init__(self, heading: str, body: str, type: ParagraphType, start: int, end: int):
         self.heading: str = heading
         self.body: str = body
