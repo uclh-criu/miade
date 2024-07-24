@@ -45,7 +45,8 @@ nav:
   - Home: index.md
   - User Guide:
     - Quickstart: user-guide/quickstart.md
-    - Configuration: user-guide/configuration.md
+    - Configurations: user-guide/configurations.md
+    - Cookbook: user-guide/cookbook.md
   - API Reference:
     - Pipeline Components:
       - NoteProcessor: api-reference/noteprocessor.md
@@ -58,7 +59,6 @@ nav:
       - Concept: api-reference/concept.md
       - Dosage: api-reference/dosage.md
       - MetaAnnotations: api-reference/metaannotations.md
-
   - About:
     - Overview: about/overview.md
     - Team: about/team.md
