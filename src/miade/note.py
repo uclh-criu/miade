@@ -3,7 +3,7 @@ import logging
 
 from typing import List, Optional, Dict
 
-from .paragraph import Paragraph, ParagraphType
+from .paragraph import ListItem, NumberedList, Paragraph, ParagraphType
 
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class Note(object):
         self.raw_text = text
         self.paragraphs: Optional[List[Paragraph]] = []
         self.prose_paragraphs: Optional[List[Paragraph]] = []
-        self.numbered_list: List[tuple] = []
+        self.numbered_list: List[NumberedList] = []
 
     def clean_text(self) -> None:
         """
@@ -76,18 +76,22 @@ class Note(object):
 
             # Check if current number is the next in sequence
             if current_num == last_num + 1:
-                results.append((match.start(1), match.end(1), number_text))
+                results.append(ListItem(content=number_text, start=match.start(1), end=match.end(1)))
             else:
                 # If there is a break in the sequence, check if current list has more than one item
                 if len(results) > 1:
-                    all_results.append(results)
-                results = [(match.start(1), match.end(1), number_text)]  # Start new results list with the current match
+                    numbered_list = NumberedList(items=results, list_start=results[0].start, list_end=results[-1].end)
+                    all_results.append(numbered_list)
+                results = [
+                    ListItem(content=number_text, start=match.start(1), end=match.end(1))
+                ]  # Start new results list with the current match
             last_num = current_num  # Update last number to the current
 
         # Add the last sequence if not empty and has more than one item
         if len(results) > 1:
-            all_results.append(results)
-        
+            numbered_list = NumberedList(items=results, list_start=results[0].start, list_end=results[-1].end)
+            all_results.append(numbered_list)
+
         self.numbered_list = all_results
 
     def get_paragraphs(self, paragraph_regex: Dict) -> None:
@@ -124,12 +128,18 @@ class Note(object):
 
             self.paragraphs.append(paragraph)
 
-    def merge_prose_sections(self):
+    def merge_prose_sections(self) -> None:
+        """
+        Merges consecutive prose sections in the paragraphs list.
+
+        Returns:
+            A list of merged prose sections.
+        """
         is_merge = False
         all_prose = []
         prose_section = []
         prose_indices = []
-    
+
         for i, paragraph in enumerate(self.paragraphs):
             if paragraph.type == ParagraphType.prose:
                 if is_merge:
@@ -142,47 +152,112 @@ class Note(object):
                     all_prose.append(prose_section)
                     prose_indices.extend([idx for idx, _ in prose_section])
                 is_merge = False
-        
+
         if len(prose_section) > 0:
             all_prose.append(prose_section)
             prose_indices.extend([idx for idx, _ in prose_section])
-        
+
         new_paragraphs = self.paragraphs[:]
-        
+
         for section in all_prose:
             start = section[0][1].start
             end = section[-1][1].end
             new_prose_para = Paragraph(
-                heading=self.text[start:end], 
-                body="", 
-                type=ParagraphType.prose, 
-                start=start, 
-                end=end)
-            
+                heading=self.text[start:end], body="", type=ParagraphType.prose, start=start, end=end
+            )
+
             # Replace the first paragraph in the section with the new merged paragraph
             first_idx = section[0][0]
             new_paragraphs[first_idx] = new_prose_para
-            
+
             # Mark other paragraphs in the section for deletion
             for _, paragraph in section[1:]:
                 index = self.paragraphs.index(paragraph)
                 new_paragraphs[index] = None
-        
+
         # Remove the None entries from new_paragraphs
         self.paragraphs = [para for para in new_paragraphs if para is not None]
-        
-        return all_prose
 
-    def is_in_numbered_list(self) -> bool:
-        pass
+    def merge_empty_non_prose_with_next_prose(self) -> None:
+        """
+        This method checks if a Paragraph has an empty body and a type that is not prose,
+        and merges it with the next Paragraph if the next paragraph is type prose.
 
-    def refine_paragraghs(self):
-        # do your whole manual check thing here etc.
-        pass
+        Returns:
+            None
+        """
+        merged_paragraphs = []
+        skip_next = False
 
-    def process(self):
-        # so this would be the call method for the refactored ParagraphSegmenter
-        pass
+        for i in range(len(self.paragraphs) - 1):
+            if skip_next:
+                # Skip this iteration because the previous iteration already handled merging
+                skip_next = False
+                continue
+
+            current_paragraph = self.paragraphs[i]
+            next_paragraph = self.paragraphs[i + 1]
+
+            # Check if current paragraph has an empty body and is not of type prose
+            if current_paragraph.body == "" and current_paragraph.type != ParagraphType.prose:
+                # Check if the next paragraph is of type prose
+                if next_paragraph.type == ParagraphType.prose:
+                    # Create a new Paragraph with merged content and type prose
+                    merged_paragraph = Paragraph(
+                        heading=current_paragraph.heading,
+                        body=next_paragraph.heading,
+                        type=current_paragraph.type,
+                        start=current_paragraph.start,
+                        end=next_paragraph.end,
+                    )
+                    merged_paragraphs.append(merged_paragraph)
+                    # Skip the next paragraph since it's already merged
+                    skip_next = True
+                    continue
+
+            # If no merging is done, add the current paragraph to the list
+            merged_paragraphs.append(current_paragraph)
+
+        # Handle the last paragraph if it wasn't merged
+        if not skip_next:
+            merged_paragraphs.append(self.paragraphs[-1])
+
+        # Update the paragraphs list with the merged paragraphs
+        self.paragraphs = merged_paragraphs
+
+    def is_in_numbered_list(self, start: int, end: int) -> bool:
+        """
+        Checks if the given start and end indices are within any of the NumberedList items.
+
+        Parameters:
+        - start (int): The start index to check.
+        - end (int): The end index to check.
+
+        Returns:
+        True if the indices are within a NumberedList item, False otherwise.
+        """
+        for numbered_list in self.numbered_list:
+            for item in numbered_list.items:
+                if item.start <= start and item.end >= end:
+                    return True
+        return False
+
+    def process(self, lookup_dict: Dict, refine: bool = True):
+        """
+        Process the note by cleaning the text, extracting numbered lists, and getting paragraphs based on a lookup dictionary.
+
+        Args:
+            lookup_dict (Dict): A dictionary used to lookup specific paragraphs.
+            refine (bool, optional): Flag indicating whether to refine the processed note - this will merge any consecutive prose
+            paragraphs and then merge any structured paragraphs with empty body with the next prose paragraph (handles line break
+            between heading and body). Defaults to True.
+        """
+        self.clean_text()
+        self.get_numbered_lists()
+        self.get_paragraphs(lookup_dict)
+        if refine:
+            self.merge_prose_sections()
+            self.merge_empty_non_prose_with_next_prose()
 
     def __str__(self):
         return self.text
