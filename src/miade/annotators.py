@@ -355,7 +355,7 @@ class Annotator(ABC):
         Args:
             note (Note): The input note to preprocess.
             refine (bool): Whether to refine the paragraph detection algorithm and allow merging of continuous prose
-            paragraphs, merging to paragraphs with empty bodies with the next prose paragraphs
+            paragraphs, merging to paragraphs with empty bodies with the next prose paragraphs. Default True.
 
         Returns:
             The preprocessed note.
