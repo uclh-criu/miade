@@ -26,7 +26,6 @@ class Note(object):
         self.text = text
         self.raw_text = text
         self.paragraphs: Optional[List[Paragraph]] = []
-        self.prose_paragraphs: Optional[List[Paragraph]] = []
         self.numbered_list: List[NumberedList] = []
 
     def clean_text(self) -> None:
