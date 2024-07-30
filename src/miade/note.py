@@ -11,22 +11,20 @@ log = logging.getLogger(__name__)
 
 class Note(object):
     """
-    Represents a note object.
+    Represents a Note object
 
     Attributes:
         text (str): The text content of the note.
         raw_text (str): The raw text content of the note.
-        regex_config (str): The path to the regex configuration file.
-        paragraphs (Optional[List[Paragraph]]): A list of paragraphs in the note.
+        paragraphs (Optional[List[Paragraph]]): A list of Paragraph objects representing the paragraphs in the note.
+        numbered_list (List[NumberedList]): A list of NumberedList objects representing the numbered lists in the note.
     """
-
-    # TODO: refactor paragraph methods to a separate class. It's too much.
 
     def __init__(self, text: str):
         self.text = text
         self.raw_text = text
         self.paragraphs: Optional[List[Paragraph]] = []
-        self.numbered_list: List[NumberedList] = []
+        self.numbered_lists: List[NumberedList] = []
 
     def clean_text(self) -> None:
         """
@@ -91,9 +89,18 @@ class Note(object):
             numbered_list = NumberedList(items=results, list_start=results[0].start, list_end=results[-1].end)
             all_results.append(numbered_list)
 
-        self.numbered_list = all_results
+        self.numbered_lists = all_results
 
     def get_paragraphs(self, paragraph_regex: Dict) -> None:
+        """
+        Split the text into paragraphs and assign paragraph types based on regex patterns.
+
+        Args:
+            paragraph_regex (Dict): A dictionary containing paragraph types as keys and regex patterns as values.
+
+        Returns:
+            None
+        """
         paragraphs = re.split(r"\n\n+", self.text)
         start = 0
 
@@ -223,23 +230,6 @@ class Note(object):
 
         # Update the paragraphs list with the merged paragraphs
         self.paragraphs = merged_paragraphs
-
-    def is_in_numbered_list(self, start: int, end: int) -> bool:
-        """
-        Checks if the given start and end indices are within any of the NumberedList items.
-
-        Parameters:
-        - start (int): The start index to check.
-        - end (int): The end index to check.
-
-        Returns:
-        True if the indices are within a NumberedList item, False otherwise.
-        """
-        for numbered_list in self.numbered_list:
-            for item in numbered_list.items:
-                if item.start <= start and item.end >= end:
-                    return True
-        return False
 
     def process(self, lookup_dict: Dict, refine: bool = True):
         """
