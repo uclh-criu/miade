@@ -213,6 +213,7 @@ class Annotator(ABC):
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
 
+        self._set_lookup_data_path()
         self._load_paragraph_regex()
 
         # TODO make paragraph processing params configurable
@@ -235,8 +236,41 @@ class Annotator(ABC):
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
 
+    def _set_lookup_data_path(self) -> None:
+        """
+        Sets the lookup data path based on the configuration.
+
+        If the `lookup_data_path` is not specified in the configuration, the default path "./data/" is used
+        and `use_package_data` is set to True. Otherwise, the specified `lookup_data_path` is used and
+        `use_package_data` is set to False.
+
+        Raises:
+            RuntimeError: If the specified `lookup_data_path` does not exist.
+        """
+        if self.config.lookup_data_path is None:
+            self.lookup_data_path = "./data/"
+            self.use_package_data = True
+            log.info("Loading preconfigured lookup data")
+        else:
+            self.lookup_data_path = self.config.lookup_data_path
+            self.use_package_data = False
+            log.info(f"Loading lookup data from {self.lookup_data_path}")
+            if not os.path.isdir(self.lookup_data_path):
+                raise RuntimeError(f"No lookup data configured: {self.lookup_data_path} does not exist!")
+
     def _load_paragraph_regex(self) -> None:
-        data = load_lookup_data(self.config.lookup_data_path + "regex_para_chunk.csv", as_dict=True)
+        """
+        Loads the paragraph regex mappings from a CSV file and initializes the paragraph_regex attribute.
+
+        This method loads the paragraph regex mappings from a CSV file located the lookup data path specified in config.
+        If unspecified, loads the default packaged regex lookup for paragraph headings.
+
+        Returns:
+            None
+        """
+        data = load_lookup_data(
+            self.lookup_data_path + "regex_para_chunk.csv", is_package_data=self.use_package_data, as_dict=True
+        )
         self.paragraph_regex = load_regex_paragraph_mappings(data)
 
     @property
@@ -491,26 +525,17 @@ class ProblemsAnnotator(Annotator):
         Raises:
             RuntimeError: If the lookup data directory does not exist.
         """
-        if self.config.lookup_data_path is None:
-            data_path = "./data/"
-            is_package_data = True
-            log.info("Loading preconfigured lookup data for ProblemsAnnotator")
-        else:
-            data_path = self.config.lookup_data_path
-            is_package_data = False
-            log.info(f"Loading lookup data from {data_path} for ProblemsAnnotator")
-            if not os.path.isdir(data_path):
-                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
-
-        self.negated_lookup = load_lookup_data(data_path + "negated.csv", is_package_data=is_package_data, as_dict=True)
+        self.negated_lookup = load_lookup_data(
+            self.lookup_data_path + "negated.csv", is_package_data=self.use_package_data, as_dict=True
+        )
         self.historic_lookup = load_lookup_data(
-            data_path + "historic.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "historic.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.suspected_lookup = load_lookup_data(
-            data_path + "suspected.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "suspected.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.filtering_blacklist = load_lookup_data(
-            data_path + "problem_blacklist.csv", is_package_data=is_package_data, no_header=True
+            self.lookup_data_path + "problem_blacklist.csv", is_package_data=self.use_package_data, no_header=True
         )
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
@@ -785,32 +810,23 @@ class MedsAllergiesAnnotator(Annotator):
         """
         Loads the medication and allergy lookup data.
         """
-        if self.config.lookup_data_path is None:
-            data_path = "./data/"
-            is_package_data = True
-            log.info("Loading preconfigured lookup data for MedsAllergiesAnnotator")
-        else:
-            data_path = self.config.lookup_data_path
-            is_package_data = False
-            log.info(f"Loading lookup data from {data_path} for MedsAllergiesAnnotator")
-            if not os.path.isdir(data_path):
-                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
-
         self.valid_meds = load_lookup_data(
-            data_path + "valid_meds.csv", is_package_data=is_package_data, no_header=True
+            self.lookup_data_path + "valid_meds.csv", is_package_data=self.use_package_data, no_header=True
         )
         self.reactions_subset_lookup = load_lookup_data(
-            data_path + "reactions_subset.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "reactions_subset.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.allergens_subset_lookup = load_lookup_data(
-            data_path + "allergens_subset.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "allergens_subset.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.allergy_type_lookup = load_allergy_type_combinations(
-            data_path + "allergy_type.csv", is_package_data=is_package_data
+            self.lookup_data_path + "allergy_type.csv", is_package_data=self.use_package_data
         )
-        self.vtm_to_vmp_lookup = load_lookup_data(data_path + "vtm_to_vmp.csv", is_package_data=is_package_data)
+        self.vtm_to_vmp_lookup = load_lookup_data(
+            self.lookup_data_path + "vtm_to_vmp.csv", is_package_data=self.use_package_data
+        )
         self.vtm_to_text_lookup = load_lookup_data(
-            data_path + "vtm_to_text.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "vtm_to_text.csv", is_package_data=self.use_package_data, as_dict=True
         )
 
     def _validate_meds(self, concept) -> bool:
