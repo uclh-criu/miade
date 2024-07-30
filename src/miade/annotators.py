@@ -319,8 +319,6 @@ class Annotator(ABC):
                     note = self.preprocess(note)
                 elif pipe == "medcat":
                     concepts = self.get_concepts(note)
-                elif pipe == "paragrapher":
-                    concepts = self.process_paragraphs(note, concepts)
                 elif pipe == "postprocessor":
                     concepts = self.postprocess(concepts)
                 elif pipe == "deduplicator":
@@ -350,20 +348,80 @@ class Annotator(ABC):
 
         return concepts
 
-    def preprocess(self, note: Note) -> Note:
+    def preprocess(self, note: Note, refine: bool = True) -> Note:
         """
         Preprocesses a note by cleaning its text and splitting it into paragraphs.
 
         Args:
             note (Note): The input note to preprocess.
+            refine (bool): Whether to refine the paragraph detection algorithm and allow merging of continuous prose
+            paragraphs, merging to paragraphs with empty bodies with the next prose paragraphs
 
         Returns:
             The preprocessed note.
         """
-        note.clean_text()
-        note.get_paragraphs(self.paragraph_regex)
+        note.process(self.paragraph_regex, refine=refine)
 
         return note
+
+    @staticmethod
+    def filter_concepts_in_numbered_list(concepts: List[Concept], note: Note) -> List[Concept]:
+        """
+        Filters and returns a list of concepts that fall within the indices of each list item's start and end
+        in the numbered_list attribute of a note.
+
+        This filters out concepts that may not be relevant given a note that has structured list headings
+        and numbered lists within that. i.e. only return the first line of a numbered list.
+
+        Args:
+            concepts (List[Concept]): The list of concepts to filter.
+            note (Note): The note containing numbered lists.
+
+        Returns:
+           The filtered list of concepts.
+        """
+        # Check there is a numbered list
+        if len(note.numbered_list) == 0:
+            return concepts
+
+        # Get the global list ranges of all numbered lists in a note
+        global_list_ranges = [
+            (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_list
+        ]
+
+        # Flatten the list items from all numbered lists into a single list and sort them
+        list_items = [item for numbered_list in note.numbered_list for item in numbered_list.items]
+        list_items.sort(key=lambda x: x.start)
+
+        # Sort the concepts by their start index
+        concepts.sort(key=lambda x: x.start)
+
+        filtered_concepts = []
+        concept_idx, item_idx = 0, 0
+
+        # Iterate through concepts and list items simultaneously
+        while concept_idx < len(concepts) and item_idx < len(list_items):
+            concept = concepts[concept_idx]
+            item = list_items[item_idx]
+
+            # Check if the concept is within the global range of any list
+            if any(start <= concept.start <= end for start, end in global_list_ranges):
+                # If the concept falls within the current list item's range, add it to the filtered list
+                if concept.start >= item.start and concept.end <= item.end:
+                    filtered_concepts.append(concept)
+                    concept_idx += 1  # Move to the next concept
+                elif concept.end < item.start:
+                    # If the concept ends before the item starts, move to the next concept
+                    concept_idx += 1
+                else:
+                    # Otherwise, move to the next list item
+                    item_idx += 1
+            else:
+                # If concept is not within a numbered list range, skip and return it
+                filtered_concepts.append(concept)
+                concept_idx += 1
+
+        return filtered_concepts
 
     @staticmethod
     def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
