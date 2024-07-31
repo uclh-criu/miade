@@ -17,14 +17,14 @@ class Note(object):
         text (str): The text content of the note.
         raw_text (str): The raw text content of the note.
         paragraphs (Optional[List[Paragraph]]): A list of Paragraph objects representing the paragraphs in the note.
-        numbered_list (List[NumberedList]): A list of NumberedList objects representing the numbered lists in the note.
+        numbered_list (Optional[List[NumberedList]]): A list of NumberedList objects representing the numbered lists in the note.
     """
 
     def __init__(self, text: str):
         self.text = text
         self.raw_text = text
         self.paragraphs: Optional[List[Paragraph]] = []
-        self.numbered_lists: List[NumberedList] = []
+        self.numbered_lists: Optional[List[NumberedList]] = []
 
     def clean_text(self) -> None:
         """
