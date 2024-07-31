@@ -296,37 +296,12 @@ class Annotator(ABC):
         """
         pass
 
-    def run_pipeline(
-        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor] = None
-    ) -> List[Concept]:
+    @abstractmethod
+    def run_pipeline(self):
         """
-        Runs the annotation pipeline on a given note and returns the extracted concepts.
-
-        Args:
-            note (Note): The input note to process.
-            record_concepts (List[Concept]): The list of concepts from existing EHR records.
-            dosage_extractor (Optional[DosageExtractor]): An optional dosage extractor to add dosages to concepts.
-
-        Returns:
-            List[Concept]: The extracted concepts from the note.
+        Abstract method that runs the annotation pipeline on a given note and returns the extracted concepts.
         """
-        # TODO: make this more extensible
-        concepts: List[Concept] = []
-
-        for pipe in self.pipeline:
-            if pipe not in self.config.disable:
-                if pipe == "preprocessor":
-                    note = self.preprocess(note)
-                elif pipe == "medcat":
-                    concepts = self.get_concepts(note)
-                elif pipe == "postprocessor":
-                    concepts = self.postprocess(concepts)
-                elif pipe == "deduplicator":
-                    concepts = self.deduplicate(concepts, record_concepts)
-                elif pipe == "dosage_extractor" and dosage_extractor is not None:
-                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-
-        return concepts
+        pass
 
     def get_concepts(self, note: Note) -> List[Concept]:
         """
@@ -437,7 +412,7 @@ class Annotator(ABC):
         return filtered_concepts
 
     @staticmethod
-    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         """
         Removes duplicate concepts from the extracted concepts list by strict ID matching.
 
@@ -585,9 +560,40 @@ class ProblemsAnnotator(Annotator):
         Get the list of processing steps in the annotation pipeline.
 
         Returns:
-            ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
+            ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "deduplicator"]
         """
-        return ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
+        return ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "deduplicator"]
+
+    def run_pipeline(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+        """
+        Runs the annotation pipeline on a given note and returns the extracted problems concepts.
+
+        Args:
+            note (Note): The input note to process.
+            record_concepts (Optional[List[Concept]]): The list of concepts from existing EHR records.
+
+        Returns:
+            List[Concept]: The extracted concepts from the note.
+        """
+        # TODO: not the best way to do this - make this more extensible!!
+        concepts: List[Concept] = []
+
+        for pipe in self.pipeline:
+            if pipe not in self.config.disable:
+                if pipe == "preprocessor":
+                    note = self.preprocess(note=note, refine=self.config.refine_paragraphs)
+                elif pipe == "medcat":
+                    concepts = self.get_concepts(note=note)
+                elif pipe == "list_cleaner":
+                    concepts = self.filter_concepts_in_numbered_list(concepts=concepts, note=note)
+                elif pipe == "paragrapher":
+                    concepts = self.process_paragraphs(note=note, concepts=concepts)
+                elif pipe == "postprocessor":
+                    concepts = self.postprocess(concepts=concepts)
+                elif pipe == "deduplicator":
+                    concepts = self.deduplicate(concepts=concepts, record_concepts=record_concepts)
+
+        return concepts
 
     def _load_problems_lookup_data(self) -> None:
         """
@@ -746,13 +752,19 @@ class ProblemsAnnotator(Annotator):
             The filtered list of concepts.
         """
         prob_concepts_in_structured_sections: List[Concept] = []
-
-        for paragraph in note.paragraphs:
-            for concept in concepts:
-                if concept.start >= paragraph.start and concept.end <= paragraph.end:
-                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
-                    if concept.meta:
-                        self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
+        if note.paragraphs:
+            # Use a list comprehension to flatten the loop and conditionals
+            concepts_in_paragraphs = [
+                (concept, paragraph)
+                for paragraph in note.paragraphs
+                for concept in concepts
+                if concept.start >= paragraph.start and concept.end <= paragraph.end and concept.meta
+            ]
+            # Process each concept and paragraph pair
+            for concept, paragraph in concepts_in_paragraphs:
+                self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
+        else:
+            log.warn("Unable to run paragrapher pipeline: did you add preprocessor to the pipeline?")
 
         # if more than set no. concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts_in_structured_sections) > self.config.structured_list_limit:
@@ -830,11 +842,12 @@ class MedsAllergiesAnnotator(Annotator):
         The annotators are executed in the order they appear in the list.
 
         Returns:
-            ["preprocessor", "medcat", "paragrapher", "postprocessor", "dosage_extractor", "vtm_converter", "deduplicator"]
+            ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "dosage_extractor", "vtm_converter", "deduplicator"]
         """
         return [
             "preprocessor",
             "medcat",
+            "list_cleaner",
             "paragrapher",
             "postprocessor",
             "dosage_extractor",
@@ -843,14 +856,17 @@ class MedsAllergiesAnnotator(Annotator):
         ]
 
     def run_pipeline(
-        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor]
+        self,
+        note: Note,
+        record_concepts: Optional[List[Concept]] = None,
+        dosage_extractor: Optional[DosageExtractor] = None,
     ) -> List[Concept]:
         """
         Runs the annotation pipeline on the given note.
 
         Args:
             note (Note): The input note to run the pipeline on.
-            record_concepts (List[Concept]): The list of previously recorded concepts.
+            record_concepts (Optional[List[Concept]]): The list of previously recorded concepts.
             dosage_extractor (Optional[DosageExtractor]): The dosage extractor function.
 
         Returns:
@@ -861,19 +877,23 @@ class MedsAllergiesAnnotator(Annotator):
         for pipe in self.pipeline:
             if pipe not in self.config.disable:
                 if pipe == "preprocessor":
-                    note = self.preprocess(note)
+                    note = self.preprocess(note=note)
                 elif pipe == "medcat":
-                    concepts = self.get_concepts(note)
+                    concepts = self.get_concepts(note=note)
+                elif pipe == "list_cleaner":
+                    concepts = self.filter_concepts_in_numbered_list(concepts=concepts, note=note)
                 elif pipe == "paragrapher":
-                    concepts = self.process_paragraphs(note, concepts)
+                    concepts = self.process_paragraphs(note=note, concepts=concepts)
                 elif pipe == "postprocessor":
-                    concepts = self.postprocess(concepts, note)
+                    concepts = self.postprocess(concepts=concepts, note=note)
                 elif pipe == "deduplicator":
-                    concepts = self.deduplicate(concepts, record_concepts)
+                    concepts = self.deduplicate(concepts=concepts, record_concepts=record_concepts)
                 elif pipe == "vtm_converter":
-                    concepts = self.convert_VTM_to_VMP_or_text(concepts)
+                    concepts = self.convert_VTM_to_VMP_or_text(concepts=concepts)
                 elif pipe == "dosage_extractor" and dosage_extractor is not None:
-                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
+                    concepts = self.add_dosages_to_concepts(
+                        dosage_extractor=dosage_extractor, concepts=concepts, note=note
+                    )
 
         return concepts
 
