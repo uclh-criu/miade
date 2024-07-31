@@ -367,11 +367,14 @@ class Annotator(ABC):
     @staticmethod
     def filter_concepts_in_numbered_list(concepts: List[Concept], note: Note) -> List[Concept]:
         """
-        Filters and returns a list of concepts that fall within the indices of each list item's start and end
-        in the numbered_list attribute of a note.
+        Filters and returns a list of concepts in a numbered list in a note using a two-pointer algorithm.
 
         This filters out concepts that may not be relevant given a note that has structured list headings
-        and numbered lists within that. i.e. only return the first line of a numbered list.
+        and numbered lists within that. i.e. only return the first line of a numbered list. e.g.
+            1. CCF -
+            - had echo on 15/6
+            - on diuretics
+        will only return the concept CCF as it is the first item in a numbered list
 
         Args:
             concepts (List[Concept]): The list of concepts to filter.
@@ -381,16 +384,16 @@ class Annotator(ABC):
            The filtered list of concepts.
         """
         # Check there is a numbered list
-        if len(note.numbered_list) == 0:
+        if len(note.numbered_lists) == 0:
             return concepts
 
         # Get the global list ranges of all numbered lists in a note
         global_list_ranges = [
-            (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_list
+            (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_lists
         ]
 
         # Flatten the list items from all numbered lists into a single list and sort them
-        list_items = [item for numbered_list in note.numbered_list for item in numbered_list.items]
+        list_items = [item for numbered_list in note.numbered_lists for item in numbered_list.items]
         list_items.sort(key=lambda x: x.start)
 
         # Sort the concepts by their start index
@@ -405,12 +408,15 @@ class Annotator(ABC):
             item = list_items[item_idx]
 
             # Check if the concept is within the global range of any list
-            if any(start <= concept.start <= end for start, end in global_list_ranges):
-                # If the concept falls within the current list item's range, add it to the filtered list
-                if concept.start >= item.start and concept.end <= item.end:
+            if any(start <= concept.start < end for start, end in global_list_ranges):
+                # Check for partial or full overlap between concept and list item
+                if (
+                    concept.start >= item.start and concept.end <= item.end
+                ):  # or (concept.start < item.end and concept.end > item.start)
+                    # Concept overlaps with or is within the current list item
                     filtered_concepts.append(concept)
                     concept_idx += 1  # Move to the next concept
-                elif concept.end < item.start:
+                elif concept.end <= item.start:
                     # If the concept ends before the item starts, move to the next concept
                     concept_idx += 1
                 else:
@@ -420,6 +426,13 @@ class Annotator(ABC):
                 # If concept is not within a numbered list range, skip and return it
                 filtered_concepts.append(concept)
                 concept_idx += 1
+
+        # After iterating, check if there are remaining concepts after the last list item that might not have been added
+        while concept_idx < len(concepts):
+            concept = concepts[concept_idx]
+            if concept.start >= global_list_ranges[-1][1]:
+                filtered_concepts.append(concept)
+            concept_idx += 1
 
         return filtered_concepts
 

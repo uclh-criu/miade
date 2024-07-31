@@ -13,8 +13,6 @@ from miade.utils.metaannotationstypes import (
 def test_note_cleaning_and_paragraphing_naive(test_problems_medcat_model, test_clean_and_paragraphing_note):
     annotator = ProblemsAnnotator(test_problems_medcat_model)
     annotator.preprocess(test_clean_and_paragraphing_note, refine=False)
-    for paragraph in test_clean_and_paragraphing_note.paragraphs:
-        print(paragraph)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
         Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=182),

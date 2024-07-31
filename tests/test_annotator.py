@@ -2,6 +2,7 @@ from miade.core import Concept, Category
 from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, calculate_word_distance
 from miade.dosage import Dose, Frequency, Dosage, Route
 from miade.dosageextractor import DosageExtractor
+from miade.paragraph import ListItem, NumberedList
 
 
 def test_dosage_text_splitter(test_meds_algy_medcat_model, test_med_concepts, test_med_note):
@@ -215,6 +216,34 @@ def test_vtm_med_conversions(test_meds_algy_medcat_model, test_vtm_concepts):
         duration=None,
         route=None,
     )
+
+
+def test_filter_concepts_in_numbered_list(test_note, test_problems_medcat_model):
+    annotator = ProblemsAnnotator(test_problems_medcat_model)
+    test_note.numbered_lists = [
+        NumberedList(
+            list_start=0,
+            list_end=30,
+            items=[ListItem(content="", start=2, end=5), ListItem(content="", start=20, end=25)],
+        ),
+        NumberedList(list_start=40, list_end=52, items=[ListItem(content="", start=45, end=50)]),
+    ]
+    concepts = [
+        Concept(id="0", name="Concept 0", start=0, end=3),  # Partial overlap with list item - Filter
+        Concept(id="1", name="Concept 1", start=6, end=12),  # In between list items - Filter
+        Concept(id="2", name="Concept 2", start=21, end=25),  # List item - Keep
+        Concept(id="3", name="Concept 3", start=27, end=30),  # After list item - Filter
+        Concept(id="4", name="Concept 4", start=30, end=40),  # Content between lists - Keep
+        Concept(id="5", name="Concept 5", start=45, end=50),  # List item - Keep
+        Concept(id="6", name="Concept 6", start=50, end=60),  # After list item - Filter
+        Concept(id="7", name="Concept 7", start=55, end=70),  # Content outside lists - Keep
+    ]
+    assert annotator.filter_concepts_in_numbered_list(concepts, test_note) == [
+        Concept(id="2", name="Concept 2", start=21, end=25),
+        Concept(id="4", name="Concept 4", start=30, end=40),
+        Concept(id="5", name="Concept 5", start=45, end=50),
+        Concept(id="7", name="Concept 7", start=55, end=70),
+    ]
 
 
 def test_annotator_config(test_meds_algy_medcat_model, test_problems_medcat_model, test_config):
