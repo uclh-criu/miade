@@ -1,9 +1,9 @@
 import pytest
 import pandas as pd
 
-from typing import List, Dict
+from typing import List, Dict, Union
 from pathlib import Path
-from miade.annotators import Annotator
+from miade.annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator
 
 from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
@@ -109,6 +109,9 @@ def test_annotator() -> Annotator:
         def pipeline():
             return []
 
+        def run_pipeline(self):
+            return []
+
         def postprocess(self):
             return super().postprocess()
 
@@ -118,8 +121,18 @@ def test_annotator() -> Annotator:
     return CustomAnnotator
 
 
+@pytest.fixture
+def test_problems_annotator(test_problems_medcat_model):
+    return ProblemsAnnotator(test_problems_medcat_model)
+
+
+@pytest.fixture
+def test_meds_algy_annotator(test_meds_algy_medcat_model):
+    return MedsAllergiesAnnotator(test_meds_algy_medcat_model)
+
+
 @pytest.fixture(scope="function")
-def test_miade_doses() -> (List[Note], pd.DataFrame):
+def test_miade_doses() -> Union[List[Note], pd.DataFrame]:
     extracted_doses = pd.read_csv("./tests/examples/common_doses_for_miade.csv")
     return [Note(text=dose) for dose in extracted_doses.dosestring.to_list()], extracted_doses
 
@@ -211,6 +224,41 @@ Penicillin
 imp::
 Penicillin
     """
+    )
+
+
+@pytest.fixture
+def test_numbered_list_note():
+    return Note(
+        text="""Problems:
+
+1. CCF -
+- had echo on 15/6
+- on diuretics
+
+- awaiting pacemaker
+
+2). IHD
+3. Diabetes type 2
+
+HbA1c = 78mmol/L
+4 Gallstones
+
+here is some random prose idk
+
+Medications:
+
+1. Paracetamol -
+- start after this date
+- refill in future
+
+2) Ibuprofen
+3. Metformin
+- for hypertension
+
+Allergies:
+and then here is some extra stuff that doesn't fall within lists, we want to detect things here
+"""
     )
 
 
@@ -462,7 +510,7 @@ def test_problem_list_limit_concepts() -> List[Concept]:
 
 
 @pytest.fixture(scope="function")
-def test_duplicate_concepts_record() -> List[Concept]:
+def test_record_concepts() -> List[Concept]:
     return [
         Concept(id="1", name="test1", category=Category.PROBLEM),
         Concept(id="2", name="test2", category=Category.PROBLEM),
