@@ -25,16 +25,16 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install ./
           pip list
-      - name: download model
+      - name: download models
         run: |
           python -m spacy download en_core_web_md
-          pip install https://huggingface.co/kormilitzin/en_core_med7_lg/resolve/main/en_core_med7_lg-any-py3-none-any.whl
+          pip install -r requirements.txt
       - name: run pytest
         run: pytest ./tests/*
-      - name: install ruff
+      - name: Install ruff
         run: pip install ruff
-      - name: ruff format
+      - name: Lint with ruff
         run: |
-          ruff format
+          ruff --output-format=github .
           ruff check --fix
         continue-on-error: true

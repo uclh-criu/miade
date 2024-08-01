@@ -82,6 +82,22 @@ def load_lookup_data(filename: str, is_package_data: bool = False, as_dict: bool
         return pd.read_csv(lookup_data).drop_duplicates()
 
 
+def load_regex_paragraph_mappings(data: pd.DataFrame) -> Dict:
+    regex_lookup = {}
+
+    for paragraph, regex in data.items():
+        paragraph_enum = None
+        try:
+            paragraph_enum = ParagraphType(paragraph)
+        except ValueError as e:
+            log.warning(e)
+
+        if paragraph_enum is not None:
+            regex_lookup[paragraph_enum] = regex
+
+    return regex_lookup
+
+
 def load_allergy_type_combinations(filename: str, is_package_data: bool = False) -> Dict:
     """
     Load allergy type combinations from a CSV file and return a dictionary.
@@ -197,6 +213,9 @@ class Annotator(ABC):
         if self.config.negation_detection == "negex":
             self._add_negex_pipeline()
 
+        self._set_lookup_data_path()
+        self._load_paragraph_regex()
+
         # TODO make paragraph processing params configurable
         self.structured_prob_lists = {
             ParagraphType.prob: Relevance.PRESENT,
@@ -216,6 +235,43 @@ class Annotator(ABC):
         self.cat.pipe.spacy_nlp.add_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.enable_pipe("sentencizer")
         self.cat.pipe.spacy_nlp.add_pipe("negex")
+
+    def _set_lookup_data_path(self) -> None:
+        """
+        Sets the lookup data path based on the configuration.
+
+        If the `lookup_data_path` is not specified in the configuration, the default path "./data/" is used
+        and `use_package_data` is set to True. Otherwise, the specified `lookup_data_path` is used and
+        `use_package_data` is set to False.
+
+        Raises:
+            RuntimeError: If the specified `lookup_data_path` does not exist.
+        """
+        if self.config.lookup_data_path is None:
+            self.lookup_data_path = "./data/"
+            self.use_package_data = True
+            log.info("Loading preconfigured lookup data")
+        else:
+            self.lookup_data_path = self.config.lookup_data_path
+            self.use_package_data = False
+            log.info(f"Loading lookup data from {self.lookup_data_path}")
+            if not os.path.isdir(self.lookup_data_path):
+                raise RuntimeError(f"No lookup data configured: {self.lookup_data_path} does not exist!")
+
+    def _load_paragraph_regex(self) -> None:
+        """
+        Loads the paragraph regex mappings from a CSV file and initializes the paragraph_regex attribute.
+
+        This method loads the paragraph regex mappings from a CSV file located the lookup data path specified in config.
+        If unspecified, loads the default packaged regex lookup for paragraph headings.
+
+        Returns:
+            None
+        """
+        data = load_lookup_data(
+            self.lookup_data_path + "regex_para_chunk.csv", is_package_data=self.use_package_data, as_dict=True
+        )
+        self.paragraph_regex = load_regex_paragraph_mappings(data)
 
     @property
     @abstractmethod
@@ -240,39 +296,12 @@ class Annotator(ABC):
         """
         pass
 
-    def run_pipeline(
-        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor] = None
-    ) -> List[Concept]:
+    @abstractmethod
+    def run_pipeline(self):
         """
-        Runs the annotation pipeline on a given note and returns the extracted concepts.
-
-        Args:
-            note (Note): The input note to process.
-            record_concepts (List[Concept]): The list of concepts from existing EHR records.
-            dosage_extractor (Optional[DosageExtractor]): An optional dosage extractor to add dosages to concepts.
-
-        Returns:
-            List[Concept]: The extracted concepts from the note.
+        Abstract method that runs the annotation pipeline on a given note and returns the extracted concepts.
         """
-        # TODO: make this more extensible
-        concepts: List[Concept] = []
-
-        for pipe in self.pipeline:
-            if pipe not in self.config.disable:
-                if pipe == "preprocessor":
-                    note = self.preprocess(note)
-                elif pipe == "medcat":
-                    concepts = self.get_concepts(note)
-                elif pipe == "paragrapher":
-                    concepts = self.process_paragraphs(note, concepts)
-                elif pipe == "postprocessor":
-                    concepts = self.postprocess(concepts)
-                elif pipe == "deduplicator":
-                    concepts = self.deduplicate(concepts, record_concepts)
-                elif pipe == "dosage_extractor" and dosage_extractor is not None:
-                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
-
-        return concepts
+        pass
 
     def get_concepts(self, note: Note) -> List[Concept]:
         """
@@ -294,24 +323,96 @@ class Annotator(ABC):
 
         return concepts
 
-    @staticmethod
-    def preprocess(note: Note) -> Note:
+    def preprocess(self, note: Note, refine: bool = True) -> Note:
         """
         Preprocesses a note by cleaning its text and splitting it into paragraphs.
 
         Args:
             note (Note): The input note to preprocess.
+            refine (bool): Whether to refine the paragraph detection algorithm and allow merging of continuous prose
+            paragraphs, merging to paragraphs with empty bodies with the next prose paragraphs. Default True.
 
         Returns:
             The preprocessed note.
         """
-        note.clean_text()
-        note.get_paragraphs()
+        note.process(self.paragraph_regex, refine=refine)
 
         return note
 
     @staticmethod
-    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]]) -> List[Concept]:
+    def filter_concepts_in_numbered_list(concepts: List[Concept], note: Note) -> List[Concept]:
+        """
+        Filters and returns a list of concepts in a numbered list in a note using a two-pointer algorithm.
+
+        This filters out concepts that may not be relevant given a note that has structured list headings
+        and numbered lists within that. i.e. only return the first line of a numbered list. e.g.
+            1. CCF -
+            - had echo on 15/6
+            - on diuretics
+        will only return the concept CCF as it is the first item in a numbered list
+
+        Args:
+            concepts (List[Concept]): The list of concepts to filter.
+            note (Note): The note containing numbered lists.
+
+        Returns:
+           The filtered list of concepts.
+        """
+        # Check there is a numbered list
+        if len(note.numbered_lists) == 0:
+            return concepts
+
+        # Get the global list ranges of all numbered lists in a note
+        global_list_ranges = [
+            (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_lists
+        ]
+
+        # Flatten the list items from all numbered lists into a single list and sort them
+        list_items = [item for numbered_list in note.numbered_lists for item in numbered_list.items]
+        list_items.sort(key=lambda x: x.start)
+
+        # Sort the concepts by their start index
+        concepts.sort(key=lambda x: x.start)
+
+        filtered_concepts = []
+        concept_idx, item_idx = 0, 0
+
+        # Iterate through concepts and list items simultaneously
+        while concept_idx < len(concepts) and item_idx < len(list_items):
+            concept = concepts[concept_idx]
+            item = list_items[item_idx]
+
+            # Check if the concept is within the global range of any list
+            if any(start <= concept.start < end for start, end in global_list_ranges):
+                # Check for partial or full overlap between concept and list item
+                if (
+                    concept.start >= item.start and concept.end <= item.end
+                ):  # or (concept.start < item.end and concept.end > item.start)
+                    # Concept overlaps with or is within the current list item
+                    filtered_concepts.append(concept)
+                    concept_idx += 1  # Move to the next concept
+                elif concept.end <= item.start:
+                    # If the concept ends before the item starts, move to the next concept
+                    concept_idx += 1
+                else:
+                    # Otherwise, move to the next list item
+                    item_idx += 1
+            else:
+                # If concept is not within a numbered list range, skip and return it
+                filtered_concepts.append(concept)
+                concept_idx += 1
+
+        # After iterating, check if there are remaining concepts after the last list item that might not have been added
+        while concept_idx < len(concepts):
+            concept = concepts[concept_idx]
+            if concept.start >= global_list_ranges[-1][1]:
+                filtered_concepts.append(concept)
+            concept_idx += 1
+
+        return filtered_concepts
+
+    @staticmethod
+    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         """
         Removes duplicate concepts from the extracted concepts list by strict ID matching.
 
@@ -459,9 +560,40 @@ class ProblemsAnnotator(Annotator):
         Get the list of processing steps in the annotation pipeline.
 
         Returns:
-            ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
+            ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "deduplicator"]
         """
-        return ["preprocessor", "medcat", "paragrapher", "postprocessor", "deduplicator"]
+        return ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "deduplicator"]
+
+    def run_pipeline(self, note: Note, record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+        """
+        Runs the annotation pipeline on a given note and returns the extracted problems concepts.
+
+        Args:
+            note (Note): The input note to process.
+            record_concepts (Optional[List[Concept]]): The list of concepts from existing EHR records.
+
+        Returns:
+            List[Concept]: The extracted concepts from the note.
+        """
+        # TODO: not the best way to do this - make this more extensible!!
+        concepts: List[Concept] = []
+
+        for pipe in self.pipeline:
+            if pipe not in self.config.disable:
+                if pipe == "preprocessor":
+                    note = self.preprocess(note=note, refine=self.config.refine_paragraphs)
+                elif pipe == "medcat":
+                    concepts = self.get_concepts(note=note)
+                elif pipe == "list_cleaner":
+                    concepts = self.filter_concepts_in_numbered_list(concepts=concepts, note=note)
+                elif pipe == "paragrapher":
+                    concepts = self.process_paragraphs(note=note, concepts=concepts)
+                elif pipe == "postprocessor":
+                    concepts = self.postprocess(concepts=concepts)
+                elif pipe == "deduplicator":
+                    concepts = self.deduplicate(concepts=concepts, record_concepts=record_concepts)
+
+        return concepts
 
     def _load_problems_lookup_data(self) -> None:
         """
@@ -470,26 +602,17 @@ class ProblemsAnnotator(Annotator):
         Raises:
             RuntimeError: If the lookup data directory does not exist.
         """
-        if self.config.lookup_data_path is None:
-            data_path = "./data/"
-            is_package_data = True
-            log.info("Loading preconfigured lookup data for ProblemsAnnotator")
-        else:
-            data_path = self.config.lookup_data_path
-            is_package_data = False
-            log.info(f"Loading lookup data from {data_path} for ProblemsAnnotator")
-            if not os.path.isdir(data_path):
-                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
-
-        self.negated_lookup = load_lookup_data(data_path + "negated.csv", is_package_data=is_package_data, as_dict=True)
+        self.negated_lookup = load_lookup_data(
+            self.lookup_data_path + "negated.csv", is_package_data=self.use_package_data, as_dict=True
+        )
         self.historic_lookup = load_lookup_data(
-            data_path + "historic.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "historic.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.suspected_lookup = load_lookup_data(
-            data_path + "suspected.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "suspected.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.filtering_blacklist = load_lookup_data(
-            data_path + "problem_blacklist.csv", is_package_data=is_package_data, no_header=True
+            self.lookup_data_path + "problem_blacklist.csv", is_package_data=self.use_package_data, no_header=True
         )
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
@@ -629,13 +752,19 @@ class ProblemsAnnotator(Annotator):
             The filtered list of concepts.
         """
         prob_concepts_in_structured_sections: List[Concept] = []
-
-        for paragraph in note.paragraphs:
-            for concept in concepts:
-                if concept.start >= paragraph.start and concept.end <= paragraph.end:
-                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
-                    if concept.meta:
-                        self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
+        if note.paragraphs:
+            # Use a list comprehension to flatten the loop and conditionals
+            concepts_in_paragraphs = [
+                (concept, paragraph)
+                for paragraph in note.paragraphs
+                for concept in concepts
+                if concept.start >= paragraph.start and concept.end <= paragraph.end and concept.meta
+            ]
+            # Process each concept and paragraph pair
+            for concept, paragraph in concepts_in_paragraphs:
+                self._process_meta_ann_by_paragraph(concept, paragraph, prob_concepts_in_structured_sections)
+        else:
+            log.warn("Unable to run paragrapher pipeline: did you add preprocessor to the pipeline?")
 
         # if more than set no. concepts in prob or imp or pmh sections, return only those and ignore all other concepts
         if len(prob_concepts_in_structured_sections) > self.config.structured_list_limit:
@@ -713,11 +842,12 @@ class MedsAllergiesAnnotator(Annotator):
         The annotators are executed in the order they appear in the list.
 
         Returns:
-            ["preprocessor", "medcat", "paragrapher", "postprocessor", "dosage_extractor", "vtm_converter", "deduplicator"]
+            ["preprocessor", "medcat", "list_cleaner", "paragrapher", "postprocessor", "dosage_extractor", "vtm_converter", "deduplicator"]
         """
         return [
             "preprocessor",
             "medcat",
+            "list_cleaner",
             "paragrapher",
             "postprocessor",
             "dosage_extractor",
@@ -726,14 +856,17 @@ class MedsAllergiesAnnotator(Annotator):
         ]
 
     def run_pipeline(
-        self, note: Note, record_concepts: List[Concept], dosage_extractor: Optional[DosageExtractor]
+        self,
+        note: Note,
+        record_concepts: Optional[List[Concept]] = None,
+        dosage_extractor: Optional[DosageExtractor] = None,
     ) -> List[Concept]:
         """
         Runs the annotation pipeline on the given note.
 
         Args:
             note (Note): The input note to run the pipeline on.
-            record_concepts (List[Concept]): The list of previously recorded concepts.
+            record_concepts (Optional[List[Concept]]): The list of previously recorded concepts.
             dosage_extractor (Optional[DosageExtractor]): The dosage extractor function.
 
         Returns:
@@ -744,19 +877,23 @@ class MedsAllergiesAnnotator(Annotator):
         for pipe in self.pipeline:
             if pipe not in self.config.disable:
                 if pipe == "preprocessor":
-                    note = self.preprocess(note)
+                    note = self.preprocess(note=note)
                 elif pipe == "medcat":
-                    concepts = self.get_concepts(note)
+                    concepts = self.get_concepts(note=note)
+                elif pipe == "list_cleaner":
+                    concepts = self.filter_concepts_in_numbered_list(concepts=concepts, note=note)
                 elif pipe == "paragrapher":
-                    concepts = self.process_paragraphs(note, concepts)
+                    concepts = self.process_paragraphs(note=note, concepts=concepts)
                 elif pipe == "postprocessor":
-                    concepts = self.postprocess(concepts, note)
+                    concepts = self.postprocess(concepts=concepts, note=note)
                 elif pipe == "deduplicator":
-                    concepts = self.deduplicate(concepts, record_concepts)
+                    concepts = self.deduplicate(concepts=concepts, record_concepts=record_concepts)
                 elif pipe == "vtm_converter":
-                    concepts = self.convert_VTM_to_VMP_or_text(concepts)
+                    concepts = self.convert_VTM_to_VMP_or_text(concepts=concepts)
                 elif pipe == "dosage_extractor" and dosage_extractor is not None:
-                    concepts = self.add_dosages_to_concepts(dosage_extractor, concepts, note)
+                    concepts = self.add_dosages_to_concepts(
+                        dosage_extractor=dosage_extractor, concepts=concepts, note=note
+                    )
 
         return concepts
 
@@ -764,32 +901,23 @@ class MedsAllergiesAnnotator(Annotator):
         """
         Loads the medication and allergy lookup data.
         """
-        if self.config.lookup_data_path is None:
-            data_path = "./data/"
-            is_package_data = True
-            log.info("Loading preconfigured lookup data for MedsAllergiesAnnotator")
-        else:
-            data_path = self.config.lookup_data_path
-            is_package_data = False
-            log.info(f"Loading lookup data from {data_path} for MedsAllergiesAnnotator")
-            if not os.path.isdir(data_path):
-                raise RuntimeError(f"No lookup data configured: {data_path} does not exist!")
-
         self.valid_meds = load_lookup_data(
-            data_path + "valid_meds.csv", is_package_data=is_package_data, no_header=True
+            self.lookup_data_path + "valid_meds.csv", is_package_data=self.use_package_data, no_header=True
         )
         self.reactions_subset_lookup = load_lookup_data(
-            data_path + "reactions_subset.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "reactions_subset.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.allergens_subset_lookup = load_lookup_data(
-            data_path + "allergens_subset.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "allergens_subset.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.allergy_type_lookup = load_allergy_type_combinations(
-            data_path + "allergy_type.csv", is_package_data=is_package_data
+            self.lookup_data_path + "allergy_type.csv", is_package_data=self.use_package_data
         )
-        self.vtm_to_vmp_lookup = load_lookup_data(data_path + "vtm_to_vmp.csv", is_package_data=is_package_data)
+        self.vtm_to_vmp_lookup = load_lookup_data(
+            self.lookup_data_path + "vtm_to_vmp.csv", is_package_data=self.use_package_data
+        )
         self.vtm_to_text_lookup = load_lookup_data(
-            data_path + "vtm_to_text.csv", is_package_data=is_package_data, as_dict=True
+            self.lookup_data_path + "vtm_to_text.csv", is_package_data=self.use_package_data, as_dict=True
         )
 
     def _validate_meds(self, concept) -> bool:
