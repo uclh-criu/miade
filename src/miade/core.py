@@ -110,6 +110,7 @@ class NoteProcessor:
         # get model {id: cat_model}
         log.info(f"Loading MedCAT models from {self.model_directory}")
         for model_pack_filepath in self.model_directory.glob("*.zip"):
+            log.debug(f"Trying to load model pack: {model_pack_filepath}")
             try:
                 cat = MiADE_CAT.load_model_pack(str(model_pack_filepath), meta_cat_config_dict=meta_cat_config_dict)
                 # temp fix reload to load stop words
