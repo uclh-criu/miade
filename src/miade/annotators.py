@@ -488,9 +488,9 @@ class Annotator(ABC):
         Returns:
             The list of concepts with numbering added to their names.
         """
-        # Prepend numbering to problem concepts e.g. 00 asthma, 01 stroke...
+        # Prepend numbering to problem concepts e.g. 01 asthma, 02 stroke...
         for i, concept in enumerate(concepts):
-            concept.name = f"{i:02} {concept.name}"
+            concept.name = f"{(i+1):02} {concept.name}"
 
         return concepts
 

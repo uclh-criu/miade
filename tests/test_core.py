@@ -15,19 +15,19 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
     processor.add_annotator("meds/allergies")
 
     assert processor.process(test_note) == [
-        Concept(id="59927004", name="00 liver failure", category=Category.PROBLEM),
+        Concept(id="59927004", name="01 liver failure", category=Category.PROBLEM),
         Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.process(test_negated_note) == [
         Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.process(test_duplicated_note) == [
-        Concept(id="59927004", name="00 liver failure", category=Category.PROBLEM),
+        Concept(id="59927004", name="01 liver failure", category=Category.PROBLEM),
         Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
     assert processor.get_concept_dicts(test_note) == [
         {
-            "name": "00 liver failure",
+            "name": "01 liver failure",
             "id": "59927004",
             "category": "PROBLEM",
             "start": 12,
