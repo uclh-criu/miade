@@ -3,13 +3,14 @@ import os
 import json
 import datetime
 import logging
+from typing_extensions import Dict
 
 import typer
 import yaml
 import numpy as np
 import pandas as pd
 
-from pathlib import Path
+from pathlib import Path, PosixPath
 from shutil import rmtree
 from typing import Optional, List
 from pydantic import BaseModel
@@ -29,7 +30,16 @@ log = logging.getLogger("miade")
 app = typer.Typer()
 
 
-class CLI_Config(BaseModel):
+class YAMLConfig(BaseModel):
+    @classmethod
+    def from_yaml_file(cls, config_filepath: Path):
+        with config_filepath.open("r") as stream:
+            config_dict = yaml.safe_load(stream)
+            return cls(**config_dict)
+
+
+
+class CLI_Config(YAMLConfig):
     snomed_data_path: Optional[Path] = None
     fdb_data_path: Optional[Path] = None
     elg_data_path: Optional[Path] = None
@@ -39,11 +49,80 @@ class CLI_Config(BaseModel):
     training_data_path: Path
     output_dir: Path
 
+class URL(BaseModel):
+    path: str
+
+class DataSource(BaseModel):
+    data: Path | URL
+
+class Source(BaseModel):
+    source: DataSource | Path | URL
+
+    def __str__(self) -> str:
+        types = {
+            DataSource: "Data",
+            PosixPath: "Path",
+            URL: "URL",
+        }
+
+        return f"""{types[type(self.source)]}: {self.source} """
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict):
+        assert len(config_dict.keys()) == 1  # must be exactly one source
+
+        path = config_dict.get("path")
+        if path:
+            return cls(source=Path(path))
+
+        url = config_dict.get("url")
+        if url:
+            return cls(source=URL(path=url))
+
+class MakeConfig(BaseModel):
+    path: Optional[Path]
+    cdb: Optional[Source]
+    vocab: Optional[Source]
+
+    def __str__(self) -> str:
+        return f"""path: {self.path}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}"""
+
     @classmethod
     def from_yaml_file(cls, config_filepath: Path):
         with config_filepath.open("r") as stream:
             config_dict = yaml.safe_load(stream)
-            return cls(**config_dict)
+
+            cdb_config = config_dict.get('cdb')
+            cdb = None
+            if cdb_config:
+                cdb = Source.from_dict(cdb_config)
+
+            vocab_config = config_dict.get('vocab')
+            vocab = None
+            if vocab_config:
+                vocab = Source.from_dict(vocab_config)
+
+            return cls(
+                path=config_dict.get("path"),
+                cdb=cdb,
+                vocab=vocab
+            )
+
+
+@app.command()
+def make(
+    config_filepath: Path,
+    temp_dir: Path = Path("./.temp")
+):
+    with config_filepath.open("r") as stream:
+            config = yaml.safe_load(stream)
+            print(config)
+
+    config = MakeConfig.from_yaml_file(config_filepath)
+    print(config)
+
+
+
 
 
 @app.command()
