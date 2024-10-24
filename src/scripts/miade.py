@@ -55,6 +55,26 @@ class URL(BaseModel):
 class DataSource(BaseModel):
     data: Path | URL
 
+    def __str__(self) -> str:
+        types = {
+            PosixPath: "Path",
+            URL: "URL",
+        }
+        return f"""{types[type(self.data)]}: {self.data} """
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict):
+        assert len(config_dict.keys()) == 1  # must be exactly one source
+
+        path = config_dict.get("path")
+        if path:
+            return cls(data=Path(path))
+
+        url = config_dict.get("url")
+        if url:
+            return cls(data=URL(path=url))
+
+
 class Source(BaseModel):
     source: DataSource | Path | URL
 
@@ -64,7 +84,6 @@ class Source(BaseModel):
             PosixPath: "Path",
             URL: "URL",
         }
-
         return f"""{types[type(self.source)]}: {self.source} """
 
     @classmethod
@@ -78,6 +97,10 @@ class Source(BaseModel):
         url = config_dict.get("url")
         if url:
             return cls(source=URL(path=url))
+
+        data = config_dict.get("data")
+        if data:
+            return cls(source=DataSource.from_dict(data))
 
 class MakeConfig(BaseModel):
     path: Optional[Path]
