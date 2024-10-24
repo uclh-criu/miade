@@ -106,9 +106,10 @@ class MakeConfig(BaseModel):
     path: Optional[Path]
     cdb: Optional[Source]
     vocab: Optional[Source]
+    meta_models: Dict[str, Source]
 
     def __str__(self) -> str:
-        return f"""path: {self.path}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}"""
+        return f"""path: {self.path}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
 
     @classmethod
     def from_yaml_file(cls, config_filepath: Path):
@@ -125,10 +126,22 @@ class MakeConfig(BaseModel):
             if vocab_config:
                 vocab = Source.from_dict(vocab_config)
 
+            meta_config = config_dict.get('meta-models')
+            meta_models = []
+            if meta_config:
+                print(meta_config)
+                meta_models = {
+                    name: Source.from_dict(config)
+                    for d in meta_config
+                        for name, config in d.items()
+                }
+
+
             return cls(
                 path=config_dict.get("path"),
                 cdb=cdb,
-                vocab=vocab
+                vocab=vocab,
+                meta_models=meta_models,
             )
 
 
