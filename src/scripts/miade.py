@@ -7,6 +7,7 @@ from typing_extensions import Dict
 
 import typer
 import yaml
+import tomllib
 import numpy as np
 import pandas as pd
 
@@ -18,6 +19,7 @@ from pydantic import BaseModel
 from tokenizers import ByteLevelBPETokenizer
 from gensim.models import Word2Vec
 from medcat.cat import CAT
+from medcat.cdb import CDB
 from medcat.meta_cat import MetaCAT
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
@@ -26,6 +28,7 @@ from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 log = logging.getLogger("miade")
+log.setLevel("INFO")
 
 app = typer.Typer()
 
@@ -38,7 +41,6 @@ class YAMLConfig(BaseModel):
             return cls(**config_dict)
 
 
-
 class CLI_Config(YAMLConfig):
     snomed_data_path: Optional[Path] = None
     fdb_data_path: Optional[Path] = None
@@ -49,18 +51,13 @@ class CLI_Config(YAMLConfig):
     training_data_path: Path
     output_dir: Path
 
+
 class URL(BaseModel):
     path: str
 
-class DataSource(BaseModel):
-    data: Path | URL
 
-    def __str__(self) -> str:
-        types = {
-            PosixPath: "Path",
-            URL: "URL",
-        }
-        return f"""{types[type(self.data)]}: {self.data} """
+class Location(BaseModel):
+    location: Path | URL
 
     @classmethod
     def from_dict(cls, config_dict: Dict):
@@ -68,97 +65,96 @@ class DataSource(BaseModel):
 
         path = config_dict.get("path")
         if path:
-            return cls(data=Path(path))
+            return cls(location=Path(path))
 
         url = config_dict.get("url")
         if url:
-            return cls(data=URL(path=url))
+            return cls(location=URL(path=url))
 
 
 class Source(BaseModel):
-    source: DataSource | Path | URL
-
-    def __str__(self) -> str:
-        types = {
-            DataSource: "Data",
-            PosixPath: "Path",
-            URL: "URL",
-        }
-        return f"""{types[type(self.source)]}: {self.source} """
+    location: Optional[Location] = None
+    data: Optional[Location] = None
 
     @classmethod
     def from_dict(cls, config_dict: Dict):
-        assert len(config_dict.keys()) == 1  # must be exactly one source
-
-        path = config_dict.get("path")
-        if path:
-            return cls(source=Path(path))
-
-        url = config_dict.get("url")
-        if url:
-            return cls(source=URL(path=url))
+        location = config_dict.get("location")
+        if location:
+            return cls(location=Location.from_dict(location))
 
         data = config_dict.get("data")
         if data:
-            return cls(source=DataSource.from_dict(data))
+            return cls(data=Location.from_dict(data))
+
 
 class MakeConfig(BaseModel):
-    path: Optional[Path]
-    cdb: Optional[Source]
+    model: Optional[Source]
     vocab: Optional[Source]
+    cdb: Optional[Source]
     meta_models: Dict[str, Source]
 
     def __str__(self) -> str:
-        return f"""path: {self.path}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
+        return f"""model: {self.model}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
+
+
+    @classmethod
+    def from_yaml_string(cls, s: str):
+        config_dict = yaml.safe_load(s)
+
+        model = config_dict.get("model")
+        if model:
+            model = Source.from_dict(model)
+
+        cdb_config = config_dict.get("cdb")
+        cdb = None
+        if cdb_config:
+            cdb = Source.from_dict(cdb_config)
+
+        vocab_config = config_dict.get("vocab")
+        vocab = None
+        if vocab_config:
+            vocab = Source.from_dict(vocab_config)
+
+        meta_config = config_dict.get("meta-models")
+        meta_models = {}
+        if meta_config:
+            meta_models: Dict[str, Source] = {
+                name: Source.from_dict(config)
+                for d in meta_config
+                    for name, config in d.items() if d
+            }
+        return cls(
+            model=model,
+            cdb=cdb,
+            vocab=vocab,
+            meta_models=meta_models,
+        )
 
     @classmethod
     def from_yaml_file(cls, config_filepath: Path):
-        with config_filepath.open("r") as stream:
-            config_dict = yaml.safe_load(stream)
-
-            cdb_config = config_dict.get('cdb')
-            cdb = None
-            if cdb_config:
-                cdb = Source.from_dict(cdb_config)
-
-            vocab_config = config_dict.get('vocab')
-            vocab = None
-            if vocab_config:
-                vocab = Source.from_dict(vocab_config)
-
-            meta_config = config_dict.get('meta-models')
-            meta_models = []
-            if meta_config:
-                print(meta_config)
-                meta_models = {
-                    name: Source.from_dict(config)
-                    for d in meta_config
-                        for name, config in d.items()
-                }
-
-
-            return cls(
-                path=config_dict.get("path"),
-                cdb=cdb,
-                vocab=vocab,
-                meta_models=meta_models,
-            )
+        with config_filepath.open("r") as file:
+            return cls.from_yaml_string(file.read())
 
 
 @app.command()
-def make(
-    config_filepath: Path,
-    temp_dir: Path = Path("./.temp")
-):
+def make(config_filepath: Path, temp_dir: Path = Path("./.temp")):
     with config_filepath.open("r") as stream:
-            config = yaml.safe_load(stream)
-            print(config)
+        config = yaml.safe_load(stream)
+        print(config)
 
     config = MakeConfig.from_yaml_file(config_filepath)
     print(config)
 
+    if config.path:
+        log.info(f"Loading model pack from {config.path}")
+        model = CAT.load_model_pack(config.path)
+    else:
+        log.info(f"Creating new model pack")
+        model = CAT()
 
-
+    if config.cdb:
+        path = config.cdb.source
+        model.cdb = CDB.load(path=path)
 
 
 @app.command()
