@@ -3,6 +3,7 @@ import os
 import json
 import datetime
 import logging
+import re
 from typing_extensions import Dict
 
 import typer
@@ -10,6 +11,7 @@ import yaml
 import tomllib
 import numpy as np
 import pandas as pd
+import requests
 
 from pathlib import Path, PosixPath
 from shutil import rmtree
@@ -31,6 +33,35 @@ log = logging.getLogger("miade")
 log.setLevel("INFO")
 
 app = typer.Typer()
+
+
+def _sanitise_filename(filename: Path) -> Path:
+    """
+    Sanitizes a filename by removing or replacing invalid characters.
+    """
+    # Replace invalid characters with underscores
+    clean_name = re.sub(r'[<>:"/\\|?*]', "_", str(filename.name))
+    # Remove leading/trailing spaces and dots
+    clean_name = clean_name.strip(". ")
+    return Path(clean_name)
+
+
+def _ensure_unique_path(path: Path) -> Path:
+    """
+    Ensures a file path is unique by adding a number suffix if necessary.
+    """
+    if not path.exists():
+        return path
+
+    base = path.stem
+    extension = path.suffix
+    counter = 1
+
+    while True:
+        new_path = path.parent / f"{base}_{counter}{extension}"
+        if not new_path.exists():
+            return new_path
+        counter += 1
 
 
 class YAMLConfig(BaseModel):
@@ -55,6 +86,61 @@ class CLI_Config(YAMLConfig):
 class URL(BaseModel):
     path: str
 
+    def download(self, dir: Path) -> Path:
+        log = logging.getLogger(__name__)
+        log.info(f"Downloading {self.path} to {dir}")
+
+        # Make initial request with stream=True to examine headers
+        response = requests.get(self.path, stream=True, allow_redirects=True)
+        response.raise_for_status()
+
+        # Try to get filename from Content-Disposition header
+        if "Content-Disposition" in response.headers:
+            content_disposition = response.headers["Content-Disposition"]
+            matches = re.findall(r"filename[^;=\n]*=([\w\.\"\']*[\w\.])", content_disposition)
+            if matches:
+                # Clean up the filename by removing quotes
+                filename = matches[0].strip("\"'")
+                filename = Path(filename)
+
+        # Try to get filename from URL path
+        else:
+            url_path = self.path.split("/")[-1].split("?")[0]
+            if url_path and "." in url_path:  # Basic check if it looks like a filename
+                filename = Path(url_path)
+
+            # Generate filename based on Content-Type
+            else:
+                content_type = response.headers.get("Content-Type", "").split(";")[0]
+                ext_map = {
+                    "image/jpeg": ".jpg",
+                    "image/png": ".png",
+                    "application/pdf": ".pdf",
+                    "text/plain": ".txt",
+                    "application/json": ".json",
+                    # Add more mappings as needed
+                    "": ".bin",  # Default extension for unknown types
+                }
+                ext = ext_map.get(content_type, ".bin")
+                # Generate a filename using timestamp or handle based on your needs
+                from datetime import datetime
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = Path(f"download_{timestamp}{ext}")
+
+        # Ensure the filename is safe and unique
+        safe_filename = dir / _sanitise_filename(filename)
+        safe_filename = _ensure_unique_path(safe_filename)
+
+        # Download the file in chunks to handle large files efficiently
+        with open(safe_filename, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:  # Filter out keep-alive chunks
+                    f.write(chunk)
+
+        log.info(f"Download completed: {safe_filename}")
+        return safe_filename
+
 
 class Location(BaseModel):
     location: Path | URL
@@ -70,6 +156,12 @@ class Location(BaseModel):
         url = config_dict.get("url")
         if url:
             return cls(location=URL(path=url))
+
+    def get_or_download(self, dir: Path) -> Path:
+        filepath = self.location
+        if type(self.location) == URL:
+            filepath = self.location.download(dir)
+        return filepath
 
 
 class Source(BaseModel):
@@ -94,8 +186,9 @@ class MakeConfig(BaseModel):
     meta_models: Dict[str, Source]
 
     def __str__(self) -> str:
-        return f"""model: {self.model}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
-
+        return (
+            f"""model: {self.model}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
+        )
 
     @classmethod
     def from_yaml_string(cls, s: str):
@@ -119,9 +212,7 @@ class MakeConfig(BaseModel):
         meta_models = {}
         if meta_config:
             meta_models: Dict[str, Source] = {
-                name: Source.from_dict(config)
-                for d in meta_config
-                    for name, config in d.items() if d
+                name: Source.from_dict(config) for d in meta_config for name, config in d.items() if d
             }
         return cls(
             model=model,
@@ -138,16 +229,19 @@ class MakeConfig(BaseModel):
 
 @app.command()
 def make(config_filepath: Path, temp_dir: Path = Path("./.temp")):
-    with config_filepath.open("r") as stream:
-        config = yaml.safe_load(stream)
-        print(config)
+    """
+    Build a model from a specification file.
+    """
+
+    log.info(f"Making temporary directory: {temp_dir}")
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     config = MakeConfig.from_yaml_file(config_filepath)
-    print(config)
+    # print(config)
 
-    if config.path:
-        log.info(f"Loading model pack from {config.path}")
-        model = CAT.load_model_pack(config.path)
+    if config.model:
+        log.info(f"Loading model pack from {config.model.location}")
+        model = CAT.load_model_pack(config.model.location.get_or_download(temp_dir))
     else:
         log.info(f"Creating new model pack")
         model = CAT()

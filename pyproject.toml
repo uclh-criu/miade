@@ -15,13 +15,14 @@ dependencies = [
     "medcat==1.9.3",
     "spacy>=3.4.2, <3.5.0", # need to be compatible with latest med7 model
     "numpy>=1.22.0",
-    "pandas>=1.4.2",        # support 2.0.0
+    "pandas>=1.4.2", # support 2.0.0
     "gensim>=4.3.0",
     "typer>=0.7.0",
     'typing>=3.7.4',
     "pathlib>=1.0.1",
-    "pydantic>=1.10.0",     # compatibility with spacy
+    "pydantic>=1.10.0", # compatibility with spacy
     "negspacy>=1.0.3",
+    "requests>=2.32.3",
 ]
 readme = "README.md"
 keywords = [
