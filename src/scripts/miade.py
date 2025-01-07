@@ -4,6 +4,7 @@ import json
 import datetime
 import logging
 import re
+from click.parser import Option
 from typing_extensions import Dict
 
 import typer
@@ -22,6 +23,7 @@ from tokenizers import ByteLevelBPETokenizer
 from gensim.models import Word2Vec
 from medcat.cat import CAT
 from medcat.cdb import CDB
+from medcat.vocab import Vocab
 from medcat.meta_cat import MetaCAT
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
 
@@ -30,7 +32,7 @@ from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 log = logging.getLogger("miade")
-log.setLevel("INFO")
+log.setLevel("DEBUG")
 
 app = typer.Typer()
 
@@ -44,25 +46,6 @@ def _sanitise_filename(filename: Path) -> Path:
     # Remove leading/trailing spaces and dots
     clean_name = clean_name.strip(". ")
     return Path(clean_name)
-
-
-def _ensure_unique_path(path: Path) -> Path:
-    """
-    Ensures a file path is unique by adding a number suffix if necessary.
-    """
-    if not path.exists():
-        return path
-
-    base = path.stem
-    extension = path.suffix
-    counter = 1
-
-    while True:
-        new_path = path.parent / f"{base}_{counter}{extension}"
-        if not new_path.exists():
-            return new_path
-        counter += 1
-
 
 class YAMLConfig(BaseModel):
     @classmethod
@@ -130,7 +113,6 @@ class URL(BaseModel):
 
         # Ensure the filename is safe and unique
         safe_filename = dir / _sanitise_filename(filename)
-        safe_filename = _ensure_unique_path(safe_filename)
 
         # Download the file in chunks to handle large files efficiently
         with open(safe_filename, "wb") as f:
@@ -144,6 +126,12 @@ class URL(BaseModel):
 
 class Location(BaseModel):
     location: Path | URL
+
+    def __str__(self):
+        if type(self.location) == URL:
+            return self.location.path
+        else:
+            return str(self.location)
 
     @classmethod
     def from_dict(cls, config_dict: Dict):
@@ -180,6 +168,9 @@ class Source(BaseModel):
 
 
 class MakeConfig(BaseModel):
+    tag: Optional[str]
+    description: Optional[str]
+    ontology: Optional[str]
     model: Optional[Source]
     vocab: Optional[Source]
     cdb: Optional[Source]
@@ -187,12 +178,24 @@ class MakeConfig(BaseModel):
 
     def __str__(self) -> str:
         return (
-            f"""model: {self.model}\nCDB:\n\t{self.cdb}\nvocab:\n\t{self.vocab}\nmeta-models:\n\t{self.meta_models}"""
+            f"""
+tag: {self.tag}
+description: {self.description}
+ontology: {self.ontology}
+model: {self.model}
+CDB:\t{self.cdb}
+vocab:\t{self.vocab}
+meta-models:
+\t{self.meta_models}"""
         )
 
     @classmethod
     def from_yaml_string(cls, s: str):
         config_dict = yaml.safe_load(s)
+
+        tag = config_dict.get("tag")
+        description = config_dict.get("description")
+        ontology = config_dict.get("ontology")
 
         model = config_dict.get("model")
         if model:
@@ -215,6 +218,9 @@ class MakeConfig(BaseModel):
                 name: Source.from_dict(config) for d in meta_config for name, config in d.items() if d
             }
         return cls(
+            tag=tag,
+            description=description,
+            ontology=ontology,
             model=model,
             cdb=cdb,
             vocab=vocab,
@@ -228,7 +234,7 @@ class MakeConfig(BaseModel):
 
 
 @app.command()
-def make(config_filepath: Path, temp_dir: Path = Path("./.temp")):
+def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path = Path.cwd()):
     """
     Build a model from a specification file.
     """
@@ -237,18 +243,67 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp")):
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     config = MakeConfig.from_yaml_file(config_filepath)
-    # print(config)
+    log.debug(config)
+
+    vocab = None
+    if config.vocab:
+        if config.vocab.location:
+            log.info(f"Loading vocab: {config.vocab.location}")
+            vocab = Vocab.load(str(config.vocab.location.get_or_download(temp_dir)))
+        elif config.vocab.data:
+            pass
+
+    cdb = None
+    if config.cdb:
+        if config.cdb.location:
+            log.info(f"Loading cdb: {config.cdb.location}")
+            cdb = CDB.load(str(config.cdb.location.get_or_download(temp_dir)))
+        elif config.cdb.data:
+            pass
+
 
     if config.model:
-        log.info(f"Loading model pack from {config.model.location}")
-        model = CAT.load_model_pack(config.model.location.get_or_download(temp_dir))
+        if config.model.location:
+            log.info(f"Loading model pack from {config.model.location}")
+            model = CAT.load_model_pack(str(config.model.location.get_or_download(temp_dir)))
+            if vocab:
+                log.info("Replacing vocab")
+                model.vocab = vocab
+            if cdb:
+                log.info("Replacing cdb")
+                model.cdb = cdb
     else:
-        log.info(f"Creating new model pack")
-        model = CAT()
+        if vocab and cdb:
+            log.info("Creating new model pack")
+            model = CAT(cdb=cdb, config=cdb.config, vocab=vocab)
+        else:
+            log.error("Both a CDB and vocab are required to make a new model.")
+            raise Exception("Both a CDB and vocab are required to make a new model.")
 
-    if config.cdb:
-        path = config.cdb.source
-        model.cdb = CDB.load(path=path)
+
+    # if description is None:
+    #         log.info("Automatically populating description field of model card...")
+    #         split_tag = ""
+    #         if tag is not None:
+    #             split_tag = " ".join(tag.split("_")) + " "
+    #         description = (
+    #             f"MiADE {split_tag}untrained model built using cdb from "
+    #             f"{cdb_data_path.stem}{cdb_data_path.suffix} and vocab "
+    #             f"from model {vocab_path.stem}"
+    #         )
+
+    model.config.version["location"] = str(output)
+    if config.description:
+        model.config.version["description"] = config.description
+    if config.ontology:
+        model.config.version["ontology"] = config.ontology
+
+    tag = config.tag+"_" if config.tag else ""
+    current_date = datetime.datetime.now().strftime("%Y_%m_%d")
+    name = f"miade_{tag}modelpack_{current_date}"
+
+    model.create_model_pack(str(output), name)
+    log.info(f"Saved model pack at {output}/{name}_{model.config.version['id']}")
 
 
 @app.command()

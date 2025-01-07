@@ -5,6 +5,9 @@ from scripts.miade import MakeConfig, Location, Source, URL
 
 def test_parse_training_config_complete():
     reference_cfg_string = """
+    tag: a_test_tag
+    description: A test description
+    ontology: TEST-CT
     model:
       location:
         path: models/test_model_0123456789.zip
@@ -27,6 +30,9 @@ def test_parse_training_config_complete():
 
     cfg = MakeConfig.from_yaml_string(reference_cfg_string)
     reference_cfg = MakeConfig(
+        tag="a_test_tag",
+        ontology="TEST-CT",
+        description="A test description",
         model=Source(location=Location(location=Path("models/test_model_0123456789.zip"))),
         vocab=Source(location=Location(location=Path("/path/to/file"))),
         cdb=Source(data=Location(location=URL(path="https://github.com///"))),
@@ -42,6 +48,10 @@ def test_parse_training_config_complete():
 
 def test_parse_training_config_incomplete():
     reference_cfg_string = """
+    tag: a_test_tag
+    description: A test description
+    ontology: TEST-CT
+    description: "A test description"
     model:
       location:
         path: models/test_model_0123456789.zip
@@ -54,6 +64,9 @@ def test_parse_training_config_incomplete():
 
     cfg = MakeConfig.from_yaml_string(reference_cfg_string)
     reference_cfg = MakeConfig(
+        tag="a_test_tag",
+        ontology="TEST-CT",
+        description="A test description",
         model=Source(location=Location(location=Path("models/test_model_0123456789.zip"))),
         vocab=Source(location=Location(location=Path("/path/to/file"))),
         cdb=None,
