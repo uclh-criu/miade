@@ -32,7 +32,7 @@ from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 log = logging.getLogger("miade")
-log.setLevel("DEBUG")
+log.setLevel("INFO")
 
 app = typer.Typer()
 
@@ -178,15 +178,14 @@ class MakeConfig(BaseModel):
 
     def __str__(self) -> str:
         return (
-            f"""
-tag: {self.tag}
-description: {self.description}
-ontology: {self.ontology}
-model: {self.model}
-CDB:\t{self.cdb}
-vocab:\t{self.vocab}
-meta-models:
-\t{self.meta_models}"""
+            f"""tag: {self.tag}
+        description: {self.description}
+        ontology: {self.ontology}
+        model: {self.model}
+        CDB:\t{self.cdb}
+        vocab:\t{self.vocab}
+        meta-models:
+        \t{self.meta_models}"""
         )
 
     @classmethod
@@ -251,7 +250,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             log.info(f"Loading vocab: {config.vocab.location}")
             vocab = Vocab.load(str(config.vocab.location.get_or_download(temp_dir)))
         elif config.vocab.data:
-            pass
+            raise Exception("vocab generation not yet implemented")
 
     cdb = None
     if config.cdb:
@@ -259,7 +258,14 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             log.info(f"Loading cdb: {config.cdb.location}")
             cdb = CDB.load(str(config.cdb.location.get_or_download(temp_dir)))
         elif config.cdb.data:
-            pass
+            log.info(f"Building CDB from {config.cdb.data}")
+
+            cdb_temp_dir = temp_dir / Path("cdb")
+
+            cdb_builder = CDBBuilder(temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)])
+            cdb_builder.preprocess()
+            cdb = cdb_builder.create_cdb()
+            del cdb_builder
 
 
     if config.model:
@@ -304,6 +310,8 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
     model.create_model_pack(str(output), name)
     log.info(f"Saved model pack at {output}/{name}_{model.config.version['id']}")
+
+    rmtree(temp_dir)
 
 
 @app.command()
