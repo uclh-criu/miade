@@ -130,9 +130,9 @@ class Location(BaseModel):
     path: Optional[Path]
     url: Optional[URL]
 
-    @validator('path', 'url')
+    @validator("path", "url")
     def validate_choice(cls, v, values):
-        if (v is not None) == ((values.get('path') is not None) + (values.get('url') is not None)) % 2:
+        if (v is not None) == ((values.get("path") is not None) + (values.get("url") is not None)) % 2:
             raise ValueError("Only one of path or url can be set")
         return v
 
