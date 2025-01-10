@@ -4,7 +4,6 @@ import json
 import datetime
 import logging
 import re
-from click.parser import Option
 from typing_extensions import Dict
 
 import typer
@@ -12,6 +11,7 @@ import yaml
 import tomllib
 import numpy as np
 import pandas as pd
+import polars as pl
 import requests
 
 from pathlib import Path, PosixPath
@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from tokenizers import ByteLevelBPETokenizer
 from gensim.models import Word2Vec
 from medcat.cat import CAT
+from medcat.config import Config
 from medcat.cdb import CDB
 from medcat.vocab import Vocab
 from medcat.meta_cat import MetaCAT
@@ -32,7 +33,7 @@ from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 log = logging.getLogger("miade")
-log.setLevel("INFO")
+log.setLevel("DEBUG")
 
 app = typer.Typer()
 
@@ -172,8 +173,10 @@ class MakeConfig(BaseModel):
     description: Optional[str]
     ontology: Optional[str]
     model: Optional[Source]
+    medcat_model_config: Optional[Dict]
     vocab: Optional[Source]
     cdb: Optional[Source]
+    context_embedding_training_data: Optional[Location]
     meta_models: Dict[str, Source]
 
     def __str__(self) -> str:
@@ -182,8 +185,10 @@ class MakeConfig(BaseModel):
         description: {self.description}
         ontology: {self.ontology}
         model: {self.model}
-        CDB:\t{self.cdb}
+        medcat_model_config: {self.medcat_model_config}
         vocab:\t{self.vocab}
+        CDB:\t{self.cdb}
+        context_embedding_training_data:\t{self.context_embedding_training_data}
         meta-models:
         \t{self.meta_models}"""
         )
@@ -210,6 +215,11 @@ class MakeConfig(BaseModel):
         if vocab_config:
             vocab = Source.from_dict(vocab_config)
 
+        context_config = config_dict.get("context_embedding_training_data")
+        context_embedding_training_data = None
+        if context_config:
+            context_embedding_training_data = Location.from_dict(context_config)
+
         meta_config = config_dict.get("meta-models")
         meta_models = {}
         if meta_config:
@@ -221,8 +231,10 @@ class MakeConfig(BaseModel):
             description=description,
             ontology=ontology,
             model=model,
+            medcat_model_config=config_dict.get("medcat_model_config"),
             cdb=cdb,
             vocab=vocab,
+            context_embedding_training_data=context_embedding_training_data,
             meta_models=meta_models,
         )
 
@@ -244,6 +256,14 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     config = MakeConfig.from_yaml_file(config_filepath)
     log.debug(config)
 
+    # Create MedCAT config object
+    medcat_config = Config()
+    if config.medcat_model_config:
+        medcat_config = Config.from_dict(config.medcat_model_config)
+
+    log.debug(medcat_config)
+
+    # LOAD VOCAB
     vocab = None
     if config.vocab:
         if config.vocab.location:
@@ -252,6 +272,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
         elif config.vocab.data:
             raise Exception("vocab generation not yet implemented")
 
+    #LOAD CDB
     cdb = None
     if config.cdb:
         if config.cdb.location:
@@ -267,7 +288,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             cdb = cdb_builder.create_cdb()
             del cdb_builder
 
-
+    # LOAD MODEL
     if config.model:
         if config.model.location:
             log.info(f"Loading model pack from {config.model.location}")
@@ -286,17 +307,13 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             log.error("Both a CDB and vocab are required to make a new model.")
             raise Exception("Both a CDB and vocab are required to make a new model.")
 
-
-    # if description is None:
-    #         log.info("Automatically populating description field of model card...")
-    #         split_tag = ""
-    #         if tag is not None:
-    #             split_tag = " ".join(tag.split("_")) + " "
-    #         description = (
-    #             f"MiADE {split_tag}untrained model built using cdb from "
-    #             f"{cdb_data_path.stem}{cdb_data_path.suffix} and vocab "
-    #             f"from model {vocab_path.stem}"
-    #         )
+    # LEARN CONTEXT EMBEDDINGS
+    if config.context_embedding_training_data:
+        context_data = pl.read_csv(config.context_embedding_training_data.get_or_download(temp_dir))["text"].to_list()
+        log.info(f"Training context embeddings from: {config.context_embedding_training_data}")
+        log.info(f"Data sample: {context_data[:10]}")
+        model.config.general["checkpoint"]["output_dir"] = str(temp_dir / Path("cdb"))
+        model.train(context_data)
 
     model.config.version["location"] = str(output)
     if config.description:
