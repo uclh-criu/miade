@@ -167,6 +167,14 @@ class Source(BaseModel):
             return cls(data=Location.from_dict(data))
 
 
+class SupervisedTrainingConfig(BaseModel):
+    annotation_data: Location
+    synthetic_data: Optional[Location] = None
+    nepochs: int = 1
+    use_filters: bool = False
+    train_from_false_positives: bool = True
+
+
 class MakeConfig(BaseModel):
     tag: Optional[str]
     description: Optional[str]
@@ -176,6 +184,7 @@ class MakeConfig(BaseModel):
     vocab: Optional[Source]
     cdb: Optional[Source]
     context_embedding_training_data: Optional[Location]
+    supervised_training: Optional[SupervisedTrainingConfig]
     meta_models: Optional[Dict[str, Source]]
 
     def __str__(self) -> str:
@@ -187,6 +196,7 @@ class MakeConfig(BaseModel):
         vocab:\t{self.vocab}
         CDB:\t{self.cdb}
         context_embedding_training_data:\t{self.context_embedding_training_data}
+        supervised_training: \t{self.supervised_training}
         meta-models:
         \t{self.meta_models}"""
 
@@ -242,7 +252,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     if config.model:
         if config.model.location:
             log.info(f"Loading model pack from {config.model.location}")
-            model = CAT.load_model_pack(str(config.model.location.get_or_download(temp_dir)))
+            model = MiADE_CAT.load_model_pack(str(config.model.location.get_or_download(temp_dir)))
             if vocab:
                 log.info("Replacing vocab")
                 model.vocab = vocab
@@ -252,18 +262,51 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     else:
         if vocab and cdb:
             log.info("Creating new model pack")
-            model = CAT(cdb=cdb, config=cdb.config, vocab=vocab)
+            model = MiADE_CAT(cdb=cdb, config=cdb.config, vocab=vocab)
         else:
             log.error("Both a CDB and vocab are required to make a new model.")
             raise Exception("Both a CDB and vocab are required to make a new model.")
 
-    # TRAIN CONTEXT EMBEDDINGS
+    # Train context embeddings
     if config.context_embedding_training_data:
         context_data = pl.read_csv(config.context_embedding_training_data.get_or_download(temp_dir))["text"].to_list()
         log.info(f"Training context embeddings from: {config.context_embedding_training_data}")
         log.info(f"Data sample: {context_data[:10]}")
         model.config.general["checkpoint"]["output_dir"] = str(temp_dir / Path("cdb"))
         model.train(context_data)
+
+
+    # Supervised model training
+    if config.supervised_training:
+        supervised_config_dict = config.supervised_training.__dict__
+        supervised_config_dict["print_stats"] = True
+        supervised_config_dict["data_path"] = config.supervised_training.annotation_data.get_or_download(temp_dir)
+        del supervised_config_dict["annotation_data"]
+        if config.supervised_training.synthetic_data:
+            supervised_config_dict["synthetic_data_path"] = config.supervised_training.synthetic_data.get_or_download(temp_dir)
+        del supervised_config_dict["synthetic_data"]
+
+        log.info(f"Starting supervised training with {supervised_config_dict['data_path']}")
+        fp, fn, tp, p, r, f1, cui_counts, examples = model.train_supervised(**supervised_config_dict)
+
+        model_id = model.config.version["id"]
+        training_stats = {
+            "fp": fp,
+            "fn": fn,
+            "tp": tp,
+            "p": p,
+            "r": r,
+            "f1": f1,
+            "cui_counts": cui_counts,
+            "examples": examples,
+        }
+
+        stats_save_name = os.path.join(output, f"supervised_training_stats_{model_id}.json")
+        with open(stats_save_name, "w") as f:
+            json.dump(training_stats, f)
+
+        log.info(f"Saved training stats at {stats_save_name}")
+
 
     model.config.version["location"] = str(output)
     if config.description:

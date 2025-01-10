@@ -23,6 +23,7 @@ dependencies = [
     "pydantic>=1.10.0", # compatibility with spacy
     "negspacy>=1.0.3",
     "requests>=2.32.3",
+    "polars>=1.8.2",
 ]
 readme = "README.md"
 keywords = [
