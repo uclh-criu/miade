@@ -17,7 +17,7 @@ import requests
 from pathlib import Path, PosixPath
 from shutil import rmtree
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from tokenizers import ByteLevelBPETokenizer
 from gensim.models import Word2Vec
@@ -127,30 +127,28 @@ class URL(BaseModel):
 
 
 class Location(BaseModel):
-    location: Path | URL
+    path: Optional[Path]
+    url: Optional[URL]
+
+    @validator('path', 'url')
+    def validate_choice(cls, v, values):
+        if (v is not None) == ((values.get('path') is not None) + (values.get('url') is not None)) % 2:
+            raise ValueError("Only one of path or url can be set")
+        return v
 
     def __str__(self):
-        if type(self.location) == URL:
-            return self.location.path
+        if self.url:
+            return f"url: {self.url}"
         else:
-            return str(self.location)
-
-    @classmethod
-    def from_dict(cls, config_dict: Dict):
-        assert len(config_dict.keys()) == 1  # must be exactly one source
-
-        path = config_dict.get("path")
-        if path:
-            return cls(location=Path(path))
-
-        url = config_dict.get("url")
-        if url:
-            return cls(location=URL(path=url))
+            return f"path: {self.path}"
 
     def get_or_download(self, dir: Path) -> Path:
-        filepath = self.location
-        if type(self.location) == URL:
-            filepath = self.location.download(dir)
+        if self.url:
+            filepath = self.url.download(dir)
+        elif self.path:
+            filepath = self.path
+        else:
+            raise Exception("attempted to get a location with no url or path")
         return filepath
 
 
@@ -178,7 +176,7 @@ class MakeConfig(BaseModel):
     vocab: Optional[Source]
     cdb: Optional[Source]
     context_embedding_training_data: Optional[Location]
-    meta_models: Dict[str, Source]
+    meta_models: Optional[Dict[str, Source]]
 
     def __str__(self) -> str:
         return f"""tag: {self.tag}
@@ -192,56 +190,6 @@ class MakeConfig(BaseModel):
         meta-models:
         \t{self.meta_models}"""
 
-    @classmethod
-    def from_yaml_string(cls, s: str):
-        config_dict = yaml.safe_load(s)
-
-        tag = config_dict.get("tag")
-        description = config_dict.get("description")
-        ontology = config_dict.get("ontology")
-
-        model = config_dict.get("model")
-        if model:
-            model = Source.from_dict(model)
-
-        cdb_config = config_dict.get("cdb")
-        cdb = None
-        if cdb_config:
-            cdb = Source.from_dict(cdb_config)
-
-        vocab_config = config_dict.get("vocab")
-        vocab = None
-        if vocab_config:
-            vocab = Source.from_dict(vocab_config)
-
-        context_config = config_dict.get("context_embedding_training_data")
-        context_embedding_training_data = None
-        if context_config:
-            context_embedding_training_data = Location.from_dict(context_config)
-
-        meta_config = config_dict.get("meta-models")
-        meta_models = {}
-        if meta_config:
-            meta_models: Dict[str, Source] = {
-                name: Source.from_dict(config) for d in meta_config for name, config in d.items() if d
-            }
-        return cls(
-            tag=tag,
-            description=description,
-            ontology=ontology,
-            model=model,
-            medcat_model_config=config_dict.get("medcat_model_config"),
-            cdb=cdb,
-            vocab=vocab,
-            context_embedding_training_data=context_embedding_training_data,
-            meta_models=meta_models,
-        )
-
-    @classmethod
-    def from_yaml_file(cls, config_filepath: Path):
-        with config_filepath.open("r") as file:
-            return cls.from_yaml_string(file.read())
-
 
 @app.command()
 def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path = Path.cwd()):
@@ -252,7 +200,8 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     log.info(f"Making temporary directory: {temp_dir}")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    config = MakeConfig.from_yaml_file(config_filepath)
+    config = MakeConfig(**yaml.safe_load(config_filepath.open()))
+
     log.debug(config)
 
     # Create MedCAT config object
@@ -262,7 +211,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
     log.debug(medcat_config)
 
-    # LOAD VOCAB
+    # Load vocab
     vocab = None
     if config.vocab:
         if config.vocab.location:
@@ -271,7 +220,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
         elif config.vocab.data:
             raise Exception("vocab generation not yet implemented")
 
-    # LOAD CDB
+    # Load CDB
     cdb = None
     if config.cdb:
         if config.cdb.location:
@@ -289,7 +238,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             cdb = cdb_builder.create_cdb()
             del cdb_builder
 
-    # LOAD MODEL
+    # Load model
     if config.model:
         if config.model.location:
             log.info(f"Loading model pack from {config.model.location}")
