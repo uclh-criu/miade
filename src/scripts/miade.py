@@ -48,6 +48,7 @@ def _sanitise_filename(filename: Path) -> Path:
     clean_name = clean_name.strip(". ")
     return Path(clean_name)
 
+
 class YAMLConfig(BaseModel):
     @classmethod
     def from_yaml_file(cls, config_filepath: Path):
@@ -180,8 +181,7 @@ class MakeConfig(BaseModel):
     meta_models: Dict[str, Source]
 
     def __str__(self) -> str:
-        return (
-            f"""tag: {self.tag}
+        return f"""tag: {self.tag}
         description: {self.description}
         ontology: {self.ontology}
         model: {self.model}
@@ -191,7 +191,6 @@ class MakeConfig(BaseModel):
         context_embedding_training_data:\t{self.context_embedding_training_data}
         meta-models:
         \t{self.meta_models}"""
-        )
 
     @classmethod
     def from_yaml_string(cls, s: str):
@@ -272,7 +271,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
         elif config.vocab.data:
             raise Exception("vocab generation not yet implemented")
 
-    #LOAD CDB
+    # LOAD CDB
     cdb = None
     if config.cdb:
         if config.cdb.location:
@@ -283,7 +282,9 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             cdb_temp_dir = temp_dir / Path("cdb")
 
-            cdb_builder = CDBBuilder(temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)])
+            cdb_builder = CDBBuilder(
+                temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)]
+            )
             cdb_builder.preprocess()
             cdb = cdb_builder.create_cdb()
             del cdb_builder
@@ -307,7 +308,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             log.error("Both a CDB and vocab are required to make a new model.")
             raise Exception("Both a CDB and vocab are required to make a new model.")
 
-    # LEARN CONTEXT EMBEDDINGS
+    # TRAIN CONTEXT EMBEDDINGS
     if config.context_embedding_training_data:
         context_data = pl.read_csv(config.context_embedding_training_data.get_or_download(temp_dir))["text"].to_list()
         log.info(f"Training context embeddings from: {config.context_embedding_training_data}")
@@ -321,7 +322,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     if config.ontology:
         model.config.version["ontology"] = config.ontology
 
-    tag = config.tag+"_" if config.tag else ""
+    tag = config.tag + "_" if config.tag else ""
     current_date = datetime.datetime.now().strftime("%Y_%m_%d")
     name = f"miade_{tag}modelpack_{current_date}"
 
@@ -560,7 +561,7 @@ def create_metacats(
     embeddings = np.load(str(os.path.join(tokenizer_path, "embeddings.npy")))
 
     assert len(embeddings) == tokenizer.get_size(), (
-        f"Tokenizer and embeddings not the same size {len(embeddings)}, " f"{tokenizer.get_size()}"
+        f"Tokenizer and embeddings not the same size {len(embeddings)}, {tokenizer.get_size()}"
     )
 
     metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
