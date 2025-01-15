@@ -488,25 +488,13 @@ def train_supervised(
 
     log.info(f"Saved training stats at {stats_save_name}")
 
-
-@app.command()
-def create_bbpe_tokenizer(
+def _create_bbpe_tokenizer(
     train_data: Path,
-    name: Optional[str] = "bbpe_tokenizer",
-    output: Optional[Path] = typer.Argument(Path.cwd()),
-):
-    # Create, train on text and save the tokenizer
+) -> tuple[ByteLevelBPETokenizer, List]:
     log.info(f"Creating BPE tokenizer and start training on {train_data}...")
     tokenizer = ByteLevelBPETokenizer()
     tokenizer.train(str(train_data))
     tokenizer.add_tokens(["<PAD>"])
-
-    save_path = os.path.join(output, name)
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
-
-    tokenizer.save_model(str(save_path), "bbpe")
-    log.info(f"Saved tokenizer model files vocab.json and merges.txt to {save_path}")
 
     log.info(f"Started tokenizing text from {train_data}...")
     data = []
@@ -535,6 +523,23 @@ def create_bbpe_tokenizer(
         step += 1
 
     log.info(f"Embedding length: {len(embeddings)}")
+    return tokenizer, embeddings
+
+@app.command()
+def create_bbpe_tokenizer(
+    train_data: Path,
+    name: str = "bbpe_tokenizer",
+    output: Path = typer.Argument(Path.cwd()),
+):
+    # Create, train on text and save the tokenizer
+    tokenizer, embeddings = _create_bbpe_tokenizer(train_data)
+
+    save_path = output / Path(name)
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+
+    tokenizer.save_model(str(save_path), "bbpe")
+    log.info(f"Saved tokenizer model files vocab.json and merges.txt to {save_path}")
 
     embeddings_save_name = os.path.join(save_path, "embeddings.npy")
     np.save(open(str(embeddings_save_name), "wb"), np.array(embeddings))
