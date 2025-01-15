@@ -425,6 +425,26 @@ def create_bbpe_tokenizer(
     log.info(f"Saved embeddings at {embeddings_save_name}")
 
 
+def _create_metacats(
+    tokenizer: ByteLevelBPETokenizer,
+    embeddings: List[np.ndarray],
+    category_names: List[str],
+) -> List[TokenizerWrapperBPE]:
+    tokenizer = TokenizerWrapperBPE(tokenizer)
+    assert len(embeddings) == tokenizer.get_size(), (
+        f"Tokenizer and embeddings not the same size {len(embeddings)}, {tokenizer.get_size()}"
+    )
+
+    metacats = []
+    for category in category_names:
+        metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
+        metacat.config.general["description"] = f"MiADE blank {category} MetaCAT model"
+        metacat.config.general["category_name"] = category
+        metacats.append(metacat)
+
+    return metacats
+
+
 @app.command()
 def create_metacats(
     tokenizer_path: Path,
@@ -442,8 +462,6 @@ def create_metacats(
 
     metacat = MetaCAT(tokenizer=tokenizer, embeddings=embeddings)
     for category in category_names:
-        metacat.config.general["description"] = f"MiADE blank {category} MetaCAT model"
-        metacat.config.general["category_name"] = category
         metacat.save(str(os.path.join(output, f"meta_{category}")))
         log.info(f"Saved meta_{category} at {output}")
 
