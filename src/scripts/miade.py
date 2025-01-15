@@ -550,7 +550,7 @@ def create_bbpe_tokenizer(
 def create_metacats(
     tokenizer_path: Path,
     category_names: List[str],
-    output: Optional[Path] = typer.Argument(Path.cwd()),
+    output: Path = typer.Argument(Path.cwd()),
 ):
     log.info(f"Loading tokenizer from {tokenizer_path}/...")
     tokenizer = TokenizerWrapperBPE.load(str(tokenizer_path))
