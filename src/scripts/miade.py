@@ -581,129 +581,128 @@ def rename_model_pack(
         rmtree(model)
 
 
+@app.command()
+def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path = Path.cwd()):
+    """
+    Build a model from a specification file.
+    """
+
+    log.info(f"Making temporary directory: {temp_dir}")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    config = MakeConfig(**yaml.safe_load(config_filepath.open()))
+
+    log.debug(config)
+
+    # Create MedCAT config object
+    medcat_config = Config()
+    if config.medcat_model_config:
+        medcat_config = Config.from_dict(config.medcat_model_config)
+
+    log.debug(medcat_config)
+
+    # Load vocab
+    vocab = None
+    if config.vocab:
+        if config.vocab.location:
+            log.info(f"Loading vocab: {config.vocab.location}")
+            vocab = Vocab.load(str(config.vocab.location.get_or_download(temp_dir)))
+        elif config.vocab.data:
+            raise Exception("vocab generation not yet implemented")  #  TODO
+
+    # Load CDB
+    cdb = None
+    if config.cdb:
+        if config.cdb.location:
+            log.info(f"Loading cdb: {config.cdb.location}")
+            cdb = CDB.load(str(config.cdb.location.get_or_download(temp_dir)))
+        elif config.cdb.data:
+            log.info(f"Building CDB from {config.cdb.data}")
+
+            cdb_temp_dir = temp_dir / Path("cdb")
+
+            cdb_builder = CDBBuilder(
+                temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)]
+            )
+            cdb_builder.preprocess()
+            cdb = cdb_builder.create_cdb()
+            del cdb_builder
+
+    # Load model
+    if config.model:
+        if config.model.location:
+            log.info(f"Loading model pack from {config.model.location}")
+            model = MiADE_CAT.load_model_pack(str(config.model.location.get_or_download(temp_dir)))
+            if vocab:
+                log.info("Replacing vocab")
+                model.vocab = vocab
+            if cdb:
+                log.info("Replacing cdb")
+                model.cdb = cdb
+    else:
+        if vocab and cdb:
+            log.info("Creating new model pack")
+            model = MiADE_CAT(cdb=cdb, config=cdb.config, vocab=vocab)
+        else:
+            log.error("Both a CDB and vocab are required to make a new model.")
+            raise Exception("Both a CDB and vocab are required to make a new model.")
+
+    # Train context embeddings
+    if config.context_embedding_training_data:
+        context_data = pl.read_csv(config.context_embedding_training_data.get_or_download(temp_dir))["text"].to_list()
+        log.info(f"Training context embeddings from: {config.context_embedding_training_data}")
+        log.info(f"Data sample: {context_data[:10]}")
+        model.config.general["checkpoint"]["output_dir"] = str(temp_dir / Path("cdb"))
+        model.train(context_data)
+
+    # Supervised model training
+    if config.supervised_training:
+        supervised_config_dict = config.supervised_training.__dict__
+        supervised_config_dict["print_stats"] = True
+        supervised_config_dict["data_path"] = config.supervised_training.annotation_data.get_or_download(temp_dir)
+        del supervised_config_dict["annotation_data"]
+        if config.supervised_training.synthetic_data:
+            supervised_config_dict["synthetic_data_path"] = config.supervised_training.synthetic_data.get_or_download(
+                temp_dir
+            )
+        del supervised_config_dict["synthetic_data"]
+
+        log.info(f"Starting supervised training with {supervised_config_dict['data_path']}")
+        fp, fn, tp, p, r, f1, cui_counts, examples = model.train_supervised(**supervised_config_dict)
+
+        model_id = model.config.version["id"]
+        training_stats = {
+            "fp": fp,
+            "fn": fn,
+            "tp": tp,
+            "p": p,
+            "r": r,
+            "f1": f1,
+            "cui_counts": cui_counts,
+            "examples": examples,
+        }
+
+        stats_save_name = os.path.join(output, f"supervised_training_stats_{model_id}.json")
+        with open(stats_save_name, "w") as f:
+            json.dump(training_stats, f)
+
+        log.info(f"Saved training stats at {stats_save_name}")
+
+    model.config.version["location"] = str(output)
+    if config.description:
+        model.config.version["description"] = config.description
+    if config.ontology:
+        model.config.version["ontology"] = config.ontology
+
+    tag = config.tag + "_" if config.tag else ""
+    current_date = datetime.datetime.now().strftime("%Y_%m_%d")
+    name = f"miade_{tag}modelpack_{current_date}"
+
+    model.create_model_pack(str(output), name)
+    log.info(f"Saved model pack at {output}/{name}_{model.config.version['id']}")
+
+    rmtree(temp_dir)
+
+
 if __name__ == "__main__":
     app()
-
-    @app.command()
-    def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path = Path.cwd()):
-        """
-        Build a model from a specification file.
-        """
-
-        log.info(f"Making temporary directory: {temp_dir}")
-        temp_dir.mkdir(parents=True, exist_ok=True)
-
-        config = MakeConfig(**yaml.safe_load(config_filepath.open()))
-
-        log.debug(config)
-
-        # Create MedCAT config object
-        medcat_config = Config()
-        if config.medcat_model_config:
-            medcat_config = Config.from_dict(config.medcat_model_config)
-
-        log.debug(medcat_config)
-
-        # Load vocab
-        vocab = None
-        if config.vocab:
-            if config.vocab.location:
-                log.info(f"Loading vocab: {config.vocab.location}")
-                vocab = Vocab.load(str(config.vocab.location.get_or_download(temp_dir)))
-            elif config.vocab.data:
-                raise Exception("vocab generation not yet implemented")
-
-        # Load CDB
-        cdb = None
-        if config.cdb:
-            if config.cdb.location:
-                log.info(f"Loading cdb: {config.cdb.location}")
-                cdb = CDB.load(str(config.cdb.location.get_or_download(temp_dir)))
-            elif config.cdb.data:
-                log.info(f"Building CDB from {config.cdb.data}")
-
-                cdb_temp_dir = temp_dir / Path("cdb")
-
-                cdb_builder = CDBBuilder(
-                    temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)]
-                )
-                cdb_builder.preprocess()
-                cdb = cdb_builder.create_cdb()
-                del cdb_builder
-
-        # Load model
-        if config.model:
-            if config.model.location:
-                log.info(f"Loading model pack from {config.model.location}")
-                model = MiADE_CAT.load_model_pack(str(config.model.location.get_or_download(temp_dir)))
-                if vocab:
-                    log.info("Replacing vocab")
-                    model.vocab = vocab
-                if cdb:
-                    log.info("Replacing cdb")
-                    model.cdb = cdb
-        else:
-            if vocab and cdb:
-                log.info("Creating new model pack")
-                model = MiADE_CAT(cdb=cdb, config=cdb.config, vocab=vocab)
-            else:
-                log.error("Both a CDB and vocab are required to make a new model.")
-                raise Exception("Both a CDB and vocab are required to make a new model.")
-
-        # Train context embeddings
-        if config.context_embedding_training_data:
-            context_data = pl.read_csv(config.context_embedding_training_data.get_or_download(temp_dir))[
-                "text"
-            ].to_list()
-            log.info(f"Training context embeddings from: {config.context_embedding_training_data}")
-            log.info(f"Data sample: {context_data[:10]}")
-            model.config.general["checkpoint"]["output_dir"] = str(temp_dir / Path("cdb"))
-            model.train(context_data)
-
-        # Supervised model training
-        if config.supervised_training:
-            supervised_config_dict = config.supervised_training.__dict__
-            supervised_config_dict["print_stats"] = True
-            supervised_config_dict["data_path"] = config.supervised_training.annotation_data.get_or_download(temp_dir)
-            del supervised_config_dict["annotation_data"]
-            if config.supervised_training.synthetic_data:
-                supervised_config_dict["synthetic_data_path"] = (
-                    config.supervised_training.synthetic_data.get_or_download(temp_dir)
-                )
-            del supervised_config_dict["synthetic_data"]
-
-            log.info(f"Starting supervised training with {supervised_config_dict['data_path']}")
-            fp, fn, tp, p, r, f1, cui_counts, examples = model.train_supervised(**supervised_config_dict)
-
-            model_id = model.config.version["id"]
-            training_stats = {
-                "fp": fp,
-                "fn": fn,
-                "tp": tp,
-                "p": p,
-                "r": r,
-                "f1": f1,
-                "cui_counts": cui_counts,
-                "examples": examples,
-            }
-
-            stats_save_name = os.path.join(output, f"supervised_training_stats_{model_id}.json")
-            with open(stats_save_name, "w") as f:
-                json.dump(training_stats, f)
-
-            log.info(f"Saved training stats at {stats_save_name}")
-
-        model.config.version["location"] = str(output)
-        if config.description:
-            model.config.version["description"] = config.description
-        if config.ontology:
-            model.config.version["ontology"] = config.ontology
-
-        tag = config.tag + "_" if config.tag else ""
-        current_date = datetime.datetime.now().strftime("%Y_%m_%d")
-        name = f"miade_{tag}modelpack_{current_date}"
-
-        model.create_model_pack(str(output), name)
-        log.info(f"Saved model pack at {output}/{name}_{model.config.version['id']}")
-
-        rmtree(temp_dir)
