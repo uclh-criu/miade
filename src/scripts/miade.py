@@ -27,6 +27,7 @@ from medcat.cdb import CDB
 from medcat.vocab import Vocab
 from medcat.meta_cat import MetaCAT
 from medcat.tokenizers.meta_cat_tokenizers import TokenizerWrapperBPE
+from medcat.config_meta_cat import ConfigMetaCAT
 
 from miade.model_builders import CDBBuilder
 from miade.utils.miade_cat import MiADE_CAT
@@ -175,6 +176,17 @@ class SupervisedTrainingConfig(BaseModel):
     train_from_false_positives: bool = True
 
 
+class MetaModelConfig(BaseModel):
+    annotations: Location
+    synthetic_data: Optional[Location]
+    config: ConfigMetaCAT = ConfigMetaCAT()
+
+
+class MetaModelsConfig(BaseModel):
+    tokenizer: Source
+    models: Dict[str, MetaModelConfig]
+
+
 class MakeConfig(BaseModel):
     tag: Optional[str]
     description: Optional[str]
@@ -185,7 +197,7 @@ class MakeConfig(BaseModel):
     cdb: Optional[Source]
     context_embedding_training_data: Optional[Location]
     supervised_training: Optional[SupervisedTrainingConfig]
-    meta_models: Optional[Dict[str, Source]]
+    meta_models: Optional[MetaModelsConfig]
 
     def __str__(self) -> str:
         return f"""tag: {self.tag}
@@ -687,6 +699,52 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             json.dump(training_stats, f)
 
         log.info(f"Saved training stats at {stats_save_name}")
+
+    if config.meta_models:
+        log.debug("BUILDING META MODELS")
+        if config.meta_models.tokenizer.location:
+            raise Exception("tokenizer loading not yet implemented")  # TODO load tokeniser
+        else:
+            tokenizer, embeddings = _create_bbpe_tokenizer(config.meta_models.tokenizer.data.get_or_download(temp_dir))
+            wrapped_tokenizer = TokenizerWrapperBPE(tokenizer)
+
+        meta_models = []
+        for meta_model_name, meta_spec in config.meta_models.models.items():
+            log.debug(meta_model_name)
+            log.debug(meta_spec)
+            if meta_spec.config.general.category_name is None:
+                meta_spec.config.general.category_name = meta_model_name
+
+            log.debug(meta_spec)
+            annotations_path = meta_spec.annotations.get_or_download(temp_dir)
+
+            synthetic_data_path = None
+            if meta_spec.synthetic_data:
+                synthetic_data_path = meta_spec.synthetic_data.get_or_download(temp_dir)
+
+            meta_model = MiADE_MetaCAT(
+                tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_model_config_and_data.config
+            )
+
+            annotation_path = meta_spec.annotations.get_or_download(temp_dir)
+
+            if meta_spec.synthetic_data:
+                synthetic_csv_path = meta_spec.synthetic_data.get_or_download(temp_dir)
+            else:
+                synthetic_csv_path = None
+
+            log.info(
+                f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {nepochs} epoch(s) "
+                f"with annotation file {annotation_path}"
+            )
+
+            report = meta_model.train(
+                json_path=annotation_path,
+                synthetic_csv_path=synthetic_csv_path,
+
+            )
+
+
 
     model.config.version["location"] = str(output)
     if config.description:
