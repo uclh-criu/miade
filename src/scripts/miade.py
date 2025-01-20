@@ -717,9 +717,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             meta_model_categories.append(meta_spec.config.general.category_name)
 
-            meta_model = MiADE_MetaCAT(
-                tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_spec.config
-            )
+            meta_model = MiADE_MetaCAT(tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_spec.config)
 
             annotations_path = meta_spec.annotations.get_or_download(temp_dir)
 
@@ -747,7 +745,6 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
         model = CAT(cdb=model.cdb, vocab=model.vocab, config=model.config, meta_cats=meta_models)
         for category in meta_model_categories:
             model.config.version["performance"]["meta"] = stats.get(category)
-
 
     model.config.version["location"] = str(output)
     if config.description:
