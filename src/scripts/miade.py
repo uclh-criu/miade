@@ -709,24 +709,19 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             wrapped_tokenizer = TokenizerWrapperBPE(tokenizer)
 
         meta_models = []
+        meta_model_categories = []
+        stats = {}
         for meta_model_name, meta_spec in config.meta_models.models.items():
-            log.debug(meta_model_name)
-            log.debug(meta_spec)
             if meta_spec.config.general.category_name is None:
                 meta_spec.config.general.category_name = meta_model_name
 
-            log.debug(meta_spec)
-            annotations_path = meta_spec.annotations.get_or_download(temp_dir)
-
-            synthetic_data_path = None
-            if meta_spec.synthetic_data:
-                synthetic_data_path = meta_spec.synthetic_data.get_or_download(temp_dir)
+            meta_model_categories.append(meta_spec.config.general.category_name)
 
             meta_model = MiADE_MetaCAT(
-                tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_model_config_and_data.config
+                tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_spec.config
             )
 
-            annotation_path = meta_spec.annotations.get_or_download(temp_dir)
+            annotations_path = meta_spec.annotations.get_or_download(temp_dir)
 
             if meta_spec.synthetic_data:
                 synthetic_csv_path = meta_spec.synthetic_data.get_or_download(temp_dir)
@@ -734,16 +729,24 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
                 synthetic_csv_path = None
 
             log.info(
-                f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {nepochs} epoch(s) "
-                f"with annotation file {annotation_path}"
+                f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {meta_spec.config.train.nepochs} epoch(s) "
+                f"with annotation file {str(annotations_path)}"
             )
 
+            # TODO -> just live with the side-effect function, save to the temp directory
+            meta_model_save_path = temp_dir / Path(meta_model_name)
             report = meta_model.train(
-                json_path=annotation_path,
-                synthetic_csv_path=synthetic_csv_path,
-
+                json_path=str(annotations_path),
+                synthetic_csv_path=str(synthetic_csv_path) if synthetic_csv_path else None,
+                save_dir_path=str(meta_model_save_path),
             )
+            log.debug(report)
+            stats[meta_spec.config.general.category_name] = report
+            meta_models.append(MetaCAT.load(str(meta_model_save_path)))
 
+        model = CAT(cdb=model.cdb, vocab=model.vocab, config=model.config, meta_cats=meta_models)
+        for category in meta_model_categories:
+            model.config.version["performance"]["meta"] = stats.get(category)
 
 
     model.config.version["location"] = str(output)
