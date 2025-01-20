@@ -731,7 +731,6 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
                 f"with annotation file {str(annotations_path)}"
             )
 
-            # TODO -> just live with the side-effect function, save to the temp directory
             meta_model_save_path = temp_dir / Path(meta_model_name)
             report = meta_model.train(
                 json_path=str(annotations_path),
