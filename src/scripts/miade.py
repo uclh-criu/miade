@@ -34,7 +34,7 @@ from miade.utils.miade_cat import MiADE_CAT
 from miade.utils.miade_meta_cat import MiADE_MetaCAT
 
 log = logging.getLogger("miade")
-log.setLevel("DEBUG")
+log.setLevel("INFO")
 
 app = typer.Typer()
 
@@ -604,14 +604,10 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
     config = MakeConfig(**yaml.safe_load(config_filepath.open()))
 
-    log.debug(config)
-
     # Create MedCAT config object
     medcat_config = Config()
     if config.medcat_model_config:
         medcat_config = Config.from_dict(config.medcat_model_config)
-
-    log.debug(medcat_config)
 
     # Load vocab
     vocab = None
@@ -701,7 +697,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
         log.info(f"Saved training stats at {stats_save_name}")
 
     if config.meta_models:
-        log.debug("BUILDING META MODELS")
+        log.debug("Building meta models")
         if config.meta_models.tokenizer.location:
             raise Exception("tokenizer loading not yet implemented")  # TODO load tokeniser
         else:
