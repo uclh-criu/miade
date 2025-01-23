@@ -40,7 +40,7 @@ app = typer.Typer()
 
 
 def _add_zip(a, b):
-    return {key: a.get(key, 0) + b.get(key, 0) for key in set(list(a.keys())+ list(b.keys()))}
+    return {key: a.get(key, 0) + b.get(key, 0) for key in set(list(a.keys()) + list(b.keys()))}
 
 
 def _get_label_counts_for_annotation_export(export, category):
@@ -235,19 +235,6 @@ class MakeConfig(BaseModel):
     context_embedding_training_data: Optional[Location]
     supervised_training: Optional[SupervisedTrainingConfig]
     meta_models: Optional[MetaModelsConfig]
-
-    def __str__(self) -> str:
-        return f"""tag: {self.tag}
-        description: {self.description}
-        ontology: {self.ontology}
-        model: {self.model}
-        medcat_model_config: {self.medcat_model_config}
-        vocab:\t{self.vocab}
-        CDB:\t{self.cdb}
-        context_embedding_training_data:\t{self.context_embedding_training_data}
-        supervised_training: \t{self.supervised_training}
-        meta-models:
-        \t{self.meta_models}"""
 
 
 @app.command()
@@ -635,11 +622,11 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     """
     Build a model from a specification file.
     """
-
     log.info(f"Making temporary directory: {temp_dir}")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     config = MakeConfig(**yaml.safe_load(config_filepath.open()))
+    log.info(f"making: {config}")
 
     # Create MedCAT config object
     medcat_config = Config()
@@ -756,8 +743,8 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             if meta_spec.synthetic_data:
                 synthetic_csv_path = meta_spec.synthetic_data.get_or_download(temp_dir)
-                synthetic_data = pl.read_csv(synthetic_csv_path)[['text', meta_model_name]]
-                prepped_synthetic_data_path = temp_dir/Path(f"prepped_synthetic_data_{meta_model_name}")
+                synthetic_data = pl.read_csv(synthetic_csv_path)[["text", meta_model_name]]
+                prepped_synthetic_data_path = temp_dir / Path(f"prepped_synthetic_data_{meta_model_name}")
                 synthetic_data.write_csv(prepped_synthetic_data_path)
                 synthetic_label_counts = _get_label_counts_for_synthetic_data(synthetic_data, meta_model_name)
             else:
@@ -766,7 +753,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             label_counts = _add_zip(
                 _get_label_counts_for_annotation_export(json.load(open(annotations_path)), meta_model_name),
-                synthetic_label_counts
+                synthetic_label_counts,
             )
 
             labels = list(label_counts.keys())
@@ -778,8 +765,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
                 for label in labels:
                     meta_model.config.train["class_weights"].append(1 - (label_counts[label] / total_label_count))
                     meta_model.config.general["category_value2id"][label] = i
-                    i +=1
-
+                    i += 1
 
             log.info(
                 f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {meta_spec.config.train.nepochs} epoch(s) "
