@@ -39,6 +39,42 @@ log.setLevel("INFO")
 app = typer.Typer()
 
 
+def _add_zip(a, b):
+    return {key: a.get(key, 0) + b.get(key, 0) for key in set(list(a.keys())+ list(b.keys()))}
+
+
+def _get_label_counts_for_annotation_export(export, category):
+    counts = {}
+    for label in [
+        ann["meta_anns"][category]["value"]
+        for doc in export["projects"][0]["documents"]
+        for ann in doc["annotations"]
+        if (ann["validated"] == True and ann["deleted"] == False and ann["alternative"] == False)
+    ]:
+        if counts.get(label):
+            counts[label] += 1
+        else:
+            counts[label] = 1
+    return counts
+
+
+def _get_label_counts_for_synthetic_data(data, category):
+    counts = {}
+    for label in data[category]:
+        if counts.get(label):
+            counts[label] += 1
+        else:
+            counts[label] = 1
+    return counts
+
+
+def _prep_synthetic_training_data(
+    synth_df,
+    name,
+):
+    return synth_df[["text", name]]
+
+
 def _sanitise_filename(filename: Path) -> Path:
     """
     Sanitizes a filename by removing or replacing invalid characters.
@@ -180,6 +216,7 @@ class MetaModelConfig(BaseModel):
     annotations: Location
     synthetic_data: Optional[Location]
     config: ConfigMetaCAT = ConfigMetaCAT()
+    balance_weights: bool = False
 
 
 class MetaModelsConfig(BaseModel):
@@ -719,8 +756,30 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             if meta_spec.synthetic_data:
                 synthetic_csv_path = meta_spec.synthetic_data.get_or_download(temp_dir)
+                synthetic_data = pl.read_csv(synthetic_csv_path)[['text', meta_model_name]]
+                prepped_synthetic_data_path = temp_dir/Path(f"prepped_synthetic_data_{meta_model_name}")
+                synthetic_data.write_csv(prepped_synthetic_data_path)
+                synthetic_label_counts = _get_label_counts_for_synthetic_data(synthetic_data, meta_model_name)
             else:
-                synthetic_csv_path = None
+                prepped_synthetic_data_path = None
+                synthetic_label_counts = {}
+
+            label_counts = _add_zip(
+                _get_label_counts_for_annotation_export(json.load(open(annotations_path)), meta_model_name),
+                synthetic_label_counts
+            )
+
+            labels = list(label_counts.keys())
+            total_label_count = sum(label_counts.values())
+
+            if meta_spec.balance_weights:
+                meta_model.config.train["class_weights"] = []
+                i = 0
+                for label in labels:
+                    meta_model.config.train["class_weights"].append(1 - (label_counts[label] / total_label_count))
+                    meta_model.config.general["category_value2id"][label] = i
+                    i +=1
+
 
             log.info(
                 f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {meta_spec.config.train.nepochs} epoch(s) "
@@ -730,10 +789,11 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             meta_model_save_path = temp_dir / Path(meta_model_name)
             report = meta_model.train(
                 json_path=str(annotations_path),
-                synthetic_csv_path=str(synthetic_csv_path) if synthetic_csv_path else None,
+                synthetic_csv_path=str(prepped_synthetic_data_path) if prepped_synthetic_data_path else None,
                 save_dir_path=str(meta_model_save_path),
             )
             log.debug(report)
+            log.info(meta_model.config.general["category_value2id"])
             stats[meta_spec.config.general.category_name] = report
             meta_models.append(MetaCAT.load(str(meta_model_save_path)))
 
