@@ -769,9 +769,10 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             total_label_count = sum(label_counts.values())
 
             meta_model.config.general["category_value2id"] = dict(zip(labels, range(0, len(labels))))
-            meta_model.config.train["class_weights"] = [
-                1 - (label_counts[label] / total_label_count) for label in labels
-            ]
+            if meta_spec.balance_weights:
+                meta_model.config.train["class_weights"] = [
+                    1 - (label_counts[label] / total_label_count) for label in labels
+                ]
             meta_model.config.model.nclasses = len(labels)
             meta_model.config.model["last_trained_on"] = datetime.now().strftime("%y%m%d%H%M%S")
 
