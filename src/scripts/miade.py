@@ -49,7 +49,12 @@ def _get_label_counts_for_annotation_export(export, category):
         ann["meta_anns"][category]["value"]
         for doc in export["projects"][0]["documents"]
         for ann in doc["annotations"]
-        if (ann["validated"] == True and ann["deleted"] == False and ann["alternative"] == False and ann["meta_anns"].get(category))
+        if (
+            ann["validated"] == True
+            and ann["deleted"] == False
+            and ann["alternative"] == False
+            and ann["meta_anns"].get(category)
+        )
     ]:
         if counts.get(label):
             counts[label] += 1
