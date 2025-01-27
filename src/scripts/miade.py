@@ -18,6 +18,7 @@ from pathlib import Path, PosixPath
 from shutil import rmtree
 from typing import Optional, List
 from pydantic import BaseModel, validator
+from datetime import datetime
 
 from tokenizers import ByteLevelBPETokenizer
 from gensim.models import Word2Vec
@@ -772,6 +773,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
                 1 - (label_counts[label] / total_label_count) for label in labels
             ]
             meta_model.config.model.nclasses = len(labels)
+            meta_model.config.model["last_trained_on"] = datetime.now().strftime("%y%m%d%H%M%S")
 
             log.info(
                 f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {meta_spec.config.train.nepochs} epoch(s) "
