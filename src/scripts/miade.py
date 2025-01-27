@@ -776,6 +776,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             log.info(
                 f"Starting MetaCAT training for {meta_spec.config.general['category_name']} for {meta_spec.config.train.nepochs} epoch(s) "
                 f"with annotation file {str(annotations_path)}"
+                f"and config: {meta_model.config}"
             )
 
             meta_model_save_path = temp_dir / Path(meta_model_name)
