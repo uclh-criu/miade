@@ -45,6 +45,7 @@ def _add_zip(a, b):
 
 def _get_label_counts_for_annotation_export(export, category):
     counts = {}
+    log.info(f"getting counts for: {category}")
     for label in [
         ann["meta_anns"][category]["value"]
         for doc in export["projects"][0]["documents"]
@@ -728,10 +729,12 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     if config.meta_models:
         log.debug("Building meta models")
         if config.meta_models.tokenizer.location:
-            raise Exception("tokenizer loading not yet implemented")  # TODO load tokeniser
+            tokenizer_directory = config.meta_models.tokenizer.location.get_or_download(temp_dir)
+            tokenizer = TokenizerWrapperBPE.load(tokenizer_directory)
+            embeddings = np.load(tokenizer_directory / Path("embeddings.npy"))
         else:
             tokenizer, embeddings = _create_bbpe_tokenizer(config.meta_models.tokenizer.data.get_or_download(temp_dir))
-            wrapped_tokenizer = TokenizerWrapperBPE(tokenizer)
+            tokenizer = TokenizerWrapperBPE(tokenizer)
 
         meta_models = []
         meta_model_categories = []
@@ -742,7 +745,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
 
             meta_model_categories.append(meta_spec.config.general.category_name)
 
-            meta_model = MiADE_MetaCAT(tokenizer=wrapped_tokenizer, embeddings=embeddings, config=meta_spec.config)
+            meta_model = MiADE_MetaCAT(tokenizer=tokenizer, embeddings=embeddings, config=meta_spec.config)
 
             annotations_path = meta_spec.annotations.get_or_download(temp_dir)
 
