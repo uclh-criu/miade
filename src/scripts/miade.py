@@ -4,6 +4,7 @@ import json
 import datetime
 import logging
 import re
+import time
 from typing_extensions import Dict
 
 import typer
@@ -628,6 +629,7 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     """
     Build a model from a specification file.
     """
+    start_time = time.time()
     log.info(f"Making temporary directory: {temp_dir}")
     temp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -813,6 +815,12 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
     log.info(f"Saved model pack at {output}/{name}_{model.config.version['id']}")
 
     rmtree(temp_dir)
+
+    elapsed_time = time.time() - start_time
+    hours = int(elapsed_time // 3600)
+    minutes = int((elapsed_time % 3600) // 60)
+    seconds = int(elapsed_time % 60)
+    print(f"Time taken: {hours}h {minutes}m {seconds}s")
 
 
 if __name__ == "__main__":
