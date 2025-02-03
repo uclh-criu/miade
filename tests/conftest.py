@@ -190,7 +190,7 @@ def test_duplicated_note() -> Note:
 def test_clean_and_paragraphing_note() -> Note:
     return Note(
         """
-    This is an example of text with various types of spaces:
+    This is an example of text with various types of spaces: 
 \tTabs,    \u00a0Non-breaking spaces, \u2003Em spaces, \u2002En spaces.
 Some lines may contain only punctuation and spaces, like this:
     !?  ...  - -- ???
@@ -223,7 +223,7 @@ Penicillin
 
 imp::
 Penicillin
-    """
+    """  # noqa: UP031
     )
 
 
