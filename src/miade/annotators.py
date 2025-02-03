@@ -490,7 +490,7 @@ class Annotator(ABC):
         """
         # Prepend numbering to problem concepts e.g. 01 asthma, 02 stroke...
         for i, concept in enumerate(concepts):
-            concept.name = f"{(i+1):02} {concept.name}"
+            concept.name = f"{(i + 1):02} {concept.name}"
 
         return concepts
 

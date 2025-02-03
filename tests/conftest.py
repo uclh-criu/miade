@@ -223,7 +223,7 @@ Penicillin
 
 imp::
 Penicillin
-    """
+    """  # noqa: UP031
     )
 
 
