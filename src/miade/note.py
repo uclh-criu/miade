@@ -5,7 +5,6 @@ from typing import List, Optional, Dict
 
 from .paragraph import ListItem, NumberedList, Paragraph, ParagraphType
 
-
 log = logging.getLogger(__name__)
 
 
@@ -194,6 +193,12 @@ class Note(object):
         """
         merged_paragraphs = []
         skip_next = False
+        
+        def isin_numbered_list(start: int, end: int) -> bool:
+            for numbered_list in self.numbered_lists:
+                if start >= numbered_list.list_start and end <= numbered_list.list_end:
+                    return True
+            return False
 
         for i in range(len(self.paragraphs) - 1):
             if skip_next:
@@ -205,13 +210,15 @@ class Note(object):
             next_paragraph = self.paragraphs[i + 1]
 
             # Check if current paragraph has an empty body and is not of type prose
-            if current_paragraph.body == "" and current_paragraph.type != ParagraphType.prose:
+            # or there is a numbered list spanning the current and next paragraph
+            if ((current_paragraph.body == "" and current_paragraph.type != ParagraphType.prose) or
+                isin_numbered_list(current_paragraph.end, next_paragraph.start)):
                 # Check if the next paragraph is of type prose
                 if next_paragraph.type == ParagraphType.prose:
-                    # Create a new Paragraph with merged content and type prose
+                    # Create a new Paragraph with merged content and type of first paragraph
                     merged_paragraph = Paragraph(
                         heading=current_paragraph.heading,
-                        body=next_paragraph.heading,
+                        body=current_paragraph.body + '\n' + next_paragraph.heading,
                         type=current_paragraph.type,
                         start=current_paragraph.start,
                         end=next_paragraph.end,
