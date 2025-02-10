@@ -401,16 +401,16 @@ class Annotator(ABC):
             # Check if the concept is within the global range of any list
             if any(start <= concept.start < end for start, end in global_list_ranges):
                 # Check for partial or full overlap between concept and list item
-                if (
-                    concept.start >= item.start and concept.start < item.end
-                ):  # Concept starts within current list item
+                if concept.start >= item.start and concept.start < item.end:  # Concept starts within current list item
                     filtered_concepts.append(concept)
                     concept_idx += 1  # Move to the next concept
                     item_idx += 1  # Move to the next list item i.e. only choose the first concept per item
                 elif concept.start < item.start:
                     # If the concept starts before the item starts, move to the next concept
                     concept_idx += 1
-                    log.debug(f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item")
+                    log.debug(
+                        f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item"
+                    )
                 else:
                     # Otherwise, move to the next list item
                     item_idx += 1
@@ -634,7 +634,6 @@ class ProblemsAnnotator(Annotator):
         self.filtering_blacklist = load_lookup_data(
             self.lookup_data_path + "problem_blacklist.csv", is_package_data=self.use_package_data, no_header=True
         )
-
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         """
