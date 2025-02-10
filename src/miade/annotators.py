@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 
 from medcat.cat import CAT
 
+from .snomed import Transitive
 from .concept import Concept, Category
 from .note import Note
 from .paragraph import Paragraph, ParagraphType
@@ -215,6 +216,7 @@ class Annotator(ABC):
 
         self._set_lookup_data_path()
         self._load_paragraph_regex()
+        self._load_transitive()
 
         # TODO make paragraph processing params configurable
         self.structured_prob_lists = {
@@ -272,6 +274,20 @@ class Annotator(ABC):
             self.lookup_data_path + "regex_para_chunk.csv", is_package_data=self.use_package_data, as_dict=True
         )
         self.paragraph_regex = load_regex_paragraph_mappings(data)
+
+    def _load_transitive(self) -> None:
+        """
+        Loads the SNOMED transitive table.
+
+        This method loads the transitive table from a CSV file and initializes the ancestor and descendant lookups.
+
+        Returns:
+            None
+        """
+        data = load_lookup_data(
+            self.lookup_data_path + "transitive.csv", is_package_data=self.use_package_data, as_dict=False
+        )
+        self.transitive = Transitive(data)
 
     @property
     @abstractmethod
@@ -385,16 +401,16 @@ class Annotator(ABC):
             # Check if the concept is within the global range of any list
             if any(start <= concept.start < end for start, end in global_list_ranges):
                 # Check for partial or full overlap between concept and list item
-                if (
-                    concept.start >= item.start and concept.start < item.end
-                ):  # Concept starts within current list item
+                if concept.start >= item.start and concept.start < item.end:  # Concept starts within current list item
                     filtered_concepts.append(concept)
                     concept_idx += 1  # Move to the next concept
                     item_idx += 1  # Move to the next list item i.e. only choose the first concept per item
                 elif concept.start < item.start:
                     # If the concept starts before the item starts, move to the next concept
                     concept_idx += 1
-                    log.debug(f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item")
+                    log.debug(
+                        f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item"
+                    )
                 else:
                     # Otherwise, move to the next list item
                     item_idx += 1
@@ -412,10 +428,10 @@ class Annotator(ABC):
 
         return filtered_concepts
 
-    @staticmethod
-    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
+    def deduplicate(self, concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         """
         Removes duplicate concepts from the extracted concepts list by strict ID matching.
+        Optionally removes concepts if a more specific concept already exists in the record.
 
         Args:
             concepts (List[Concept]): The list of extracted concepts.
@@ -434,6 +450,9 @@ class Annotator(ABC):
         # Use an OrderedDict to keep track of ids as it preservers original MedCAT order (the order it appears in text)
         filtered_concepts: List[Concept] = []
         existing_concepts = OrderedDict()
+
+        if self.config.remove_if_already_more_specific:
+            record_ids = record_ids | self.transitive.get_ancestorIds(record_ids)
 
         # Filter concepts that are in record or exist in concept list
         for concept in concepts:
