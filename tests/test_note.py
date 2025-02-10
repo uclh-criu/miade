@@ -57,6 +57,20 @@ def test_numbered_list_note(test_problems_annotator, test_numbered_list_note):
         Concept(name="other section", id="correct"),
     ]
 
+def test_numbered_list_with_blank_line(test_problems_annotator, test_note_numbered_list_with_blank_line):
+    test_concepts = [
+        Concept(id="correct", name="first item", start=13, end=26),
+        Concept(id="incorrect", name="additional concept in first item", start=31, end=54),
+        Concept(id="correct", name="second item", start=59, end=82),
+        Concept(id="incorrect", name="additional concept in second item", start=85, end=96),
+        Concept(id="correct", name="third item", start=100, end=115),
+    ]
+    test_problems_annotator.preprocess(test_note_numbered_list_with_blank_line, refine=True)
+    assert test_problems_annotator.filter_concepts_in_numbered_list(test_concepts, test_note_numbered_list_with_blank_line) == [
+        Concept(name="first item", id="correct"),
+        Concept(name="second item", id="correct"),
+        Concept(name="third item", id="correct"),
+    ]
 
 def test_prob_paragraph_note(
     test_problems_annotator, test_clean_and_paragraphing_note, test_paragraph_chunking_prob_concepts

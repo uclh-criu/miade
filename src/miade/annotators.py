@@ -345,8 +345,8 @@ class Annotator(ABC):
         Filters and returns a list of concepts in a numbered list in a note using a two-pointer algorithm.
 
         This filters out concepts that may not be relevant given a note that has structured list headings
-        and numbered lists within that. i.e. only return the first line of a numbered list. e.g.
-            1. CCF -
+        and numbered lists within that. i.e. only return the first concept of a numbered list. e.g.
+            1. CCF - left ventricular failure
             - had echo on 15/6
             - on diuretics
         will only return the concept CCF as it is the first item in a numbered list
@@ -386,14 +386,15 @@ class Annotator(ABC):
             if any(start <= concept.start < end for start, end in global_list_ranges):
                 # Check for partial or full overlap between concept and list item
                 if (
-                    concept.start >= item.start and concept.end <= item.end
-                ):  # or (concept.start < item.end and concept.end > item.start)
-                    # Concept overlaps with or is within the current list item
+                    concept.start >= item.start and concept.start < item.end
+                ):  # Concept starts within current list item
                     filtered_concepts.append(concept)
                     concept_idx += 1  # Move to the next concept
-                elif concept.end <= item.start:
-                    # If the concept ends before the item starts, move to the next concept
+                    item_idx += 1  # Move to the next list item i.e. only choose the first concept per item
+                elif concept.start < item.start:
+                    # If the concept starts before the item starts, move to the next concept
                     concept_idx += 1
+                    log.debug(f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item")
                 else:
                     # Otherwise, move to the next list item
                     item_idx += 1

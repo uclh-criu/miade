@@ -261,6 +261,19 @@ and then here is some extra stuff that doesn't fall within lists, we want to det
 """
     )
 
+@pytest.fixture
+def test_note_numbered_list_with_blank_line():
+    return Note(
+        text="""Problems:
+1. Heart failure and tricuspid regurgitation
+
+2. Ischaemic heart disease -
+Previous MI
+3. Type 2 diabetes
+"""
+    )
+# Numbered list with blank line which should be closed by
+# detection of numbered list spanning multiple paragraphs
 
 @pytest.fixture(scope="function")
 def test_paragraph_chunking_prob_concepts() -> List[Concept]:
