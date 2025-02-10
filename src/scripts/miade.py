@@ -662,7 +662,9 @@ def make(config_filepath: Path, temp_dir: Path = Path("./.temp"), output: Path =
             cdb_temp_dir = temp_dir / Path("cdb")
 
             cdb_builder = CDBBuilder(
-                temp_dir=cdb_temp_dir, custom_data_paths=[config.cdb.data.get_or_download(temp_dir)], config=medcat_config
+                temp_dir=cdb_temp_dir,
+                custom_data_paths=[config.cdb.data.get_or_download(temp_dir)],
+                config=medcat_config,
             )
             cdb_builder.preprocess()
             cdb = cdb_builder.create_cdb()
