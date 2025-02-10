@@ -428,9 +428,7 @@ class Annotator(ABC):
 
         return filtered_concepts
 
-    @staticmethod
-    def deduplicate(concepts: List[Concept], record_concepts: Optional[List[Concept]] = None,
-        remove_if_already_more_specific: bool = False) -> List[Concept]:
+    def deduplicate(self, concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         """
         Removes duplicate concepts from the extracted concepts list by strict ID matching.
         Optionally removes concepts if a more specific concept already exists in the record.
@@ -452,9 +450,9 @@ class Annotator(ABC):
         # Use an OrderedDict to keep track of ids as it preservers original MedCAT order (the order it appears in text)
         filtered_concepts: List[Concept] = []
         existing_concepts = OrderedDict()
-        
-        if remove_if_already_more_specific is True:
-            record_ids = record_ids | transitive.get_ancestorIds(record_ids)
+
+        if self.config.remove_if_already_more_specific:
+            record_ids = record_ids | self.transitive.get_ancestorIds(record_ids)
 
         # Filter concepts that are in record or exist in concept list
         for concept in concepts:
@@ -636,7 +634,7 @@ class ProblemsAnnotator(Annotator):
         self.filtering_blacklist = load_lookup_data(
             self.lookup_data_path + "problem_blacklist.csv", is_package_data=self.use_package_data, no_header=True
         )
-        
+
 
     def _process_meta_annotations(self, concept: Concept) -> Optional[Concept]:
         """

@@ -9,3 +9,4 @@ class AnnotatorConfig(BaseModel):
     refine_paragraphs: Optional[bool] = True
     disable: List[str] = []
     add_numbering: bool = False
+    remove_if_already_more_specific: bool = False
