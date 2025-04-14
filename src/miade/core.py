@@ -11,7 +11,7 @@ from typing import List, Optional, Dict
 from .concept import Concept, Category
 from .note import Note
 from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator  # noqa: F401
-from .dosageextractor import DosageExtractor
+from .dosageextractor import DosageExtractor, DummyDosageExtractor
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
 from .utils.annotatorconfig import AnnotatorConfig
@@ -85,7 +85,8 @@ class NoteProcessor:
         self.model_directory: Path = model_directory
         self.model_config_path: Path = model_config_path
         self.model_factory: ModelFactory = self._load_model_factory(custom_annotators)
-        self.dosage_extractor: DosageExtractor = DosageExtractor()
+        # self.dosage_extractor: DosageExtractor = DosageExtractor()
+        self.dosage_extractor: DosageExtractor = DummyDosageExtractor()
 
     def _load_config(self) -> Dict:
         """
