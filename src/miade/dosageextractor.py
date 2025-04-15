@@ -67,3 +67,17 @@ class DosageExtractor:
 
     def __call__(self, text: str, calculate: bool = True):
         return self.extract(text, calculate)
+
+
+class DummyDosageExtractor(DosageExtractor):
+    """
+    Dummy dosage extractor that returns None, until the Med7 model is rebuilt.
+
+    Consider why Drug / Dosage extraction is even considered a special case anyway.
+    """
+
+    def __init__(self):
+        pass
+
+    def extract(self, text: str, calculate: bool = True) -> Optional[Dosage]:
+        return None

@@ -12,15 +12,14 @@ description = "A set of tools for extracting formattable data from clinical note
 requires-python = ">=3.8"
 dynamic = ["version"]
 dependencies = [
-    "medcat==1.9.3",
-    "spacy>=3.4.2, <3.5.0", # need to be compatible with latest med7 model
-    "numpy>=1.22.0",
-    "pandas>=1.4.2", # support 2.0.0
+    "medcat==1.15.2",
+    # "spacy>=3.4.2, <3.5.0", # need to be compatible with latest med7 model
+    "pandas>=2.0.0", # support 2.0.0
     "gensim>=4.3.0",
     "typer>=0.7.0",
     'typing>=3.7.4',
     "pathlib>=1.0.1",
-    "pydantic>=1.10.0", # compatibility with spacy
+    "pydantic>=2.0.0", # compatibility with spacy
     "negspacy>=1.0.3",
     "requests>=2.32.3",
     "polars>=1.8.2",
