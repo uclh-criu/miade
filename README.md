@@ -6,6 +6,12 @@
 A set of tools for extracting formattable data from clinical notes stored in electronic health record systems. Powered by [MedCAT](https://github.com/CogStack/MedCAT) models.
 
 
+# Main-2025 Branch
+
+Updates for 2025 release of MiADE software stack at further Trusts
+
+Feature / fix / maintanence branches to be PR'd and merged into this branch as a new master branch for upcoming changes
+
 ## Installing
 
 ### Install MiADE
