@@ -14,7 +14,6 @@ dynamic = ["version"]
 dependencies = [
     "medcat==1.15.2",
     # "spacy>=3.4.2, <3.5.0", # need to be compatible with latest med7 model
-    # "numpy>=1.22.0",
     "pandas>=2.0.0", # support 2.0.0
     "gensim>=4.3.0",
     "typer>=0.7.0",
