@@ -68,7 +68,7 @@ def numbers_replace(text) -> str:
     if not re.search(r" ([\d.]+) (times|x) (\d+) 5 ml ", text):
         text = re.sub(
             r" ([\d.]+) (times|x) (\d+) ",
-            lambda m: " {:g} ".format(int(m.group(1)) * int(m.group(3))),
+            lambda m: " {:g} ".format(float(m.group(1)) * float(m.group(3))),
             text,
         )
 
@@ -79,7 +79,7 @@ def numbers_replace(text) -> str:
     ):
         text = re.sub(
             r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
-            lambda m: " {:g} {} ".format(int(m.group(1)) * int(m.group(4)), m.group(2)),
+            lambda m: " {:g} {} ".format(float(m.group(1)) * float(m.group(4)), m.group(2)),
             text,
         )
 
@@ -108,21 +108,21 @@ def numbers_replace(text) -> str:
     # 1 and 2...
     text = re.sub(
         r" ([\d.]+) (and|\\+) ([\d.]+) ",
-        lambda m: " {:g} ".format(int(m.group(1)) + int(m.group(3))),
+        lambda m: " {:g} ".format(float(m.group(1)) + float(m.group(3))),
         text,
     )
     # 3 weeks...
-    text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
+    text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(float(m.group(1)) * 7), text)
     # 3 months ... NB assume 30 days in a month
     text = re.sub(
         r" ([\d.]+) (month) ",
-        lambda m: " {:g} days ".format(int(m.group(1)) * 30),
+        lambda m: " {:g} days ".format(float(m.group(1)) * 30),
         text,
     )
     # day 1 to day 14 ...
     text = re.sub(
         r" days (\d+) (to|-) day (\d+) ",
-        lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
+        lambda m: " for {:g} days ".format(float(m.group(3)) - float(m.group(1))),
         text,
     )
     # X times day to X times day
@@ -130,8 +130,8 @@ def numbers_replace(text) -> str:
     text = re.sub(
         r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
         lambda m: " every {:g} hours +-{:g} ".format(
-            (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,
-            24 / int(m.group(1)) - (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,
+            (24 / float(m.group(4)) + 24 / float(m.group(1))) / 2,
+            24 / float(m.group(1)) - (24 / float(m.group(4)) + 24 / float(m.group(1))) / 2,
         ),
         text,
     )
@@ -139,7 +139,7 @@ def numbers_replace(text) -> str:
     # days 1 to 14 ...
     text = re.sub(
         r" days (\d+) (to|-) (\d+) ",
-        lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
+        lambda m: " for {:g} days ".format(float(m.group(3)) - float(m.group(1))),
         text,
     )
 
@@ -155,7 +155,7 @@ def numbers_replace(text) -> str:
     text = re.sub(
         r" (for )*([\d\\.]+) days every ([\d\\.]+) days ",
         lambda m: " for {} days changeto 0 0 times day for {:g} days ".format(
-            m.group(2), int(m.group(3)) - int(m.group(2))
+            m.group(2), float(m.group(3)) - float(m.group(2))
         ),
         text,
     )
