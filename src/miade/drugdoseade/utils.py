@@ -1,8 +1,6 @@
-import re
 import logging
-
+import re
 from typing import Dict, List
-
 
 log = logging.getLogger(__name__)
 
@@ -57,31 +55,42 @@ def numbers_replace(text) -> str:
 
     """
     # 10 ml etc
-    text = re.sub(
-        r" (\d+) o (ml|microgram|mcg|gram|mg) ",
-        lambda m: " {:g} {} ".format(float(m.group(1)) * 10, m.group(2)),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" (\d+) o (ml|microgram|mcg|gram|mg) ",
+            lambda m: " {:g} {} ".format(float(m.group(1)) * 10, m.group(2)),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: o -> 0 substitution failed.")
+
     # 1/2
     text = re.sub(r" 1 / 2 ", r" 0.5 ", text)
+
     # 1.5 times 2 ... (not used for 5ml doses, because this is treated as a separate dose units)
-    if not re.search(r" ([\d.]+) (times|x) (\d+) 5 ml ", text):
-        text = re.sub(
-            r" ([\d.]+) (times|x) (\d+) ",
-            lambda m: " {:g} ".format(float(m.group(1)) * float(m.group(3))),
-            text,
-        )
+    try:
+        if not re.search(r" ([\d.]+) (times|x) (\d+) 5 ml ", text):
+            text = re.sub(
+                r" ([\d.]+) (times|x) (\d+) ",
+                lambda m: " {:g} ".format(int(m.group(1)) * int(m.group(3))),
+                text,
+            )
+    except:
+        log.error("Number cleaning error: dose multiplication failed. (Excepting 5ml)")
 
     # 1 mg x 2 ... (but not 1 mg x 5 days)
-    if not re.search(
-        r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) (days|month|week) ",
-        text,
-    ):
-        text = re.sub(
-            r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
-            lambda m: " {:g} {} ".format(float(m.group(1)) * float(m.group(4)), m.group(2)),
+    try:
+        if not re.search(
+            r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) (days|month|week) ",
             text,
-        )
+        ):
+            text = re.sub(
+                r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
+                lambda m: " {:g} {} ".format(int(m.group(1)) * int(m.group(4)), m.group(2)),
+                text,
+            )
+    except:
+        log.error("Number cleaning error: dose multiplication failed. (Excepting time periods)")
 
     # 1 drop or 2...
     split_text = re.sub(
@@ -105,59 +114,91 @@ def numbers_replace(text) -> str:
                 r" \1 \2 \4 ",
                 text,
             )
+
     # 1 and 2...
-    text = re.sub(
-        r" ([\d.]+) (and|\\+) ([\d.]+) ",
-        lambda m: " {:g} ".format(float(m.group(1)) + float(m.group(3))),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" ([\d.]+) (and|\\+) ([\d.]+) ",
+            lambda m: " {:g} ".format(int(m.group(1)) + int(m.group(3))),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: addition")
+
     # 3 weeks...
-    text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(float(m.group(1)) * 7), text)
+    try:
+        text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
+    except:
+        log.error("Number cleaning error: week -> day concverion failed")
+
     # 3 months ... NB assume 30 days in a month
-    text = re.sub(
-        r" ([\d.]+) (month) ",
-        lambda m: " {:g} days ".format(float(m.group(1)) * 30),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" ([\d.]+) (month) ",
+            lambda m: " {:g} days ".format(int(m.group(1)) * 30),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: month -> day converion failed.")
+
     # day 1 to day 14 ...
-    text = re.sub(
-        r" days (\d+) (to|-) day (\d+) ",
-        lambda m: " for {:g} days ".format(float(m.group(3)) - float(m.group(1))),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" days (\d+) (to|-) day (\d+) ",
+            lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: day interval -> period conversion (singular) failed.")
+
     # X times day to X times day
     # TODO: frequency ranges
-    text = re.sub(
-        r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
-        lambda m: " every {:g} hours +-{:g} ".format(
-            (24 / float(m.group(4)) + 24 / float(m.group(1))) / 2,
-            24 / float(m.group(1)) - (24 / float(m.group(4)) + 24 / float(m.group(1))) / 2,
-        ),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" (\d+) (times|x) day (to|or|-|upto|star) (\d+) (times|x) day ",
+            lambda m: " every {:g} hours +-{:g} ".format(
+                (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,
+                24 / int(m.group(1)) - (24 / int(m.group(4)) + 24 / int(m.group(1))) / 2,
+            ),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: day frequency -> hour interval conversion failed.")
 
     # days 1 to 14 ...
-    text = re.sub(
-        r" days (\d+) (to|-) (\d+) ",
-        lambda m: " for {:g} days ".format(float(m.group(3)) - float(m.group(1))),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" days (\d+) (to|-) (\d+) ",
+            lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: day interval -> period conversion (plural) failed.")
 
     # 1 or 2 ...
-    text = re.sub(
-        r" ([\d.]+) (to|or|-|star) ([\d.]+) (tab|drops|cap|ml|puff|fiveml) ",
-        r" \1 \4 \2 \3 \4 ",
-        text,
-    )
+    try:
+        text = re.sub(
+            r" ([\d.]+) (to|or|-|star) ([\d.]+) (tab|drops|cap|ml|puff|fiveml) ",
+            r" \1 \4 \2 \3 \4 ",
+            text,
+        )
+    except:
+        log.error("Number cleaning error: to -> backslash conversion failed.")
 
     # X times or X times ...deleted as want to have range
     # x days every x days
-    text = re.sub(
-        r" (for )*([\d\\.]+) days every ([\d\\.]+) days ",
-        lambda m: " for {} days changeto 0 0 times day for {:g} days ".format(
-            m.group(2), float(m.group(3)) - float(m.group(2))
-        ),
-        text,
-    )
+    try:
+        text = re.sub(
+            r" (for )*([\d\\.]+) days every ([\d\\.]+) days ",
+            lambda m: " for {} days changeto 0 0 times day for {:g} days ".format(
+                m.group(2), int(m.group(3)) - int(m.group(2))
+            ),
+            text,
+        )
+    except:
+        log.error("Number cleaning error: multi-day dose at multi-day interval failed.")
 
     return text
+
+
+d
