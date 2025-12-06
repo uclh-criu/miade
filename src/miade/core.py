@@ -1,20 +1,20 @@
+import logging
 import os
 import sys
+from pathlib import Path
+from typing import Dict, List, Optional
+
 import spacy
 import yaml
-import logging
-
 from negspacy.negation import Negex  # noqa: F401
-from pathlib import Path
-from typing import List, Optional, Dict
 
-from .concept import Concept, Category
-from .note import Note
-from .annotators import Annotator, ProblemsAnnotator, MedsAllergiesAnnotator  # noqa: F401
+from .annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator  # noqa: F401
+from .concept import Category, Concept
 from .dosageextractor import DosageExtractor
+from .note import Note
+from .utils.annotatorconfig import AnnotatorConfig
 from .utils.miade_cat import MiADE_CAT
 from .utils.modelfactory import ModelFactory
-from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -298,9 +298,9 @@ class NoteProcessor:
                     "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
                     "route": concept.dosage.route.dict() if concept.dosage.route else None,
                 }
-            if concept.meta is not None:
+            if concept.meta_anns is not None:
                 meta_anns = []
-                for meta in concept.meta:
+                for meta in concept.meta_anns:
                     meta_dict = meta.__dict__
                     meta_dict["value"] = meta.value.name
                     meta_anns.append(meta_dict)

@@ -1,8 +1,8 @@
 from miade.annotators import ProblemsAnnotator
-from miade.concept import Concept, Category
-from miade.paragraph import Paragraph, ParagraphType
+from miade.concept import Category, Concept
 from miade.metaannotations import MetaAnnotations
-from miade.note import Note, NumberedList, ListItem
+from miade.note import ListItem, Note, NumberedList
+from miade.paragraph import Paragraph, ParagraphType
 from miade.utils.metaannotationstypes import (
     Presence,
     Relevance,
@@ -57,6 +57,7 @@ def test_numbered_list_note(test_problems_annotator, test_numbered_list_note):
         Concept(name="other section", id="correct"),
     ]
 
+
 def test_numbered_list_with_blank_line(test_problems_annotator, test_note_numbered_list_with_blank_line):
     test_concepts = [
         Concept(id="correct", name="first item", start=13, end=26),
@@ -66,11 +67,14 @@ def test_numbered_list_with_blank_line(test_problems_annotator, test_note_number
         Concept(id="correct", name="third item", start=100, end=115),
     ]
     test_problems_annotator.preprocess(test_note_numbered_list_with_blank_line, refine=True)
-    assert test_problems_annotator.filter_concepts_in_numbered_list(test_concepts, test_note_numbered_list_with_blank_line) == [
+    assert test_problems_annotator.filter_concepts_in_numbered_list(
+        test_concepts, test_note_numbered_list_with_blank_line
+    ) == [
         Concept(name="first item", id="correct"),
         Concept(name="second item", id="correct"),
         Concept(name="third item", id="correct"),
     ]
+
 
 def test_prob_paragraph_note(
     test_problems_annotator, test_clean_and_paragraphing_note, test_paragraph_chunking_prob_concepts
@@ -81,31 +85,31 @@ def test_prob_paragraph_note(
         test_clean_and_paragraphing_note, test_paragraph_chunking_prob_concepts
     )
     # prose
-    assert concepts[0].meta == [
+    assert concepts[0].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.PRESENT),
     ]
     # pmh
-    assert concepts[1].meta == [
+    assert concepts[1].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
     ]
-    assert concepts[2].meta == [
+    assert concepts[2].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
     ]
     # allergies
-    assert concepts[3].meta == [
+    assert concepts[3].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
     ]
     # probs
-    assert concepts[4].meta == [
+    assert concepts[4].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.PRESENT),
     ]
     # plan
-    assert concepts[5].meta == [
+    assert concepts[5].meta_anns == [
         MetaAnnotations(name="presence", value=Presence.CONFIRMED),
         MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
     ]
@@ -120,27 +124,27 @@ def test_med_paragraph_note(
         test_clean_and_paragraphing_note, test_paragraph_chunking_med_concepts
     )
     # pmh
-    assert concepts[0].meta == [
+    assert concepts[0].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
     ]
     # meds
-    assert concepts[1].meta == [
+    assert concepts[1].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
     ]
     # allergies
-    assert concepts[2].meta == [
+    assert concepts[2].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
     ]
     # probs
-    assert concepts[3].meta == [
+    assert concepts[3].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
     ]
     # plan
-    assert concepts[4].meta == [
+    assert concepts[4].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
     ]
     # imp
-    assert concepts[5].meta == [
+    assert concepts[5].meta_anns == [
         MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
     ]
 

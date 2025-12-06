@@ -202,6 +202,3 @@ def numbers_replace(text) -> str:
         log.error("Number cleaning error: multi-day dose at multi-day interval failed.")
 
     return text
-
-
-d

@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
 
 from .dosage import Dosage
 from .metaannotations import MetaAnnotations
@@ -15,7 +18,7 @@ class Category(Enum):
     ALLERGY_TYPE = 6
 
 
-class Concept(object):
+class Concept(BaseModel):
     """Represents a concept in the system.
 
     Attributes:
@@ -31,32 +34,16 @@ class Concept(object):
         debug_dict (Optional[Dict]): The debug dictionary of the concept (optional).
     """
 
-    def __init__(
-        self,
-        id: str,
-        name: str,
-        category: Optional[Enum] = None,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        dosage: Optional[Dosage] = None,
-        linked_concepts: Optional[List[Concept]] = None,
-        negex: Optional[bool] = None,
-        meta_anns: Optional[List[MetaAnnotations]] = None,
-        debug_dict: Optional[Dict] = None,
-    ):
-        self.name = name
-        self.id = id
-        self.category = category
-        self.start = start
-        self.end = end
-        self.dosage = dosage
-        self.linked_concepts = linked_concepts
-        self.negex = negex
-        self.meta = meta_anns
-        self.debug = debug_dict
-
-        if linked_concepts is None:
-            self.linked_concepts = []
+    id: str
+    name: str
+    category: Optional[Enum] = None
+    start: Optional[int] = None
+    end: Optional[int] = None
+    dosage: Optional[Dosage] = None
+    linked_concepts: Optional[List[Concept]] = None
+    negex: Optional[bool] = None
+    meta_anns: Optional[List[MetaAnnotations]] = None
+    debug_dict: Optional[Dict] = None
 
     @classmethod
     def from_entity(cls, entity: Dict) -> Concept:
@@ -88,7 +75,7 @@ class Concept(object):
     def __str__(self):
         return (
             f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta}}} "
+            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta_anns}}} "
         )
 
     def __hash__(self):

@@ -1,8 +1,8 @@
-import re
 import logging
-
+import re
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel
 from spacy.tokens import Doc
 
@@ -265,24 +265,16 @@ def parse_route(text: str, dose: Optional[Dose]) -> Optional[Route]:
     return route_dosage
 
 
-class Dosage(object):
+class Dosage(BaseModel):
     """
     Container for drug dosage information
     """
 
-    def __init__(
-        self,
-        dose: Optional[Dose],
-        duration: Optional[Duration],
-        frequency: Optional[Frequency],
-        route: Optional[Route],
-        text: Optional[str] = None,
-    ):
-        self.text = text
-        self.dose = dose
-        self.duration = duration
-        self.frequency = frequency
-        self.route = route
+    dose: Optional[Dose]
+    duration: Optional[Duration]
+    frequency: Optional[Frequency]
+    route: Optional[Route]
+    text: Optional[str] = None
 
     @classmethod
     def from_doc(cls, doc: Doc, calculate: bool = True):

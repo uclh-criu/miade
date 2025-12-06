@@ -1,34 +1,31 @@
 import io
-import os
 import logging
+import os
 import pkgutil
 import re
-from enum import Enum
-
-import pandas as pd
-
-from typing import List, Optional, Tuple, Dict
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from copy import deepcopy
+from enum import Enum
 from math import inf
-from abc import ABC, abstractmethod
+from typing import Dict, List, Optional, Tuple
 
-
+import pandas as pd
 from medcat.cat import CAT
 
-from .snomed import Transitive
-from .concept import Concept, Category
+from .concept import Category, Concept
+from .dosageextractor import DosageExtractor
 from .note import Note
 from .paragraph import Paragraph, ParagraphType
-from .dosageextractor import DosageExtractor
+from .snomed import Transitive
+from .utils.annotatorconfig import AnnotatorConfig
 from .utils.metaannotationstypes import (
     Presence,
-    Relevance,
     ReactionPos,
-    SubstanceCategory,
+    Relevance,
     Severity,
+    SubstanceCategory,
 )
-from .utils.annotatorconfig import AnnotatorConfig
 
 log = logging.getLogger(__name__)
 
@@ -649,7 +646,7 @@ class ProblemsAnnotator(Annotator):
             ValueError: If the concept has an invalid negex value.
         """
         # Add, convert, or ignore concepts
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
 
         convert = False
         tag = ""
@@ -740,7 +737,7 @@ class ProblemsAnnotator(Annotator):
         # if paragraph is structured problems section, add to prob list and convert to corresponding relevance
         if paragraph.type in self.structured_prob_lists:
             prob_concepts_in_structured_sections.append(concept)
-            for meta in concept.meta:
+            for meta in concept.meta_anns:
                 if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
                     new_relevance = self.structured_prob_lists[paragraph.type]
                     log.debug(
@@ -751,7 +748,7 @@ class ProblemsAnnotator(Annotator):
                     meta.value = new_relevance
         # if paragraph is meds or irrelevant section, convert problems to irrelevant
         elif paragraph.type in self.structured_med_lists or paragraph.type in self.irrelevant_paragraphs:
-            for meta in concept.meta:
+            for meta in concept.meta_anns:
                 if meta.name == "relevance" and meta.value != Relevance.IRRELEVANT:
                     log.debug(
                         f"Converted {meta.value} to "
@@ -778,7 +775,7 @@ class ProblemsAnnotator(Annotator):
                 (concept, paragraph)
                 for paragraph in note.paragraphs
                 for concept in concepts
-                if concept.start >= paragraph.start and concept.end <= paragraph.end and concept.meta
+                if concept.start >= paragraph.start and concept.end <= paragraph.end and concept.meta_anns
             ]
             # Process each concept and paragraph pair
             for concept, paragraph in concepts_in_paragraphs:
@@ -1024,7 +1021,7 @@ class MedsAllergiesAnnotator(Annotator):
             The validated and converted concept.
 
         """
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
 
         # assign categories
         if SubstanceCategory.ADVERSE_REACTION in meta_ann_values:
@@ -1074,7 +1071,9 @@ class MedsAllergiesAnnotator(Annotator):
             nearest_allergy_concept = None
             min_distance = inf
             meta_ann_values = (
-                [meta_ann.value for meta_ann in reaction_concept.meta] if reaction_concept.meta is not None else []
+                [meta_ann.value for meta_ann in reaction_concept.meta_anns]
+                if reaction_concept.meta_anns is not None
+                else []
             )
 
             for allergy_concept in allergy_concepts:
@@ -1127,7 +1126,7 @@ class MedsAllergiesAnnotator(Annotator):
         Returns:
             True if the conversion is successful, False otherwise.
         """
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta] if concept.meta is not None else []
+        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
         if Severity.MILD in meta_ann_values:
             concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
         elif Severity.MODERATE in meta_ann_values:
@@ -1158,7 +1157,7 @@ class MedsAllergiesAnnotator(Annotator):
             True if the conversion and linking were successful, False otherwise.
         """
         # get the ALLERGYTYPE meta-annotation
-        allergy_type = [meta_ann for meta_ann in concept.meta if meta_ann.name == "allergy_type"]
+        allergy_type = [meta_ann for meta_ann in concept.meta_anns if meta_ann.name == "allergy_type"]
         if len(allergy_type) != 1:
             log.warning(
                 f"Unable to map allergy type code: allergy_type meta-annotation "
@@ -1203,7 +1202,7 @@ class MedsAllergiesAnnotator(Annotator):
         """
         # if paragraph is structured meds to convert to corresponding relevance
         if paragraph.type in self.structured_med_lists:
-            for meta in concept.meta:
+            for meta in concept.meta_anns:
                 if meta.name == "substance_category" and meta.value in [
                     SubstanceCategory.TAKING,
                     SubstanceCategory.IRRELEVANT,
@@ -1218,7 +1217,7 @@ class MedsAllergiesAnnotator(Annotator):
                         meta.value = new_relevance
         # if paragraph is probs or irrelevant section, convert substance to irrelevant
         elif paragraph.type in self.structured_prob_lists or paragraph.type in self.irrelevant_paragraphs:
-            for meta in concept.meta:
+            for meta in concept.meta_anns:
                 if meta.name == "substance_category" and meta.value != SubstanceCategory.IRRELEVANT:
                     log.debug(
                         f"Converted {meta.value} to "
@@ -1242,7 +1241,7 @@ class MedsAllergiesAnnotator(Annotator):
             for concept in concepts:
                 if concept.start >= paragraph.start and concept.end <= paragraph.end:
                     # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
-                    if concept.meta:
+                    if concept.meta_anns:
                         self._process_meta_ann_by_paragraph(concept, paragraph)
 
         return concepts

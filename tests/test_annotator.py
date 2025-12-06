@@ -1,6 +1,6 @@
-from miade.core import Concept, Category
 from miade.annotators import MedsAllergiesAnnotator, ProblemsAnnotator, calculate_word_distance
-from miade.dosage import Dose, Frequency, Dosage, Route
+from miade.core import Category, Concept
+from miade.dosage import Dosage, Dose, Frequency, Route
 from miade.dosageextractor import DosageExtractor
 from miade.paragraph import ListItem, NumberedList
 
@@ -128,7 +128,7 @@ def test_meta_annotations(test_problems_annotator, test_meta_annotations_concept
     ]
     # test just using negex for negation
     test_meta_annotations_concepts[0].negex = True
-    test_meta_annotations_concepts[0].meta = None
+    test_meta_annotations_concepts[0].meta_anns = None
     test_meta_annotations_concepts[1].negex = False
     test_meta_annotations_concepts[2].negex = True
     test_meta_annotations_concepts[3].negex = True
