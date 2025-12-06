@@ -69,9 +69,9 @@ def numbers_replace(text) -> str:
 
     # 1.5 times 2 ... (not used for 5ml doses, because this is treated as a separate dose units)
     try:
-        if not re.search(r" ([\d.]+) (times|x) (\d+) 5 ml ", text):
+        if not re.search(r" (\.?\d+\.?\d*) (times|x) (\d+) 5 ml ", text):
             text = re.sub(
-                r" ([\d.]+) (times|x) (\d+) ",
+                r" (\.?\d+\.?\d*) (times|x) (\d+) ",
                 lambda m: " {:g} ".format(int(m.group(1)) * int(m.group(3))),
                 text,
             )
@@ -81,11 +81,11 @@ def numbers_replace(text) -> str:
     # 1 mg x 2 ... (but not 1 mg x 5 days)
     try:
         if not re.search(
-            r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) (days|month|week) ",
+            r" (\.?\d+\.?\d*) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) (days|month|week) ",
             text,
         ):
             text = re.sub(
-                r" ([\d.]+) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
+                r" (\.?\d+\.?\d*) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
                 lambda m: " {:g} {} ".format(int(m.group(1)) * int(m.group(4)), m.group(2)),
                 text,
             )
@@ -95,7 +95,7 @@ def numbers_replace(text) -> str:
     # 1 drop or 2...
     try:
         split_text = re.sub(
-            r"^[\w\s]*([\d.]+) (tab|drops|cap|ml|puff|fiveml) (to|-|star) ([\d.]+)[\w\s]*$",
+            r"^[\w\s]*(\.?\d+\.?\d*) (tab|drops|cap|ml|puff|fiveml) (to|-|star) (\.?\d+\.?\d*)[\w\s]*$",
             r"MATCHED \1 \4",
             text,
         ).split(" ")
@@ -104,14 +104,14 @@ def numbers_replace(text) -> str:
             # the text may not actually represent a dose range
             if float(split_text[2]) > float(split_text[1]):
                 text = re.sub(
-                    r" ([\d.]+) (tab|drops|cap|ml|puff|fiveml) (to|-|star) ([\d.]+) ",
+                    r" (\.?\d+\.?\d*) (tab|drops|cap|ml|puff|fiveml) (to|-|star) (\.?\d+\.?\d*) ",
                     r" \1 \2 or \4 ",
                     text,
                 )
             else:
                 # not a choice, two pieces of information (e.g. '25mg - 2 daily')
                 text = re.sub(
-                    r" ([\d.]+) (tab|drops|cap|ml|puff|fiveml) (to|-|star) ([\d.]+) ",
+                    r" (\.?\d+\.?\d*) (tab|drops|cap|ml|puff|fiveml) (to|-|star) (\.?\d+\.?\d*) ",
                     r" \1 \2 \4 ",
                     text,
                 )
@@ -121,7 +121,7 @@ def numbers_replace(text) -> str:
     # 1 and 2...
     try:
         text = re.sub(
-            r" ([\d.]+) (and|\\+) ([\d.]+) ",
+            r" (\.?\d+\.?\d*) (and|\\+) (\.?\d+\.?\d*) ",
             lambda m: " {:g} ".format(int(m.group(1)) + int(m.group(3))),
             text,
         )
@@ -130,14 +130,14 @@ def numbers_replace(text) -> str:
 
     # 3 weeks...
     try:
-        text = re.sub(r" ([\d.]+) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
+        text = re.sub(r" (\.?\d+\.?\d*) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
     except:
         log.error("Number cleaning error: week -> day concverion failed")
 
     # 3 months ... NB assume 30 days in a month
     try:
         text = re.sub(
-            r" ([\d.]+) (month) ",
+            r" (\.?\d+\.?\d*) (month) ",
             lambda m: " {:g} days ".format(int(m.group(1)) * 30),
             text,
         )
@@ -181,7 +181,7 @@ def numbers_replace(text) -> str:
     # 1 or 2 ...
     try:
         text = re.sub(
-            r" ([\d.]+) (to|or|-|star) ([\d.]+) (tab|drops|cap|ml|puff|fiveml) ",
+            r" (\.?\d+\.?\d*) (to|or|-|star) (\.?\d+\.?\d*) (tab|drops|cap|ml|puff|fiveml) ",
             r" \1 \4 \2 \3 \4 ",
             text,
         )
