@@ -1,54 +1,57 @@
 from __future__ import annotations
 
-from enum import Enum
+from datetime import datetime
+from enum import StrEnum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
+from miade.utils.metaannotationstypes import (
+    AllergyType,
+    Laterality,
+    Presence,
+    ReactionPos,
+    Relevance,
+    Severity,
+    SubstanceCategory,
+)
+
 from .dosage import Dosage
-from .metaannotations import MetaAnnotations
 
 
-class Category(Enum):
-    PROBLEM = 1
-    MEDICATION = 2
-    ALLERGY = 3
-    REACTION = 4
-    SEVERITY = 5
-    ALLERGY_TYPE = 6
+class Category(StrEnum):
+    PROBLEM = "PROBLEM"
+    MEDICATION = "MEDICATION"
+    ALLERGY = "ALLERGY"
+    REACTION = "REACTION"
+    SEVERITY = "SEVERITY"
+    ALLERGY_TYPE = "ALLERGY_TYPE"
 
 
 class Concept(BaseModel):
-    """Represents a concept in the system.
-
-    Attributes:
-        id (str): The unique identifier of the concept.
-        name (str): The name of the concept.
-        category (Optional[Enum]): The category of the concept (optional).
-        start (Optional[int]): The start position of the concept (optional).
-        end (Optional[int]): The end position of the concept (optional).
-        dosage (Optional[Dosage]): The dosage of the concept (optional).
-        linked_concepts (Optional[List[Concept]]): The linked concepts of the concept (optional).
-        negex (Optional[bool]): The negex value of the concept (optional).
-        meta_anns (Optional[List[MetaAnnotations]]): The meta annotations of the concept (optional).
-        debug_dict (Optional[Dict]): The debug dictionary of the concept (optional).
-    """
-
-    id: str
+    id: Optional[str] = None
     name: str
-    category: Optional[Enum] = None
+    category: Optional[Category] = None
     start: Optional[int] = None
     end: Optional[int] = None
     dosage: Optional[Dosage] = None
-    linked_concepts: Optional[List[Concept]] = None
-    negex: Optional[bool] = None
-    meta_anns: Optional[List[MetaAnnotations]] = None
+    bodysite: List[Concept] = []
+    presence: Optional[Presence] = None
+    relevance: Optional[Relevance] = None
+    substance_category: Optional[SubstanceCategory] = None
+    allergy_type: Optional[AllergyType] = None
+    laterality: Optional[Laterality] = None
+    reaction_position: Optional[ReactionPos] = None
+    severity: Optional[Severity] = None
+    onset: Optional[datetime] = None
+    note: Optional[str] = None
+    linked_concepts: List[Concept] = []
     debug_dict: Optional[Dict] = None
 
     @classmethod
     def from_entity(cls, entity: Dict) -> Concept:
         """
-        Converts an entity dictionary into a Concept object.
+        Converts a medcat entity dictionary into a Concept object.
 
         Args:
             entity (Dict): The entity dictionary containing the necessary information.
@@ -56,11 +59,8 @@ class Concept(BaseModel):
         Returns:
             The Concept object created from the entity dictionary.
         """
-        meta_anns = None
-        if entity["meta_anns"]:
-            meta_anns = [MetaAnnotations(**value) for value in entity["meta_anns"].values()]
 
-        return Concept(
+        concept = Concept(
             id=entity["cui"],
             name=entity[
                 "source_value"
@@ -68,15 +68,37 @@ class Concept(BaseModel):
             category=None,
             start=entity["start"],
             end=entity["end"],
-            negex=entity["negex"] if "negex" in entity else None,
-            meta_anns=meta_anns,
         )
 
-    def __str__(self):
-        return (
-            f"{{name: {self.name}, id: {self.id}, category: {self.category}, start: {self.start}, end: {self.end},"
-            f" dosage: {self.dosage}, linked_concepts: {self.linked_concepts}, negex: {self.negex}, meta: {self.meta_anns}}} "
-        )
+        if meta_annotations := entity.get("meta_anns"):
+            if presence := meta_annotations.get("presence"):
+                if presence.get("value") in [member.value for member in Presence]:
+                    concept.presence = Presence(presence["value"])
+
+            if relevance := meta_annotations.get("relevance"):
+                if relevance.get("value") in [member.value for member in Relevance]:
+                    concept.relevance = Relevance(relevance["value"])
+
+            if substance_category := meta_annotations.get("substance_category"):
+                if substance_category.get("value") in [member.value for member in SubstanceCategory]:
+                    concept.substance_category = SubstanceCategory(substance_category["value"])
+
+            if allergy_type := meta_annotations.get("allergy_type"):
+                if allergy_type.get("value") in [member.value for member in AllergyType]:
+                    concept.allergy_type = AllergyType(allergy_type["value"])
+
+            if reaction_position := meta_annotations.get("reaction_pos"):
+                if reaction_position.get("value") in [member.value for member in ReactionPos]:
+                    concept.reaction_position = ReactionPos(reaction_position["value"])
+
+            if severity := meta_annotations.get("severity"):
+                if severity.get("vaule") in [member.value for member in Severity]:
+                    concept.severity = Severity(severity["value"])
+
+        if entity.get("negex") is True:
+            concept.presence = Presence.NEGATED
+
+        return concept
 
     def __hash__(self):
         return hash((self.id, self.name, self.category))

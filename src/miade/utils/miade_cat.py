@@ -1,19 +1,19 @@
 import json
 import logging
-import pandas as pd
 from copy import deepcopy
+from typing import Dict, List, Optional, Set, Tuple
 
-from typing import List, Tuple, Optional, Dict, Set
-
-from tqdm.autonotebook import trange
-from spacy.tokens import Span, Doc
-
+import pandas as pd
 from medcat.cat import CAT
-from medcat.utils.matutils import intersect_nonempty_set
-from medcat.utils.data_utils import make_mc_train_test, get_false_positives
 from medcat.utils.checkpoint import Checkpoint
-from medcat.utils.helpers import tkns_from_doc
+from medcat.utils.data_utils import get_false_positives, make_mc_train_test
 from medcat.utils.filters import get_project_filters
+from medcat.utils.helpers import tkns_from_doc
+from medcat.utils.matutils import intersect_nonempty_set
+from spacy.tokens import Doc, Span
+from tqdm.autonotebook import trange
+
+from miade.concept import Concept
 
 logger = logging.getLogger("cat")
 
@@ -28,7 +28,7 @@ class MiADE_CAT(CAT):
         addl_info: List[str],
         out_with_text: bool = False,
     ) -> Dict:
-        out: Dict = {"entities": {}, "tokens": []}
+        out: Dict = {"concepts": [], "entities": {}, "tokens": [], "doc": doc}
         cnf_annotation_output = getattr(self.config, "annotation_output", {})
         if doc is not None:
             out_ent: Dict = {}
@@ -60,6 +60,7 @@ class MiADE_CAT(CAT):
             doc_extended_info = cnf_annotation_output.get("doc_extended_info", False)
 
             for _, ent in enumerate(_ents):
+                # TODO: We can get rid of the entities for production, but are leaving them temporarily for development.
                 cui = str(ent._.cui)
                 if not only_cui:
                     out_ent["pretty_name"] = self.cdb.get_name(cui)
@@ -94,6 +95,7 @@ class MiADE_CAT(CAT):
                         out_ent["negex"] = ent._.negex
 
                     out["entities"][out_ent["id"]] = dict(out_ent)
+                    out["concepts"].append(Concept.from_entity(out_ent))
                 else:
                     out["entities"][ent._.id] = cui
 

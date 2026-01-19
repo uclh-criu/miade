@@ -103,7 +103,10 @@ def parse_dose(text: str, quantities: List[str], units: List[str], results: Dict
             try:
                 quantity_dosage.value = float(quantities[0])
             except ValueError:
-                quantity_dosage.value = float(re.sub(r"[^\d.]+", "", quantities[0]))
+                try:
+                    quantity_dosage.value = float(re.sub(r"[^\d.]+", "", quantities[0]))
+                except ValueError:
+                    return None
         quantity_dosage.unit = units[0]
     elif len(quantities) == 2 and len(units) == 2:
         quantities.sort()

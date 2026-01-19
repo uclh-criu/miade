@@ -109,7 +109,7 @@ def test_deduplicate(
     assert test_problems_annotator.deduplicate(concepts=[], record_concepts=test_record_concepts) == []
 
 
-def test_meta_annotations(test_problems_annotator, test_meta_annotations_concepts):
+def postprocess(test_problems_annotator, test_meta_annotations_concepts):
     assert test_problems_annotator.postprocess(test_meta_annotations_concepts) == [
         Concept(id="274826007", name="Nystagmus (negated)", category=Category.PROBLEM),  # negex true, meta ignored
         Concept(id="302064001", name="Lymphangitis (negated)", category=Category.PROBLEM),  # negex true, meta ignored
@@ -152,8 +152,6 @@ def test_problems_filtering_list(test_problems_annotator, test_filtering_list_co
 
 def test_allergy_annotator(test_meds_algy_annotator, test_substance_concepts_with_meta_anns, test_meds_allergy_note):
     concepts = test_meds_algy_annotator.postprocess(test_substance_concepts_with_meta_anns, test_meds_allergy_note)
-
-    # print([concept.__str__() for concept in concepts])
     assert concepts == [
         Concept(id="102263004", name="Eggs", category=Category.ALLERGY),
         Concept(id="767270007", name="Penicillin", category=Category.ALLERGY),

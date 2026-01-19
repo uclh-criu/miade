@@ -298,13 +298,6 @@ class NoteProcessor:
                     "frequency": concept.dosage.frequency.dict() if concept.dosage.frequency else None,
                     "route": concept.dosage.route.dict() if concept.dosage.route else None,
                 }
-            if concept.meta_anns is not None:
-                meta_anns = []
-                for meta in concept.meta_anns:
-                    meta_dict = meta.__dict__
-                    meta_dict["value"] = meta.value.name
-                    meta_anns.append(meta_dict)
-                concept_dict["meta"] = meta_anns
             if concept.category is not None:
                 concept_dict["category"] = concept.category.name
             concept_list.append(concept_dict)

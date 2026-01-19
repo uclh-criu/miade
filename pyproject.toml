@@ -9,7 +9,7 @@ authors = [
     { name = "James Brandreth", email = "j.brandreth@ucl.ac.uk" },
 ]
 description = "A set of tools for extracting formattable data from clinical notes stored in electronic health record systems."
-requires-python = ">=3.8"
+requires-python = "~=3.11.10"
 dynamic = ["version"]
 dependencies = [
     "medcat==1.9.3",

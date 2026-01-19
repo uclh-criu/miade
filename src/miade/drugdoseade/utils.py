@@ -61,7 +61,7 @@ def numbers_replace(text) -> str:
             lambda m: " {:g} {} ".format(float(m.group(1)) * 10, m.group(2)),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: o -> 0 substitution failed.")
 
     # 1/2
@@ -72,10 +72,10 @@ def numbers_replace(text) -> str:
         if not re.search(r" (\.?\d+\.?\d*) (times|x) (\d+) 5 ml ", text):
             text = re.sub(
                 r" (\.?\d+\.?\d*) (times|x) (\d+) ",
-                lambda m: " {:g} ".format(int(m.group(1)) * int(m.group(3))),
+                lambda m: " {:g} ".format(float(m.group(1)) * float(m.group(3))),
                 text,
             )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: dose multiplication failed. (Excepting 5ml)")
 
     # 1 mg x 2 ... (but not 1 mg x 5 days)
@@ -86,10 +86,10 @@ def numbers_replace(text) -> str:
         ):
             text = re.sub(
                 r" (\.?\d+\.?\d*) (ml|mg|gram|mcg|microgram|unit) (times|x) (\d+) ",
-                lambda m: " {:g} {} ".format(int(m.group(1)) * int(m.group(4)), m.group(2)),
+                lambda m: " {:g} {} ".format(float(m.group(1)) * float(m.group(4)), m.group(2)),
                 text,
             )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: dose multiplication failed. (Excepting time periods)")
 
     # 1 drop or 2...
@@ -115,33 +115,33 @@ def numbers_replace(text) -> str:
                     r" \1 \2 \4 ",
                     text,
                 )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: drops")
 
     # 1 and 2...
     try:
         text = re.sub(
             r" (\.?\d+\.?\d*) (and|\\+) (\.?\d+\.?\d*) ",
-            lambda m: " {:g} ".format(int(m.group(1)) + int(m.group(3))),
+            lambda m: " {:g} ".format(float(m.group(1)) + float(m.group(3))),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: addition")
 
     # 3 weeks...
     try:
-        text = re.sub(r" (\.?\d+\.?\d*) (week) ", lambda m: " {:g} days ".format(int(m.group(1)) * 7), text)
-    except:
+        text = re.sub(r" (\.?\d+\.?\d*) (week) ", lambda m: " {:g} days ".format(float(m.group(1)) * 7), text)
+    except Exception as _:
         log.error("Number cleaning error: week -> day concverion failed")
 
     # 3 months ... NB assume 30 days in a month
     try:
         text = re.sub(
             r" (\.?\d+\.?\d*) (month) ",
-            lambda m: " {:g} days ".format(int(m.group(1)) * 30),
+            lambda m: " {:g} days ".format(float(m.group(1)) * 30),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: month -> day converion failed.")
 
     # day 1 to day 14 ...
@@ -151,7 +151,7 @@ def numbers_replace(text) -> str:
             lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: day interval -> period conversion (singular) failed.")
 
     # X times day to X times day
@@ -165,7 +165,7 @@ def numbers_replace(text) -> str:
             ),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: day frequency -> hour interval conversion failed.")
 
     # days 1 to 14 ...
@@ -175,7 +175,7 @@ def numbers_replace(text) -> str:
             lambda m: " for {:g} days ".format(int(m.group(3)) - int(m.group(1))),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: day interval -> period conversion (plural) failed.")
 
     # 1 or 2 ...
@@ -185,7 +185,7 @@ def numbers_replace(text) -> str:
             r" \1 \4 \2 \3 \4 ",
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: to -> backslash conversion failed.")
 
     # X times or X times ...deleted as want to have range
@@ -198,7 +198,7 @@ def numbers_replace(text) -> str:
             ),
             text,
         )
-    except:
+    except Exception as _:
         log.error("Number cleaning error: multi-day dose at multi-day interval failed.")
 
     return text

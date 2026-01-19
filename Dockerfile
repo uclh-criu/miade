@@ -1,4 +1,4 @@
-FROM python:3.8.10
+FROM python:3.11.10
 
 ADD ./.git/ /home/.git
 ADD ./pyproject.toml /home/pyproject.toml

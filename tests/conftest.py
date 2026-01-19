@@ -1,23 +1,22 @@
-import pytest
-import pandas as pd
-
-from typing import List, Dict, Union
 from pathlib import Path
-from miade.annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator
+from typing import Dict, List, Union
 
+import pandas as pd
+import pytest
+
+from miade.annotators import Annotator, MedsAllergiesAnnotator, ProblemsAnnotator
+from miade.concept import Category, Concept
 from miade.dosage import Dosage, Dose, Route
 from miade.note import Note
-from miade.concept import Concept, Category
-from miade.metaannotations import MetaAnnotations
 from miade.utils.annotatorconfig import AnnotatorConfig
 from miade.utils.metaannotationstypes import (
-    Presence,
-    Relevance,
-    Laterality,
-    ReactionPos,
-    SubstanceCategory,
     AllergyType,
+    Laterality,
+    Presence,
+    ReactionPos,
+    Relevance,
     Severity,
+    SubstanceCategory,
 )
 from miade.utils.miade_cat import MiADE_CAT
 
@@ -190,7 +189,7 @@ def test_duplicated_note() -> Note:
 def test_clean_and_paragraphing_note() -> Note:
     return Note(
         """
-    This is an example of text with various types of spaces: 
+    This is an example of text with various types of spaces:
 \tTabs,    \u00a0Non-breaking spaces, \u2003Em spaces, \u2002En spaces.
 Some lines may contain only punctuation and spaces, like this:
     !?  ...  - -- ???
@@ -261,6 +260,7 @@ and then here is some extra stuff that doesn't fall within lists, we want to det
 """
     )
 
+
 @pytest.fixture
 def test_note_numbered_list_with_blank_line():
     return Note(
@@ -272,8 +272,11 @@ Previous MI
 3. Type 2 diabetes
 """
     )
+
+
 # Numbered list with blank line which should be closed by
 # detection of numbered list spanning multiple paragraphs
+
 
 @pytest.fixture(scope="function")
 def test_paragraph_chunking_prob_concepts() -> List[Concept]:
@@ -283,77 +286,59 @@ def test_paragraph_chunking_prob_concepts() -> List[Concept]:
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=304,
-            end=314,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            start=303,
+            end=313,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         # pmh
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=320,
-            end=330,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-            ],
+            start=319,
+            end=329,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.IRRELEVANT,
         ),
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=396,
-            end=406,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            start=395,
+            end=405,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         # allergies
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=418,
-            end=428,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            start=417,
+            end=427,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         # probs
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=456,
-            end=466,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-            ],
+            start=455,
+            end=465,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.IRRELEVANT,
         ),
         # plan
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
-            start=484,
-            end=494,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            start=483,
+            end=493,
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
     ]
 
@@ -365,72 +350,54 @@ def test_paragraph_chunking_med_concepts() -> List[Concept]:
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=331,
-            end=341,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
+            start=330,
+            end=340,
+            substance_category=SubstanceCategory.TAKING,
         ),
         # meds
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=356,
-            end=366,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-            ],
+            start=355,
+            end=365,
+            substance_category=SubstanceCategory.IRRELEVANT,
         ),
         # allergies
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=435,
-            end=445,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-            ],
+            start=434,
+            end=444,
+            substance_category=SubstanceCategory.TAKING,
         ),
         # probs
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=467,
-            end=477,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
-            ],
+            start=466,
+            end=476,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
         ),
         # plan
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=495,
-            end=505,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
-            ],
+            start=494,
+            end=504,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
         ),
         # imp
         Concept(
             id="764146007",
             name="Penicillin",
             category=Category.MEDICATION,
-            negex=False,
-            start=511,
-            end=521,
-            meta_anns=[
-                MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
-            ],
+            start=510,
+            end=520,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
         ),
     ]
 
@@ -463,61 +430,46 @@ def test_problem_list_limit_concepts() -> List[Concept]:
             id="0",
             name="Fear",
             category=Category.PROBLEM,
-            negex=False,
             start=58,
             end=62,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="1",
             name="Fever",
             category=Category.PROBLEM,
-            negex=False,
             start=138,
             end=143,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="2",
             name="Diabetes",
             category=Category.PROBLEM,
-            negex=False,
             start=144,
             end=152,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="3",
             name="Penicillin",
             category=Category.PROBLEM,
-            negex=False,
             start=165,
             end=175,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="4",
             name="Arthritis",
             category=Category.PROBLEM,
-            negex=False,
             start=189,
             end=196,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.IRRELEVANT,
         ),
     ]
 
@@ -642,100 +594,73 @@ def test_meta_annotations_concepts() -> List[Concept]:
             id="563001",
             name="Nystagmus",
             category=Category.PROBLEM,
-            negex=True,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.LEFT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.LEFT,
         ),
         Concept(
             id="1415005",
             name="Lymphangitis",
             category=Category.PROBLEM,
-            negex=True,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.NEGATED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.NEGATED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="123",
             name="negated concept",
             category=Category.PROBLEM,
-            negex=True,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.NEGATED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.NEGATED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="3723001",
             name="Arthritis",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.SUSPECTED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="4556007",
             name="Gastritis",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.SUSPECTED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="0000",
             name="suspected concept",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.SUSPECTED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.SUSPECTED,
+            relevance=Relevance.PRESENT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="1847009",
             name="Endophthalmitis",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.HISTORIC,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="1912002",
             name="Fall",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.IRRELEVANT,
+            laterality=Laterality.NO_LATERALITY,
         ),
         Concept(
             id="0000",
             name="historic concept",
             category=Category.PROBLEM,
-            negex=False,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
-                MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.HISTORIC,
+            laterality=Laterality.NO_LATERALITY,
         ),
     ]
 
@@ -766,48 +691,40 @@ def test_substance_concepts_with_meta_anns() -> List[Concept]:
             name="Eggs",
             start=14,
             end=17,
-            meta_anns=[
-                MetaAnnotations(name="reaction_pos", value=ReactionPos.NOT_REACTION),
-                MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
-                MetaAnnotations(name="allergy_type", value=AllergyType.INTOLERANCE),
-                MetaAnnotations(name="severity", value=Severity.MILD),
-            ],
+            reaction_position=ReactionPos.NOT_REACTION,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
+            allergy_type=AllergyType.INTOLERANCE,
+            severity=Severity.MILD,
         ),
         Concept(
             id="159002",
             name="Penicillin",
             start=64,
             end=73,
-            meta_anns=[
-                MetaAnnotations(name="reaction_pos", value=ReactionPos.NOT_REACTION),
-                MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
-                MetaAnnotations(name="allergy_type", value=AllergyType.ALLERGY),
-                MetaAnnotations(name="severity", value=Severity.MODERATE),
-            ],
+            reaction_position=ReactionPos.NOT_REACTION,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
+            allergy_type=AllergyType.ALLERGY,
+            severity=Severity.MODERATE,
         ),
         Concept(
             id="140004",
             name="Rash",
             start=24,
             end=27,
-            meta_anns=[
-                MetaAnnotations(name="reaction_pos", value=ReactionPos.AFTER_SUBSTANCE),
-                MetaAnnotations(name="category", value=SubstanceCategory.NOT_SUBSTANCE),
-                MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
-                MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
-            ],
+            reaction_position=ReactionPos.AFTER_SUBSTANCE,
+            substance_category=SubstanceCategory.NOT_SUBSTANCE,
+            allergy_type=AllergyType.UNSPECIFIED,
+            severity=Severity.UNSPECIFIED,
         ),
         Concept(
             id="832007",
             name="Nausea",
             start=50,
             end=55,
-            meta_anns=[
-                MetaAnnotations(name="reaction_pos", value=ReactionPos.BEFORE_SUBSTANCE),
-                MetaAnnotations(name="category", value=SubstanceCategory.ADVERSE_REACTION),
-                MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
-                MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
-            ],
+            reaction_position=ReactionPos.BEFORE_SUBSTANCE,
+            substance_category=SubstanceCategory.ADVERSE_REACTION,
+            allergy_type=AllergyType.UNSPECIFIED,
+            severity=Severity.UNSPECIFIED,
         ),
         Concept(
             id="7336002",
@@ -815,12 +732,10 @@ def test_substance_concepts_with_meta_anns() -> List[Concept]:
             start=83,
             end=93,
             dosage=Dosage(dose=Dose(value=50, unit="mg"), duration=None, frequency=None, route=None),
-            meta_anns=[
-                MetaAnnotations(name="reaction_pos", value=ReactionPos.NOT_REACTION),
-                MetaAnnotations(name="category", value=SubstanceCategory.TAKING),
-                MetaAnnotations(name="allergy_type", value=AllergyType.UNSPECIFIED),
-                MetaAnnotations(name="severity", value=Severity.UNSPECIFIED),
-            ],
+            reaction_position=ReactionPos.NOT_REACTION,
+            substance_category=SubstanceCategory.TAKING,
+            allergy_type=AllergyType.UNSPECIFIED,
+            severity=Severity.UNSPECIFIED,
         ),
     ]
 

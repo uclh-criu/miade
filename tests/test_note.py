@@ -1,6 +1,5 @@
 from miade.annotators import ProblemsAnnotator
 from miade.concept import Category, Concept
-from miade.metaannotations import MetaAnnotations
 from miade.note import ListItem, Note, NumberedList
 from miade.paragraph import Paragraph, ParagraphType
 from miade.utils.metaannotationstypes import (
@@ -14,15 +13,15 @@ def test_note_cleaning_and_paragraphing_naive(test_problems_annotator, test_clea
     test_problems_annotator.preprocess(test_clean_and_paragraphing_note, refine=False)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
-        Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=182),
-        Paragraph(heading="", body="", type=ParagraphType.prose, start=184, end=262),
-        Paragraph(heading="", body="", type=ParagraphType.prose, start=264, end=314),
-        Paragraph(heading="", body="", type=ParagraphType.pmh, start=316, end=341),
-        Paragraph(heading="", body="", type=ParagraphType.med, start=343, end=406),
-        Paragraph(heading="", body="", type=ParagraphType.allergy, start=408, end=445),
-        Paragraph(heading="", body="", type=ParagraphType.prob, start=447, end=477),
-        Paragraph(heading="", body="", type=ParagraphType.plan, start=479, end=505),
-        Paragraph(heading="", body="", type=ParagraphType.imp, start=507, end=523),
+        Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=181),
+        Paragraph(heading="", body="", type=ParagraphType.prose, start=183, end=261),
+        Paragraph(heading="", body="", type=ParagraphType.prose, start=263, end=313),
+        Paragraph(heading="", body="", type=ParagraphType.pmh, start=315, end=340),
+        Paragraph(heading="", body="", type=ParagraphType.med, start=342, end=405),
+        Paragraph(heading="", body="", type=ParagraphType.allergy, start=407, end=444),
+        Paragraph(heading="", body="", type=ParagraphType.prob, start=446, end=476),
+        Paragraph(heading="", body="", type=ParagraphType.plan, start=478, end=504),
+        Paragraph(heading="", body="", type=ParagraphType.imp, start=506, end=522),
     ]
 
 
@@ -30,13 +29,13 @@ def test_note_cleaning_and_paragraphing_refined(test_problems_annotator, test_cl
     test_problems_annotator.preprocess(test_clean_and_paragraphing_note, refine=True)
 
     assert test_clean_and_paragraphing_note.paragraphs == [
-        Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=314),
-        Paragraph(heading="", body="", type=ParagraphType.pmh, start=316, end=341),
-        Paragraph(heading="", body="", type=ParagraphType.med, start=343, end=406),
-        Paragraph(heading="", body="", type=ParagraphType.allergy, start=408, end=445),
-        Paragraph(heading="", body="", type=ParagraphType.prob, start=447, end=477),
-        Paragraph(heading="", body="", type=ParagraphType.plan, start=479, end=505),
-        Paragraph(heading="", body="", type=ParagraphType.imp, start=507, end=523),
+        Paragraph(heading="", body="", type=ParagraphType.prose, start=0, end=313),
+        Paragraph(heading="", body="", type=ParagraphType.pmh, start=315, end=340),
+        Paragraph(heading="", body="", type=ParagraphType.med, start=342, end=405),
+        Paragraph(heading="", body="", type=ParagraphType.allergy, start=407, end=444),
+        Paragraph(heading="", body="", type=ParagraphType.prob, start=446, end=476),
+        Paragraph(heading="", body="", type=ParagraphType.plan, start=478, end=504),
+        Paragraph(heading="", body="", type=ParagraphType.imp, start=506, end=522),
     ]
 
 
@@ -85,34 +84,27 @@ def test_prob_paragraph_note(
         test_clean_and_paragraphing_note, test_paragraph_chunking_prob_concepts
     )
     # prose
-    assert concepts[0].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-    ]
+    assert concepts[0].presence == Presence.CONFIRMED
+    assert concepts[0].relevance == Relevance.PRESENT
+
     # pmh
-    assert concepts[1].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
-    ]
-    assert concepts[2].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-    ]
+    assert concepts[1].presence == Presence.CONFIRMED
+    assert concepts[1].relevance == Relevance.HISTORIC
+
+    assert concepts[2].presence == Presence.CONFIRMED
+    assert concepts[2].relevance == Relevance.IRRELEVANT
+
     # allergies
-    assert concepts[3].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-    ]
+    assert concepts[3].presence == Presence.CONFIRMED
+    assert concepts[3].relevance == Relevance.IRRELEVANT
+
     # probs
-    assert concepts[4].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-    ]
+    assert concepts[4].presence == Presence.CONFIRMED
+    assert concepts[4].relevance == Relevance.PRESENT
+
     # plan
-    assert concepts[5].meta_anns == [
-        MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-        MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT),
-    ]
+    assert concepts[5].presence == Presence.CONFIRMED
+    assert concepts[5].relevance == Relevance.IRRELEVANT
 
 
 def test_med_paragraph_note(
@@ -124,29 +116,17 @@ def test_med_paragraph_note(
         test_clean_and_paragraphing_note, test_paragraph_chunking_med_concepts
     )
     # pmh
-    assert concepts[0].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-    ]
+    assert concepts[0].substance_category == SubstanceCategory.IRRELEVANT
     # meds
-    assert concepts[1].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.TAKING),
-    ]
+    assert concepts[1].substance_category == SubstanceCategory.TAKING
     # allergies
-    assert concepts[2].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.ADVERSE_REACTION),
-    ]
+    assert concepts[2].substance_category == SubstanceCategory.ADVERSE_REACTION
     # probs
-    assert concepts[3].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-    ]
+    assert concepts[3].substance_category == SubstanceCategory.IRRELEVANT
     # plan
-    assert concepts[4].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-    ]
+    assert concepts[4].substance_category == SubstanceCategory.IRRELEVANT
     # imp
-    assert concepts[5].meta_anns == [
-        MetaAnnotations(name="substance_category", value=SubstanceCategory.IRRELEVANT),
-    ]
+    assert concepts[5].substance_category == SubstanceCategory.IRRELEVANT
 
 
 def test_problem_list_limit(
@@ -162,37 +142,28 @@ def test_problem_list_limit(
             id="1",
             name="Fever",
             category=Category.PROBLEM,
-            negex=False,
             start=138,
             end=143,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="2",
             name="Diabetes",
             category=Category.PROBLEM,
-            negex=False,
             start=144,
             end=152,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.PRESENT),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.PRESENT,
         ),
         Concept(
             id="4",
             name="Arthritis",
             category=Category.PROBLEM,
-            negex=False,
             start=189,
             end=196,
-            meta_anns=[
-                MetaAnnotations(name="presence", value=Presence.CONFIRMED),
-                MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
-            ],
+            presence=Presence.CONFIRMED,
+            relevance=Relevance.HISTORIC,
         ),
     ]
 

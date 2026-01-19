@@ -43,7 +43,9 @@ class AllergenType(Enum):
     ANIMAL = "animal"
 
 
-def load_lookup_data(filename: str, is_package_data: bool = False, as_dict: bool = False, no_header: bool = False):
+def load_lookup_data(
+    filename: str, is_package_data: bool = False, as_dict: bool = False, no_header: bool = False
+) -> pd.DataFrame:
     """
     Load lookup data from a CSV file.
 
@@ -204,7 +206,7 @@ class Annotator(ABC):
         config (AnnotatorConfig): The configuration for the annotator.
     """
 
-    def __init__(self, cat: CAT, config: AnnotatorConfig = None):
+    def __init__(self, cat: CAT, config: Optional[AnnotatorConfig] = None):
         self.cat = cat
         self.config = config if config is not None else AnnotatorConfig()
 
@@ -326,13 +328,9 @@ class Annotator(ABC):
         Returns:
             The extracted concepts from the note.
         """
-        concepts: List[Concept] = []
-        for entity in self.cat.get_entities(note)["entities"].values():
-            try:
-                concepts.append(Concept.from_entity(entity))
-                log.debug(f"Detected concept ({concepts[-1].id} | {concepts[-1].name})")
-            except ValueError as e:
-                log.warning(f"Concept skipped: {e}")
+        concepts: List[Concept] = self.cat.get_entities(note)["concepts"]
+        for concept in concepts:
+            log.debug(f"Detected concept ({concept.id} | {concept.name})")
 
         return concepts
 
@@ -372,58 +370,60 @@ class Annotator(ABC):
            The filtered list of concepts.
         """
         # Check there is a numbered list
-        if len(note.numbered_lists) == 0:
-            return concepts
+        if note.numbered_lists is not None and len(note.numbered_lists) > 0:
+            # Get the global list ranges of all numbered lists in a note
+            global_list_ranges = [
+                (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_lists
+            ]
 
-        # Get the global list ranges of all numbered lists in a note
-        global_list_ranges = [
-            (numbered_list.list_start, numbered_list.list_end) for numbered_list in note.numbered_lists
-        ]
+            # Flatten the list items from all numbered lists into a single list and sort them
+            list_items = [item for numbered_list in note.numbered_lists for item in numbered_list.items]
+            list_items.sort(key=lambda x: x.start)
 
-        # Flatten the list items from all numbered lists into a single list and sort them
-        list_items = [item for numbered_list in note.numbered_lists for item in numbered_list.items]
-        list_items.sort(key=lambda x: x.start)
+            # Sort the concepts by their start index
+            concepts.sort(key=lambda x: x.start)
 
-        # Sort the concepts by their start index
-        concepts.sort(key=lambda x: x.start)
+            filtered_concepts = []
+            concept_idx, item_idx = 0, 0
 
-        filtered_concepts = []
-        concept_idx, item_idx = 0, 0
+            # Iterate through concepts and list items simultaneously
+            while concept_idx < len(concepts) and item_idx < len(list_items):
+                concept = concepts[concept_idx]
+                item = list_items[item_idx]
 
-        # Iterate through concepts and list items simultaneously
-        while concept_idx < len(concepts) and item_idx < len(list_items):
-            concept = concepts[concept_idx]
-            item = list_items[item_idx]
-
-            # Check if the concept is within the global range of any list
-            if any(start <= concept.start < end for start, end in global_list_ranges):
-                # Check for partial or full overlap between concept and list item
-                if concept.start >= item.start and concept.start < item.end:  # Concept starts within current list item
-                    filtered_concepts.append(concept)
-                    concept_idx += 1  # Move to the next concept
-                    item_idx += 1  # Move to the next list item i.e. only choose the first concept per item
-                elif concept.start < item.start:
-                    # If the concept starts before the item starts, move to the next concept
-                    concept_idx += 1
-                    log.debug(
-                        f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item"
-                    )
+                # Check if the concept is within the global range of any list
+                if any(start <= concept.start < end for start, end in global_list_ranges):
+                    # Check for partial or full overlap between concept and list item
+                    if (
+                        concept.start >= item.start and concept.start < item.end
+                    ):  # Concept starts within current list item
+                        filtered_concepts.append(concept)
+                        concept_idx += 1  # Move to the next concept
+                        item_idx += 1  # Move to the next list item i.e. only choose the first concept per item
+                    elif concept.start < item.start:
+                        # If the concept starts before the item starts, move to the next concept
+                        concept_idx += 1
+                        log.debug(
+                            f"Removed concept ({concept.id} | {concept.name}): within a numbered list but not the first concept in the list item"
+                        )
+                    else:
+                        # Otherwise, move to the next list item
+                        item_idx += 1
                 else:
-                    # Otherwise, move to the next list item
-                    item_idx += 1
-            else:
-                # If concept is not within a numbered list range, skip and return it
-                filtered_concepts.append(concept)
+                    # If concept is not within a numbered list range, skip and return it
+                    filtered_concepts.append(concept)
+                    concept_idx += 1
+
+            # After iterating, check if there are remaining concepts after the last list item that might not have been added
+            while concept_idx < len(concepts):
+                concept = concepts[concept_idx]
+                if concept.start >= global_list_ranges[-1][1]:
+                    filtered_concepts.append(concept)
                 concept_idx += 1
 
-        # After iterating, check if there are remaining concepts after the last list item that might not have been added
-        while concept_idx < len(concepts):
-            concept = concepts[concept_idx]
-            if concept.start >= global_list_ranges[-1][1]:
-                filtered_concepts.append(concept)
-            concept_idx += 1
-
-        return filtered_concepts
+            return filtered_concepts
+        else:
+            return concepts
 
     def deduplicate(self, concepts: List[Concept], record_concepts: Optional[List[Concept]] = None) -> List[Concept]:
         """
@@ -646,61 +646,33 @@ class ProblemsAnnotator(Annotator):
             ValueError: If the concept has an invalid negex value.
         """
         # Add, convert, or ignore concepts
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
-
-        convert = False
-        tag = ""
-        # only get meta model results if negex is false
-        if concept.negex is not None:
-            if concept.negex:
-                convert = self.negated_lookup.get(int(concept.id), False)
-                tag = " (negated)"
-            elif Presence.SUSPECTED in meta_ann_values:
-                convert = self.suspected_lookup.get(int(concept.id), False)
-                tag = " (suspected)"
-            elif Relevance.HISTORIC in meta_ann_values:
-                convert = self.historic_lookup.get(int(concept.id), False)
-                tag = " (historic)"
+        if concept.presence == Presence.NEGATED:
+            convert = self.negated_lookup.get(int(concept.id), False)
+            tag = " (negated)"
+        elif concept.presence == Presence.SUSPECTED:
+            convert = self.suspected_lookup.get(int(concept.id), False)
+            tag = " (suspected)"
+        elif concept.relevance == Relevance.HISTORIC:  # fix this!!!!!!!!
+            convert = self.historic_lookup.get(int(concept.id), False)
+            tag = " (historic)"
         else:
-            if Presence.NEGATED in meta_ann_values:
-                convert = self.negated_lookup.get(int(concept.id), False)
-                tag = " (negated)"
-            elif Presence.SUSPECTED in meta_ann_values:
-                convert = self.suspected_lookup.get(int(concept.id), False)
-                tag = " (suspected)"
-            elif Relevance.HISTORIC in meta_ann_values:
-                convert = self.historic_lookup.get(int(concept.id), False)
-                tag = " (historic)"
+            convert = False
+            tag = ""
 
         if convert:
-            if tag == " (negated)" and concept.negex:
-                log.debug(
-                    f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag}): "
-                    f"negation detected by negex"
-                )
-            else:
-                log.debug(
-                    f"Converted concept ({concept.id} | {concept.name}) to ({str(convert)} | {concept.name + tag}):"
-                    f"detected by meta model"
-                )
             concept.id = str(convert)
             concept.name += tag
         else:
-            if concept.negex:
-                log.debug(f"Removed concept ({concept.id} | {concept.name}): negation (negex) with no conversion match")
+            if concept.presence == Presence.NEGATED:
+                log.debug(f"Removed concept ({concept.id} | {concept.name}): negation with no conversion match")
                 return None
-            if concept.negex is None and Presence.NEGATED in meta_ann_values:
-                log.debug(
-                    f"Removed concept ({concept.id} | {concept.name}): negation (meta model) with no conversion match"
-                )
-                return None
-            if Presence.SUSPECTED in meta_ann_values:
+            if concept.presence == Presence.SUSPECTED:
                 log.debug(f"Removed concept ({concept.id} | {concept.name}): suspected with no conversion match")
                 return None
-            if Relevance.IRRELEVANT in meta_ann_values:
+            if concept.relevance == Relevance.IRRELEVANT:
                 log.debug(f"Removed concept ({concept.id} | {concept.name}): irrelevant concept")
                 return None
-            if Relevance.HISTORIC in meta_ann_values:
+            if concept.relevance == Relevance.HISTORIC:
                 log.debug(f"No change to concept ({concept.id} | {concept.name}): historic with no conversion match")
 
         concept.category = Category.PROBLEM
@@ -737,25 +709,23 @@ class ProblemsAnnotator(Annotator):
         # if paragraph is structured problems section, add to prob list and convert to corresponding relevance
         if paragraph.type in self.structured_prob_lists:
             prob_concepts_in_structured_sections.append(concept)
-            for meta in concept.meta_anns:
-                if meta.name == "relevance" and meta.value == Relevance.IRRELEVANT:
-                    new_relevance = self.structured_prob_lists[paragraph.type]
-                    log.debug(
-                        f"Converted {meta.value} to "
-                        f"{new_relevance} for concept ({concept.id} | {concept.name}): "
-                        f"paragraph is {paragraph.type}"
-                    )
-                    meta.value = new_relevance
+            if concept.relevance == Relevance.IRRELEVANT:
+                new_relevance = self.structured_prob_lists[paragraph.type]
+                log.debug(
+                    f"Converted {concept.relevance} to "
+                    f"{new_relevance} for concept ({concept.id} | {concept.name}): "
+                    f"paragraph is {paragraph.type}"
+                )
+                concept.relevance = new_relevance
         # if paragraph is meds or irrelevant section, convert problems to irrelevant
         elif paragraph.type in self.structured_med_lists or paragraph.type in self.irrelevant_paragraphs:
-            for meta in concept.meta_anns:
-                if meta.name == "relevance" and meta.value != Relevance.IRRELEVANT:
-                    log.debug(
-                        f"Converted {meta.value} to "
-                        f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
-                        f"paragraph is {paragraph.type}"
-                    )
-                    meta.value = Relevance.IRRELEVANT
+            if concept.relevance != Relevance.IRRELEVANT:
+                log.debug(
+                    f"Converted {concept.relevance} to "
+                    f"{Relevance.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                    f"paragraph is {paragraph.type}"
+                )
+                concept.relevance = Relevance.IRRELEVANT
 
     def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
         """
@@ -775,7 +745,7 @@ class ProblemsAnnotator(Annotator):
                 (concept, paragraph)
                 for paragraph in note.paragraphs
                 for concept in concepts
-                if concept.start >= paragraph.start and concept.end <= paragraph.end and concept.meta_anns
+                if concept.start >= paragraph.start and concept.end <= paragraph.end
             ]
             # Process each concept and paragraph pair
             for concept, paragraph in concepts_in_paragraphs:
@@ -1021,10 +991,9 @@ class MedsAllergiesAnnotator(Annotator):
             The validated and converted concept.
 
         """
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
 
         # assign categories
-        if SubstanceCategory.ADVERSE_REACTION in meta_ann_values:
+        if concept.substance_category == SubstanceCategory.ADVERSE_REACTION:
             if self._validate_and_convert_substance(concept):
                 self._convert_allergy_type_to_code(concept)
                 self._convert_allergy_severity_to_code(concept)
@@ -1032,18 +1001,19 @@ class MedsAllergiesAnnotator(Annotator):
             else:
                 log.warning(f"Double-checking if concept ({concept.id} | {concept.name}) is in reaction subset")
                 if self._validate_and_convert_reaction(concept) and (
-                    ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values
+                    concept.reaction_position == (ReactionPos.BEFORE_SUBSTANCE or ReactionPos.AFTER_SUBSTANCE)
                 ):
                     concept.category = Category.REACTION
                 else:
                     log.warning(
                         f"Reaction concept ({concept.id} | {concept.name}) not in subset or reaction_pos is NOT_REACTION"
                     )
-        if SubstanceCategory.TAKING in meta_ann_values:
+        if concept.substance_category == SubstanceCategory.TAKING:
             if self._validate_meds(concept):
                 concept.category = Category.MEDICATION
-        if SubstanceCategory.NOT_SUBSTANCE in meta_ann_values and (
-            ReactionPos.BEFORE_SUBSTANCE in meta_ann_values or ReactionPos.AFTER_SUBSTANCE in meta_ann_values
+        if concept.substance_category == SubstanceCategory.NOT_SUBSTANCE and (
+            concept.reaction_position == ReactionPos.BEFORE_SUBSTANCE
+            or concept.reaction_position == ReactionPos.AFTER_SUBSTANCE
         ):
             if self._validate_and_convert_reaction(concept):
                 concept.category = Category.REACTION
@@ -1070,18 +1040,19 @@ class MedsAllergiesAnnotator(Annotator):
         for reaction_concept in reaction_concepts:
             nearest_allergy_concept = None
             min_distance = inf
-            meta_ann_values = (
-                [meta_ann.value for meta_ann in reaction_concept.meta_anns]
-                if reaction_concept.meta_anns is not None
-                else []
-            )
 
             for allergy_concept in allergy_concepts:
                 # skip if allergy is after and meta is before_substance
-                if ReactionPos.BEFORE_SUBSTANCE in meta_ann_values and allergy_concept.start < reaction_concept.start:
+                if (
+                    allergy_concept.reaction_position == ReactionPos.BEFORE_SUBSTANCE
+                    and allergy_concept.start < reaction_concept.start
+                ):
                     continue
                 # skip if allergy is before and meta is after_substance
-                elif ReactionPos.AFTER_SUBSTANCE in meta_ann_values and allergy_concept.start > reaction_concept.start:
+                elif (
+                    allergy_concept.reaction_position == ReactionPos.AFTER_SUBSTANCE
+                    and allergy_concept.start > reaction_concept.start
+                ):
                     continue
                 else:
                     distance = calculate_word_distance(
@@ -1126,18 +1097,18 @@ class MedsAllergiesAnnotator(Annotator):
         Returns:
             True if the conversion is successful, False otherwise.
         """
-        meta_ann_values = [meta_ann.value for meta_ann in concept.meta_anns] if concept.meta_anns is not None else []
-        if Severity.MILD in meta_ann_values:
-            concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
-        elif Severity.MODERATE in meta_ann_values:
-            concept.linked_concepts.append(Concept(id="M", name="Moderate", category=Category.SEVERITY))
-        elif Severity.SEVERE in meta_ann_values:
-            concept.linked_concepts.append(Concept(id="H", name="High", category=Category.SEVERITY))
-        elif Severity.UNSPECIFIED in meta_ann_values:
-            return True
-        else:
-            log.warning(f"No severity annotation associated with ({concept.id} | {concept.name})")
-            return False
+        match concept.severity:
+            case Severity.MILD:
+                concept.linked_concepts.append(Concept(id="L", name="Low", category=Category.SEVERITY))
+            case Severity.MODERATE:
+                concept.linked_concepts.append(Concept(id="M", name="Moderate", category=Category.SEVERITY))
+            case Severity.SEVERE:
+                concept.linked_concepts.append(Concept(id="H", name="High", category=Category.SEVERITY))
+            case Severity.UNSPECIFIED:
+                return True
+            case _:
+                log.warning(f"No severity annotation associated with ({concept.id} | {concept.name})")
+                return False
 
         log.debug(
             f"Linked severity concept ({concept.linked_concepts[-1].id} | {concept.linked_concepts[-1].name}) "
@@ -1157,37 +1128,35 @@ class MedsAllergiesAnnotator(Annotator):
             True if the conversion and linking were successful, False otherwise.
         """
         # get the ALLERGYTYPE meta-annotation
-        allergy_type = [meta_ann for meta_ann in concept.meta_anns if meta_ann.name == "allergy_type"]
-        if len(allergy_type) != 1:
+
+        if allergy_type := concept.allergy_type:
+            # perform lookup with ALLERGYTYPE and AllergenType combination
+            lookup_combination: Tuple[str, str] = (concept.category.value, allergy_type.value)
+            allergy_type_lookup_result = self.allergy_type_lookup.get(lookup_combination)
+
+            # add resulting allergy type concept as to linked_concept
+            if allergy_type_lookup_result is not None:
+                concept.linked_concepts.append(
+                    Concept(
+                        id=str(allergy_type_lookup_result[0]),
+                        name=allergy_type_lookup_result[1],
+                        category=Category.ALLERGY_TYPE,
+                    )
+                )
+                log.debug(
+                    f"Linked allergy_type concept ({allergy_type_lookup_result[0]} | {allergy_type_lookup_result[1]})"
+                    f" to allergen concept ({concept.id} | {concept.name}): valid meta model output + allergytype lookup"
+                )
+            else:
+                log.warning(f"Allergen and adverse reaction type combination not found: {lookup_combination}")
+
+            return True
+        else:
             log.warning(
                 f"Unable to map allergy type code: allergy_type meta-annotation "
                 f"not found for concept {concept.__str__()}"
             )
             return False
-        else:
-            allergy_type = allergy_type[0].value
-
-        # perform lookup with ALLERGYTYPE and AllergenType combination
-        lookup_combination: Tuple[str, str] = (concept.category.value, allergy_type.value)
-        allergy_type_lookup_result = self.allergy_type_lookup.get(lookup_combination)
-
-        # add resulting allergy type concept as to linked_concept
-        if allergy_type_lookup_result is not None:
-            concept.linked_concepts.append(
-                Concept(
-                    id=str(allergy_type_lookup_result[0]),
-                    name=allergy_type_lookup_result[1],
-                    category=Category.ALLERGY_TYPE,
-                )
-            )
-            log.debug(
-                f"Linked allergy_type concept ({allergy_type_lookup_result[0]} | {allergy_type_lookup_result[1]})"
-                f" to allergen concept ({concept.id} | {concept.name}): valid meta model output + allergytype lookup"
-            )
-        else:
-            log.warning(f"Allergen and adverse reaction type combination not found: {lookup_combination}")
-
-        return True
 
     def _process_meta_ann_by_paragraph(self, concept: Concept, paragraph: Paragraph):
         """
@@ -1202,29 +1171,27 @@ class MedsAllergiesAnnotator(Annotator):
         """
         # if paragraph is structured meds to convert to corresponding relevance
         if paragraph.type in self.structured_med_lists:
-            for meta in concept.meta_anns:
-                if meta.name == "substance_category" and meta.value in [
-                    SubstanceCategory.TAKING,
-                    SubstanceCategory.IRRELEVANT,
-                ]:
-                    new_relevance = self.structured_med_lists[paragraph.type]
-                    if meta.value != new_relevance:
-                        log.debug(
-                            f"Converted {meta.value} to "
-                            f"{new_relevance} for concept ({concept.id} | {concept.name}): "
-                            f"paragraph is {paragraph.type}"
-                        )
-                        meta.value = new_relevance
-        # if paragraph is probs or irrelevant section, convert substance to irrelevant
-        elif paragraph.type in self.structured_prob_lists or paragraph.type in self.irrelevant_paragraphs:
-            for meta in concept.meta_anns:
-                if meta.name == "substance_category" and meta.value != SubstanceCategory.IRRELEVANT:
+            if concept.substance_category in [
+                SubstanceCategory.TAKING,
+                SubstanceCategory.IRRELEVANT,
+            ]:
+                new_relevance = self.structured_med_lists[paragraph.type]
+                if concept.substance_category != new_relevance:
                     log.debug(
-                        f"Converted {meta.value} to "
-                        f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                        f"Converted {concept.substance_category} to "
+                        f"{new_relevance} for concept ({concept.id} | {concept.name}): "
                         f"paragraph is {paragraph.type}"
                     )
-                    meta.value = SubstanceCategory.IRRELEVANT
+                    concept.substance_category = new_relevance
+        # if paragraph is probs or irrelevant section, convert substance to irrelevant
+        elif paragraph.type in self.structured_prob_lists or paragraph.type in self.irrelevant_paragraphs:
+            if concept.substance_category is not None and concept.substance_category != SubstanceCategory.IRRELEVANT:
+                log.debug(
+                    f"Converted {concept.substance_category} to "
+                    f"{SubstanceCategory.IRRELEVANT} for concept ({concept.id} | {concept.name}): "
+                    f"paragraph is {paragraph.type}"
+                )
+                concept.substance_category = SubstanceCategory.IRRELEVANT
 
     def process_paragraphs(self, note: Note, concepts: List[Concept]) -> List[Concept]:
         """
@@ -1240,9 +1207,7 @@ class MedsAllergiesAnnotator(Annotator):
         for paragraph in note.paragraphs:
             for concept in concepts:
                 if concept.start >= paragraph.start and concept.end <= paragraph.end:
-                    # log.debug(f"({concept.name} | {concept.id}) is in {paragraph.type}")
-                    if concept.meta_anns:
-                        self._process_meta_ann_by_paragraph(concept, paragraph)
+                    self._process_meta_ann_by_paragraph(concept, paragraph)
 
         return concepts
 

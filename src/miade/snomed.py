@@ -2,8 +2,6 @@
 
 import pandas
 
-from typing import List, Optional, Dict
-
 
 class Transitive:
     def __init__(self, df: pandas.DataFrame):

@@ -1,10 +1,9 @@
+from miade.concept import Category, Concept
 from miade.core import NoteProcessor
-from miade.concept import Concept, Category
-from miade.metaannotations import MetaAnnotations
 from miade.utils.metaannotationstypes import (
+    Laterality,
     Presence,
     Relevance,
-    Laterality,
 )
 
 
@@ -25,22 +24,30 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
         Concept(id="59927004", name="01 liver failure", category=Category.PROBLEM),
         Concept(id="322236009", name="paracetamol 500mg oral tablets", category=Category.MEDICATION),
     ]
-    assert processor.get_concept_dicts(test_note) == [
+    test_note_concepts = processor.get_concept_dicts(test_note)
+    ground = [
         {
-            "name": "01 liver failure",
             "id": "59927004",
+            "name": "01 liver failure",
             "category": "PROBLEM",
             "start": 12,
             "end": 25,
             "dosage": None,
+            "bodysite": None,
+            "presence": None,
+            "relevance": None,
+            "substance_category": None,
+            "allergy_type": None,
+            "laterality": None,
+            "reaction_position": None,
+            "severity": None,
+            "note": None,
             "linked_concepts": [],
-            "negex": False,
-            "meta": None,
-            "debug": None,
+            "debug_dict": None,
         },
         {
-            "name": "paracetamol 500mg oral tablets",
             "id": "322236009",
+            "name": "paracetamol 500mg oral tablets",
             "category": "MEDICATION",
             "start": 40,
             "end": 70,
@@ -50,12 +57,22 @@ def test_core(model_directory_path, test_note, test_negated_note, test_duplicate
                 "frequency": None,
                 "route": {"source": "by mouth", "full_name": "Oral", "value": "C38288", "code_system": "NCI Thesaurus"},
             },
+            "bodysite": None,
+            "presence": None,
+            "relevance": None,
+            "substance_category": None,
+            "laterality": None,
+            "allergy_type": None,
+            "reaction_position": None,
+            "severity": None,
+            "note": None,
             "linked_concepts": [],
-            "negex": False,
-            "meta": None,
-            "debug": None,
+            "debug_dict": None,
         },
     ]
+    print(ground)
+    print(test_note_concepts)
+    assert test_note_concepts == ground
 
 
 def test_adding_removing_annotators(model_directory_path):
@@ -94,10 +111,8 @@ def test_meta_from_entity(test_medcat_concepts):
         category=None,
         start=4,
         end=11,
-        meta_anns=[
-            MetaAnnotations(name="presence", value=Presence.NEGATED),
-            MetaAnnotations(name="relevance", value=Relevance.HISTORIC),
-        ],
+        presence=Presence.NEGATED,
+        relevance=Relevance.HISTORIC,
     )
     assert Concept.from_entity(test_medcat_concepts["1"]) == Concept(
         id="0",
@@ -105,9 +120,7 @@ def test_meta_from_entity(test_medcat_concepts):
         category=None,
         start=4,
         end=11,
-        meta_anns=[
-            MetaAnnotations(name="presence", value=Presence.SUSPECTED, confidence=1),
-            MetaAnnotations(name="relevance", value=Relevance.IRRELEVANT, confidence=1),
-            MetaAnnotations(name="laterality (generic)", value=Laterality.NO_LATERALITY, confidence=1),
-        ],
+        presence=Presence.SUSPECTED,
+        relevance=Relevance.IRRELEVANT,
+        laterality=Laterality.NO_LATERALITY,
     )

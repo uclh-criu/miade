@@ -9,13 +9,12 @@ from typing_extensions import Dict
 
 import typer
 import yaml
-import tomllib
 import numpy as np
 import pandas as pd
 import polars as pl
 import requests
 
-from pathlib import Path, PosixPath
+from pathlib import Path
 from shutil import rmtree
 from typing import Optional, List
 from pydantic import BaseModel, validator
